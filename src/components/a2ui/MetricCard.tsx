@@ -38,10 +38,10 @@ export function MetricCard({ component }: MetricCardProps) {
   const isCritical = status === 'critical';
 
   return (
-    <div 
+    <div
       className={`
-        bg-surface-2 rounded-xl p-5 border transition-all duration-300
-        ${isCritical ? 'border-accent-danger/50 animate-pulse-critical' : 'border-surface-3'}
+        bg-white/70 backdrop-blur-sm rounded-xl p-5 border transition-all duration-300 shadow-sm
+        ${isCritical ? 'border-accent-danger/50 animate-pulse-critical' : 'border-white/50'}
         card-hover
       `}
     >

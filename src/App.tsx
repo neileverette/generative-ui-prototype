@@ -3,9 +3,22 @@ import { CopilotKit } from '@copilotkit/react-core';
 import { CopilotChat } from '@copilotkit/react-ui';
 import '@copilotkit/react-ui/styles.css';
 import { DashboardCanvas } from './components/DashboardCanvas';
+import { BlurBackground } from './components/BlurBackground';
 import { A2UIComponent, DashboardState, sortByPriority } from './types/a2ui';
 import { useCopilotAction, useCopilotReadable } from '@copilotkit/react-core';
-import { Activity, Server, Container, Clock, Home } from 'lucide-react';
+import { Server, Container, Clock, ArrowLeft, List } from 'lucide-react';
+
+// IBM Venn Diagram icon
+const VennDiagramIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 32 32"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M20,6a9.92,9.92,0,0,0-4,.84A9.92,9.92,0,0,0,12,6a10,10,0,0,0,0,20,9.92,9.92,0,0,0,4-.84A9.92,9.92,0,0,0,20,26,10,10,0,0,0,20,6ZM12,24A8,8,0,0,1,12,8a7.91,7.91,0,0,1,1.76.2,10,10,0,0,0,0,15.6A7.91,7.91,0,0,1,12,24Zm8-8a8,8,0,0,1-4,6.92A8,8,0,0,1,16,9.08,8,8,0,0,1,20,16Zm0,8a7.91,7.91,0,0,1-1.76-.2,10,10,0,0,0,0-15.6A7.91,7.91,0,0,1,20,8a8,8,0,0,1,0,16Z" />
+  </svg>
+);
 
 function DashboardWithAgent() {
   const [dashboardState, setDashboardState] = useState<DashboardState>({
@@ -292,6 +305,305 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to fetch running containers count
+  useCopilotAction({
+    name: 'fetchRunningContainers',
+    description: 'Fetch the count of running Docker containers. Use this when the user asks how many containers are running.',
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await fetch('/api/metrics/running-containers');
+        const data = await response.json();
+
+        if (data.error) {
+          return `Error fetching containers: ${data.error}`;
+        }
+
+        const component: A2UIComponent = {
+          id: 'running-containers',
+          component: 'metric_card' as const,
+          source: 'datadog',
+          priority: 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: data.displayName,
+            value: data.currentValue ?? 'N/A',
+            unit: data.unit,
+            status: data.status as 'healthy' | 'warning' | 'critical' | 'unknown',
+            description: 'Number of Docker containers currently running',
+          },
+        };
+
+        setDashboardState(prev => {
+          const filtered = prev.components.filter(c => c.id !== 'running-containers');
+          return {
+            ...prev,
+            components: sortByPriority([...filtered, component]),
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        return `Running containers: ${data.currentValue}`;
+      } catch (error) {
+        return `Failed to fetch running containers: ${error}`;
+      }
+    },
+  });
+
+  // Action to fetch container memory usage
+  useCopilotAction({
+    name: 'fetchContainerMemory',
+    description: 'Fetch memory usage for a specific Docker container. Use this when the user asks about container memory usage, like "show me n8n memory" or "how much memory is redis using".',
+    parameters: [
+      {
+        name: 'containerName',
+        type: 'string',
+        description: 'The name of the Docker container to fetch memory metrics for (e.g., "n8n", "redis", "postgres", "langflow")',
+        required: true,
+      },
+    ],
+    handler: async ({ containerName }) => {
+      try {
+        const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName as string)}/memory`);
+        const data = await response.json();
+
+        if (data.error && !data.currentValue) {
+          return `No memory data found for container "${containerName}".`;
+        }
+
+        const component: A2UIComponent = {
+          id: `container-${containerName}-memory`,
+          component: 'metric_card' as const,
+          source: 'datadog',
+          priority: data.status === 'critical' ? 'critical' : data.status === 'warning' ? 'high' : 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: data.displayName,
+            value: data.currentValue ?? 'N/A',
+            unit: data.unit,
+            status: data.status as 'healthy' | 'warning' | 'critical' | 'unknown',
+            description: `Current memory usage for ${containerName} container`,
+          },
+        };
+
+        setDashboardState(prev => {
+          const filtered = prev.components.filter(c => c.id !== `container-${containerName}-memory`);
+          return {
+            ...prev,
+            components: sortByPriority([...filtered, component]),
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        return `Showing memory usage for ${containerName}: ${data.currentValue} ${data.unit}`;
+      } catch (error) {
+        return `Failed to fetch container memory: ${error}`;
+      }
+    },
+  });
+
+  // Action to fetch Gmail Filter workflow metrics
+  useCopilotAction({
+    name: 'fetchGmailFilterMetrics',
+    description: 'Fetch n8n Gmail Filter workflow execution metrics (successful, failed, success rate). Use this when the user asks about Gmail Filter workflow status or executions.',
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await fetch('/api/metrics/n8n/gmail-filter');
+        const data = await response.json();
+
+        if (data.error) {
+          return `Error fetching Gmail Filter metrics: ${data.error}`;
+        }
+
+        // Create three metric cards for success, failed, and rate
+        const components: A2UIComponent[] = [
+          {
+            id: 'gmail-filter-success',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Gmail Filter: Successful',
+              value: data.metrics.successful,
+              unit: '',
+              status: 'healthy' as const,
+              description: 'Successful executions (24h)',
+            },
+          },
+          {
+            id: 'gmail-filter-failed',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: data.metrics.failed > 0 ? 'high' : 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Gmail Filter: Failed',
+              value: data.metrics.failed,
+              unit: '',
+              status: data.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
+              description: 'Failed executions (24h)',
+            },
+          },
+          {
+            id: 'gmail-filter-rate',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Gmail Filter: Success Rate',
+              value: data.metrics.successRate,
+              unit: '%',
+              status: data.metrics.successRate >= 95 ? 'healthy' as const : data.metrics.successRate >= 80 ? 'warning' as const : 'critical' as const,
+              description: 'Success rate (24h)',
+            },
+          },
+        ];
+
+        setDashboardState(prev => {
+          const filtered = prev.components.filter(c => !c.id.startsWith('gmail-filter-'));
+          return {
+            ...prev,
+            components: sortByPriority([...filtered, ...components]),
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        return `Gmail Filter: ${data.metrics.successful} successful, ${data.metrics.failed} failed, ${data.metrics.successRate}% success rate`;
+      } catch (error) {
+        return `Failed to fetch Gmail Filter metrics: ${error}`;
+      }
+    },
+  });
+
+  // Action to fetch Image Generator workflow metrics
+  useCopilotAction({
+    name: 'fetchImageGeneratorMetrics',
+    description: 'Fetch n8n Image Generator workflow execution metrics (successful, failed, success rate). Use this when the user asks about Image Generator workflow status or executions.',
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await fetch('/api/metrics/n8n/image-generator');
+        const data = await response.json();
+
+        if (data.error) {
+          return `Error fetching Image Generator metrics: ${data.error}`;
+        }
+
+        const components: A2UIComponent[] = [
+          {
+            id: 'image-gen-success',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Image Generator: Successful',
+              value: data.metrics.successful,
+              unit: '',
+              status: 'healthy' as const,
+              description: 'Successful executions (24h)',
+            },
+          },
+          {
+            id: 'image-gen-failed',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: data.metrics.failed > 0 ? 'high' : 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Image Generator: Failed',
+              value: data.metrics.failed,
+              unit: '',
+              status: data.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
+              description: 'Failed executions (24h)',
+            },
+          },
+          {
+            id: 'image-gen-rate',
+            component: 'metric_card' as const,
+            source: 'datadog',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Image Generator: Success Rate',
+              value: data.metrics.successRate,
+              unit: '%',
+              status: data.metrics.successRate >= 95 ? 'healthy' as const : data.metrics.successRate >= 80 ? 'warning' as const : 'critical' as const,
+              description: 'Success rate (24h)',
+            },
+          },
+        ];
+
+        setDashboardState(prev => {
+          const filtered = prev.components.filter(c => !c.id.startsWith('image-gen-'));
+          return {
+            ...prev,
+            components: sortByPriority([...filtered, ...components]),
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        return `Image Generator: ${data.metrics.successful} successful, ${data.metrics.failed} failed, ${data.metrics.successRate}% success rate`;
+      } catch (error) {
+        return `Failed to fetch Image Generator metrics: ${error}`;
+      }
+    },
+  });
+
+  // Action to fetch running containers list as a table
+  useCopilotAction({
+    name: 'fetchContainersList',
+    description: 'Fetch a table showing all running Docker containers with their memory and CPU usage. Use this when the user asks to see all containers, list containers, or wants a containers table/overview.',
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await fetch('/api/metrics/containers-list');
+        const data = await response.json();
+
+        if (data.error) {
+          return `Error fetching containers list: ${data.error}`;
+        }
+
+        const component: A2UIComponent = {
+          id: 'containers-list-table',
+          component: 'data_table' as const,
+          source: 'datadog',
+          priority: 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: 'Running Containers',
+            columns: [
+              { key: 'name', label: 'Container', sortable: true },
+              { key: 'memory', label: 'Memory (MiB)', sortable: true },
+              { key: 'cpu', label: 'CPU %', sortable: true },
+            ],
+            rows: data.containers.map((c: { name: string; memory: number | null; cpu: number | null }) => ({
+              name: c.name,
+              memory: c.memory ?? 'N/A',
+              cpu: c.cpu !== null ? `${c.cpu}%` : 'N/A',
+            })),
+          },
+        };
+
+        setDashboardState(prev => {
+          const filtered = prev.components.filter(c => c.id !== 'containers-list-table');
+          return {
+            ...prev,
+            components: sortByPriority([...filtered, component]),
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        return `Showing ${data.count} running containers`;
+      } catch (error) {
+        return `Failed to fetch containers list: ${error}`;
+      }
+    },
+  });
+
   // Shortcut handlers for the welcome screen
   const handleFetchSystemMetrics = useCallback(async () => {
     try {
@@ -386,6 +698,47 @@ function DashboardWithAgent() {
     }
   }, []);
 
+  const handleFetchContainersList = useCallback(async () => {
+    try {
+      const response = await fetch('/api/metrics/containers-list');
+      const data = await response.json();
+
+      if (data.error) return;
+
+      const component: A2UIComponent = {
+        id: 'containers-list-table',
+        component: 'data_table' as const,
+        source: 'datadog',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Running Containers',
+          columns: [
+            { key: 'name', label: 'Container', sortable: true },
+            { key: 'memory', label: 'Memory (MiB)', sortable: true },
+            { key: 'cpu', label: 'CPU %', sortable: true },
+          ],
+          rows: data.containers.map((c: { name: string; memory: number | null; cpu: number | null }) => ({
+            name: c.name,
+            memory: c.memory ?? 'N/A',
+            cpu: c.cpu !== null ? `${c.cpu}%` : 'N/A',
+          })),
+        },
+      };
+
+      setDashboardState(prev => {
+        const filtered = prev.components.filter(c => c.id !== 'containers-list-table');
+        return {
+          ...prev,
+          components: sortByPriority([...filtered, component]),
+          lastUpdated: new Date().toISOString(),
+        };
+      });
+    } catch (error) {
+      console.error('Failed to fetch containers list:', error);
+    }
+  }, []);
+
   // Define shortcuts for the welcome screen
   const shortcuts = [
     {
@@ -409,71 +762,77 @@ function DashboardWithAgent() {
       icon: <Clock className="w-6 h-6" />,
       onClick: handleFetchUptime,
     },
+    {
+      id: 'containers-list',
+      title: 'Containers List',
+      description: 'View all running containers with CPU & memory',
+      icon: <List className="w-6 h-6" />,
+      onClick: handleFetchContainersList,
+    },
   ];
 
   return (
-    <div ref={containerRef} className="flex h-screen bg-surface-0 text-text-primary">
-      {/* Main Canvas Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-14 border-b border-surface-3 flex items-center justify-between px-6 bg-surface-1">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setDashboardState({
-                components: [],
-                lastUpdated: new Date().toISOString(),
-              })}
-              disabled={dashboardState.components.length === 0}
-              className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg transition-all mr-2 text-sm ${
-                dashboardState.components.length > 0
-                  ? 'bg-accent-primary text-white border-accent-primary hover:bg-accent-primary/90 cursor-pointer'
-                  : 'bg-surface-2 text-text-muted border-surface-3 cursor-not-allowed opacity-50'
-              }`}
-              title="Back to home"
-            >
-              <Home className="w-4 h-4" />
-              <span>Home</span>
-            </button>
-            <Activity className="w-5 h-5 text-accent-primary" />
-            <h1 className="text-lg font-semibold">
-              <span className="gradient-text">Agent-Driven</span> Dashboard
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-text-muted font-mono">
-              {dashboardState.components.length} components
-            </span>
-          </div>
-        </header>
+    <div ref={containerRef} className="flex flex-col h-screen text-text-primary relative">
+      {/* Blurred gradient background */}
+      <BlurBackground />
 
+      {/* Full-width Header */}
+      <header className="h-14 border-b border-surface-3/50 flex items-center justify-between px-6 bg-white/70 backdrop-blur-sm relative z-10 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setDashboardState({
+              components: [],
+              lastUpdated: new Date().toISOString(),
+            })}
+            disabled={dashboardState.components.length === 0}
+            className={`p-2 rounded transition-all mr-2 ${
+              dashboardState.components.length > 0
+                ? 'text-accent-primary hover:bg-accent-primary/10 cursor-pointer'
+                : 'text-text-muted cursor-not-allowed opacity-30'
+            }`}
+            title="Back to home"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <VennDiagramIcon className="w-8 h-8 text-accent-primary" />
+          <h1 className="text-lg font-sans font-normal">
+            <span className="gradient-text">Generative UI</span> Example
+          </h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-text-muted font-mono">
+            {dashboardState.components.length} components
+          </span>
+        </div>
+      </header>
+
+      {/* Main content area with dashboard and chat side by side */}
+      <div className="flex flex-1 overflow-hidden relative z-10">
         {/* Dashboard Canvas */}
         <main className="flex-1 overflow-auto p-6">
           <DashboardCanvas state={dashboardState} shortcuts={shortcuts} />
         </main>
-      </div>
 
-      {/* Resizable Divider */}
-      <div
-        onMouseDown={handleMouseDown}
-        className="w-1 bg-surface-3 hover:bg-accent-primary cursor-col-resize transition-colors flex-shrink-0"
-      />
+        {/* Resizable Divider */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="w-1 bg-surface-3/50 hover:bg-accent-primary cursor-col-resize transition-colors flex-shrink-0"
+        />
 
-      {/* Chat Panel */}
-      <div
-        className="flex flex-col bg-surface-1 overflow-hidden flex-shrink-0"
-        style={{ width: chatWidth }}
-      >
-        <div className="h-14 border-b border-surface-3 flex items-center px-4">
-          <h2 className="font-semibold text-text-primary">Infrastructure Assistant</h2>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <CopilotChat
-            labels={{
-              initial: 'Ask me about your system metrics, or say "show me a dashboard" to get started.',
-              placeholder: 'Ask about CPU, memory, containers...',
-            }}
-            className="h-full"
-          />
+        {/* Chat Panel */}
+        <div
+          className="flex flex-col bg-white/50 backdrop-blur-sm overflow-hidden flex-shrink-0"
+          style={{ width: chatWidth }}
+        >
+          <div className="flex-1 overflow-hidden">
+            <CopilotChat
+              labels={{
+                initial: 'Ask me about your system metrics, or say "show me a dashboard" to get started.',
+                placeholder: 'Ask about CPU, memory, containers...',
+              }}
+              className="h-full"
+            />
+          </div>
         </div>
       </div>
     </div>

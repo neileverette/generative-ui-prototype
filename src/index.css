@@ -26,9 +26,56 @@
   @apply transition-colors duration-200;
 }
 
-/* Custom CopilotKit overrides */
-.copilotkit-chat-container {
+/* Custom CopilotKit overrides - make chat transparent */
+.copilotkit-chat-container,
+[class*="copilotKitChat"],
+[class*="CopilotKit"],
+[data-copilotkit],
+.copilotKitChat,
+[class*="copilotKit"],
+[class*="Copilot"] {
   background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Target all CopilotKit wrapper divs and nested elements */
+[class*="copilotKitChat"] > div,
+[class*="CopilotKit"] > div,
+[class*="copilotKit"] > div,
+[class*="copilotKit"] div,
+[class*="CopilotKit"] div {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Target message container and input areas specifically */
+[class*="messages"],
+[class*="Messages"],
+[class*="input"],
+[class*="Input"],
+[class*="textarea"],
+[class*="chatInput"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Resize and style CopilotKit header icon */
+.copilotKitHeader button,
+[class*="copilotKitHeader"] button,
+button[aria-label*="Inspector"],
+button[aria-label*="inspector"] {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+}
+
+.copilotKitHeader button svg,
+[class*="copilotKitHeader"] button svg,
+button[aria-label*="Inspector"] svg,
+button[aria-label*="inspector"] svg {
+  width: 16px !important;
+  height: 16px !important;
 }
 
 /* Hide CopilotKit dev console floating button */
@@ -98,4 +145,54 @@ div[class*="console-button"],
 .card-hover:hover {
   @apply -translate-y-1;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Blurred gradient background */
+.blur-background-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blur-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(103.196px);
+  pointer-events: none;
+}
+
+.blur-circle-ibm-blue {
+  background-color: #0f62fe;
+  opacity: 0.25;
+}
+
+.blur-circle-purple {
+  background-color: #6366f1;
+  opacity: 0.25;
+}
+
+/* Floating animation for blur circles */
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(30px, -20px);
+  }
+  50% {
+    transform: translate(-20px, 30px);
+  }
+  75% {
+    transform: translate(-30px, -10px);
+  }
+}
+
+.blur-circle-animate {
+  animation: float 20s ease-in-out infinite;
 }

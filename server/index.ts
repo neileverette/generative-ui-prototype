@@ -215,6 +215,260 @@ app.get('/api/metrics/overview', async (_req, res) => {
   }
 });
 
+// Running containers count endpoint
+app.get('/api/metrics/running-containers', async (_req, res) => {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600;
+
+    const query = 'sum:docker.containers.running{host:i-040ac6026761030ac}';
+    const data = await queryDatadog(query, from, now);
+
+    if (data.series && data.series.length > 0) {
+      const series = data.series[0];
+      const points = series.pointlist || [];
+      const currentValue = points.length > 0 ? points[points.length - 1][1] : null;
+
+      res.json({
+        metric: 'running_containers',
+        displayName: 'Running Containers',
+        currentValue: currentValue !== null ? Math.round(currentValue) : null,
+        unit: '',
+        status: 'healthy',
+        queriedAt: new Date().toISOString(),
+      });
+    } else {
+      res.json({
+        metric: 'running_containers',
+        displayName: 'Running Containers',
+        currentValue: null,
+        unit: '',
+        status: 'unknown',
+        queriedAt: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Container memory usage endpoint
+app.get('/api/metrics/container/:containerName/memory', async (req, res) => {
+  try {
+    const { containerName } = req.params;
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600;
+
+    const query = `avg:docker.mem.rss{container_name:${containerName}}`;
+    const data = await queryDatadog(query, from, now);
+
+    if (data.series && data.series.length > 0) {
+      const series = data.series[0];
+      const points = series.pointlist || [];
+      const currentValue = points.length > 0 ? points[points.length - 1][1] : null;
+
+      // Convert bytes to MiB
+      const mibValue = currentValue !== null ? currentValue / (1024 * 1024) : null;
+
+      // Determine status based on memory thresholds (500MB warning, 1GB critical)
+      let status = 'healthy';
+      if (mibValue !== null) {
+        if (mibValue >= 1024) {
+          status = 'critical';
+        } else if (mibValue >= 500) {
+          status = 'warning';
+        }
+      }
+
+      res.json({
+        containerName,
+        metric: 'memory_usage',
+        displayName: `${containerName} Memory Usage`,
+        currentValue: mibValue !== null ? parseFloat(mibValue.toFixed(1)) : null,
+        unit: 'MiB',
+        status,
+        queriedAt: new Date().toISOString(),
+      });
+    } else {
+      res.json({
+        containerName,
+        metric: 'memory_usage',
+        displayName: `${containerName} Memory Usage`,
+        currentValue: null,
+        unit: 'MiB',
+        status: 'unknown',
+        queriedAt: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// n8n workflow execution metrics (Gmail Filter)
+app.get('/api/metrics/n8n/gmail-filter', async (_req, res) => {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 86400; // Last 24 hours
+
+    // Query for successful and failed executions
+    const successQuery = 'sum:gmail.filter_executions{status:success}.as_count()';
+    const failedQuery = 'sum:gmail.filter_executions{status:failure}.as_count()';
+
+    const [successData, failedData] = await Promise.all([
+      queryDatadog(successQuery, from, now),
+      queryDatadog(failedQuery, from, now),
+    ]);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    if (successData.series && successData.series.length > 0) {
+      const points = successData.series[0].pointlist || [];
+      successCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (failedData.series && failedData.series.length > 0) {
+      const points = failedData.series[0].pointlist || [];
+      failedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const totalCount = successCount + failedCount;
+    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
+
+    res.json({
+      workflow: 'gmail_filter',
+      displayName: 'Gmail Filter',
+      metrics: {
+        successful: Math.round(successCount),
+        failed: Math.round(failedCount),
+        successRate: parseFloat(successRate.toFixed(1)),
+      },
+      status: failedCount > 0 ? 'warning' : 'healthy',
+      queriedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// n8n workflow execution metrics (Image Generator)
+app.get('/api/metrics/n8n/image-generator', async (_req, res) => {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 86400; // Last 24 hours
+
+    const successQuery = 'sum:image_generator.executions{status:success}.as_count()';
+    const failedQuery = 'sum:image_generator.executions{status:failure}.as_count()';
+
+    const [successData, failedData] = await Promise.all([
+      queryDatadog(successQuery, from, now),
+      queryDatadog(failedQuery, from, now),
+    ]);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    if (successData.series && successData.series.length > 0) {
+      const points = successData.series[0].pointlist || [];
+      successCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (failedData.series && failedData.series.length > 0) {
+      const points = failedData.series[0].pointlist || [];
+      failedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const totalCount = successCount + failedCount;
+    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
+
+    res.json({
+      workflow: 'image_generator',
+      displayName: 'Image Generator',
+      metrics: {
+        successful: Math.round(successCount),
+        failed: Math.round(failedCount),
+        successRate: parseFloat(successRate.toFixed(1)),
+      },
+      status: failedCount > 0 ? 'warning' : 'healthy',
+      queriedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Running containers list endpoint - returns table data for all containers
+app.get('/api/metrics/containers-list', async (_req, res) => {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600;
+
+    // Query for container memory and CPU by container name
+    const memoryQuery = 'avg:docker.mem.rss{host:i-040ac6026761030ac} by {container_name}';
+    const cpuQuery = 'avg:docker.cpu.usage{host:i-040ac6026761030ac} by {container_name}';
+
+    const [memoryData, cpuData] = await Promise.all([
+      queryDatadog(memoryQuery, from, now),
+      queryDatadog(cpuQuery, from, now),
+    ]);
+
+    // Build a map of container metrics
+    const containerMap = new Map<string, { memory: number | null; cpu: number | null }>();
+
+    // Process memory data
+    if (memoryData.series) {
+      for (const series of memoryData.series) {
+        const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1];
+        if (containerName) {
+          const points = series.pointlist || [];
+          const lastValue = points.length > 0 ? points[points.length - 1][1] : null;
+          const mibValue = lastValue !== null ? lastValue / (1024 * 1024) : null;
+
+          if (!containerMap.has(containerName)) {
+            containerMap.set(containerName, { memory: null, cpu: null });
+          }
+          containerMap.get(containerName)!.memory = mibValue;
+        }
+      }
+    }
+
+    // Process CPU data
+    if (cpuData.series) {
+      for (const series of cpuData.series) {
+        const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1];
+        if (containerName) {
+          const points = series.pointlist || [];
+          const lastValue = points.length > 0 ? points[points.length - 1][1] : null;
+
+          if (!containerMap.has(containerName)) {
+            containerMap.set(containerName, { memory: null, cpu: null });
+          }
+          containerMap.get(containerName)!.cpu = lastValue;
+        }
+      }
+    }
+
+    // Convert to array and sort by memory usage (descending)
+    const containers = Array.from(containerMap.entries())
+      .map(([name, metrics]) => ({
+        name,
+        memory: metrics.memory !== null ? parseFloat(metrics.memory.toFixed(1)) : null,
+        cpu: metrics.cpu !== null ? parseFloat(metrics.cpu.toFixed(2)) : null,
+      }))
+      .filter(c => c.memory !== null || c.cpu !== null)
+      .sort((a, b) => (b.memory || 0) - (a.memory || 0));
+
+    res.json({
+      containers,
+      count: containers.length,
+      queriedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 // System uptime endpoint - returns uptime in human-readable format
 app.get('/api/metrics/uptime', async (_req, res) => {
   try {
