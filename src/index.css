@@ -2,23 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for light theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #12121a;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a38;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a48;
+  background: #94a3b8;
 }
 
 /* Smooth transitions */
@@ -29,6 +29,19 @@
 /* Custom CopilotKit overrides */
 .copilotkit-chat-container {
   background: transparent !important;
+}
+
+/* Hide CopilotKit dev console floating button */
+.console-button,
+[class*="console-button"],
+.group.relative.pointer-events-auto.inline-flex.h-12.w-12,
+button[class*="bg-slate-950"],
+div[class*="console-button"],
+[class*="backdrop-blur-md"][class*="rounded-full"][class*="h-12"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Pulse animation for critical status */
@@ -55,9 +68,9 @@
 
 /* Glass effect */
 .glass {
-  background: rgba(18, 18, 26, 0.8);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Status colors */
@@ -84,5 +97,5 @@
 
 .card-hover:hover {
   @apply -translate-y-1;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
 }

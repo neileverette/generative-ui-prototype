@@ -9,9 +9,8 @@
 export type Priority = 'critical' | 'high' | 'medium' | 'low';
 
 // Supported component types
-export type ComponentType = 
+export type ComponentType =
   | 'metric_card'
-  | 'time_series_chart'
   | 'data_table'
   | 'alert_list'
   | 'status_indicator'
@@ -47,27 +46,6 @@ export interface MetricCardComponent extends A2UIComponentBase {
       warning?: number;
       critical?: number;
     };
-  };
-}
-
-// Time Series Chart - displays data over time
-export interface TimeSeriesPoint {
-  timestamp: string;
-  value: number;
-}
-
-export interface TimeSeriesChartComponent extends A2UIComponentBase {
-  component: 'time_series_chart';
-  props: {
-    title: string;
-    series: {
-      name: string;
-      data: TimeSeriesPoint[];
-      color?: string;
-    }[];
-    yAxisLabel?: string;
-    timeRange: string;  // e.g., "1h", "24h"
-    status?: MetricStatus;
   };
 }
 
@@ -128,9 +106,8 @@ export interface ProgressBarComponent extends A2UIComponentBase {
 }
 
 // Union type for all components
-export type A2UIComponent = 
+export type A2UIComponent =
   | MetricCardComponent
-  | TimeSeriesChartComponent
   | DataTableComponent
   | AlertListComponent
   | StatusIndicatorComponent

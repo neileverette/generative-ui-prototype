@@ -1,21 +1,28 @@
 import { DashboardState, A2UIComponent } from '../types/a2ui';
 import { MetricCard } from './a2ui/MetricCard';
-import { TimeSeriesChart } from './a2ui/TimeSeriesChart';
 import { DataTable } from './a2ui/DataTable';
 import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
-import { LayoutGrid, Sparkles } from 'lucide-react';
+import { Server, Container, Clock, LayoutGrid } from 'lucide-react';
+
+interface ShortcutAction {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
 
 interface DashboardCanvasProps {
   state: DashboardState;
+  shortcuts?: ShortcutAction[];
 }
 
 // Component registry - maps A2UI component types to React components
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   metric_card: MetricCard,
-  time_series_chart: TimeSeriesChart,
   data_table: DataTable,
   alert_list: AlertList,
   status_indicator: StatusIndicator,
@@ -41,7 +48,7 @@ function renderComponent(component: A2UIComponent, index: number) {
   );
 }
 
-export function DashboardCanvas({ state }: DashboardCanvasProps) {
+export function DashboardCanvas({ state, shortcuts }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
 
   if (components.length === 0) {
@@ -51,17 +58,36 @@ export function DashboardCanvas({ state }: DashboardCanvasProps) {
           <LayoutGrid className="w-10 h-10 text-text-muted" />
         </div>
         <h2 className="text-xl font-semibold text-text-primary mb-2">
-          No components yet
+          Welcome to your Dashboard
         </h2>
-        <p className="text-text-secondary max-w-md mb-6">
-          Start a conversation with the agent to fetch metrics and build your dashboard dynamically.
+        <p className="text-text-secondary max-w-md mb-8">
+          Get started by selecting one of the options below, or ask the assistant for help.
         </p>
-        <div className="flex items-center gap-2 px-4 py-2 bg-surface-2 rounded-full">
-          <Sparkles className="w-4 h-4 text-accent-primary" />
-          <span className="text-sm text-text-secondary">
-            Try: "Show me a system overview"
-          </span>
-        </div>
+
+        {/* Shortcut Cards */}
+        {shortcuts && shortcuts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full">
+            {shortcuts.map((shortcut) => (
+              <button
+                key={shortcut.id}
+                onClick={shortcut.onClick}
+                className="group p-6 bg-surface-2 hover:bg-surface-3 border border-surface-3 hover:border-accent-primary/50 rounded-xl transition-all duration-200 text-left"
+              >
+                <div className="w-12 h-12 rounded-lg bg-surface-3 group-hover:bg-accent-primary/20 flex items-center justify-center mb-4 transition-colors">
+                  <span className="text-text-muted group-hover:text-accent-primary transition-colors">
+                    {shortcut.icon}
+                  </span>
+                </div>
+                <h3 className="font-semibold text-text-primary mb-1">
+                  {shortcut.title}
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  {shortcut.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -72,8 +98,8 @@ export function DashboardCanvas({ state }: DashboardCanvasProps) {
   const smallComponents = components.filter(c => 
     ['metric_card', 'status_indicator', 'progress_bar'].includes(c.component)
   );
-  const largeComponents = components.filter(c => 
-    ['time_series_chart', 'data_table', 'alert_list'].includes(c.component)
+  const largeComponents = components.filter(c =>
+    ['data_table', 'alert_list'].includes(c.component)
   );
 
   return (

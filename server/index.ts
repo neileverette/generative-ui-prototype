@@ -88,11 +88,63 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Container CPU metrics endpoint - returns CPU usage for a specific container
+app.get('/api/metrics/container/:containerName', async (req, res) => {
+  try {
+    const { containerName } = req.params;
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600; // Last hour
+
+    const query = `avg:docker.cpu.usage{container_name:${containerName}}`;
+    const data = await queryDatadog(query, from, now);
+
+    if (data.series && data.series.length > 0) {
+      const series = data.series[0];
+      const points = series.pointlist || [];
+      const currentValue = points.length > 0 ? points[points.length - 1][1] : null;
+
+      // Determine status based on CPU thresholds
+      let status = 'healthy';
+      if (currentValue !== null) {
+        if (currentValue >= 90) {
+          status = 'critical';
+        } else if (currentValue >= 70) {
+          status = 'warning';
+        }
+      }
+
+      res.json({
+        containerName,
+        metric: 'cpu_usage',
+        displayName: `${containerName} CPU Usage`,
+        currentValue: currentValue !== null ? parseFloat(currentValue.toFixed(2)) : null,
+        unit: '%',
+        status,
+        queriedAt: new Date().toISOString(),
+      });
+    } else {
+      res.json({
+        containerName,
+        metric: 'cpu_usage',
+        displayName: `${containerName} CPU Usage`,
+        currentValue: null,
+        unit: '%',
+        status: 'unknown',
+        queriedAt: new Date().toISOString(),
+        error: 'No data found for this container',
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 // System overview endpoint - returns metrics formatted for dashboard
 app.get('/api/metrics/overview', async (_req, res) => {
   try {
     const now = Math.floor(Date.now() / 1000);
     const from = now - 3600; // Last hour
+    const twoDaysAgo = now - (2 * 24 * 3600); // 2 days ago
 
     const overviewMetrics = [
       { name: 'cpuTotal', query: 'avg:system.cpu.user{host:i-040ac6026761030ac} + avg:system.cpu.system{host:i-040ac6026761030ac}', displayName: 'CPU Usage', unit: '%', warning: 70, critical: 90 },
@@ -105,33 +157,115 @@ app.get('/api/metrics/overview', async (_req, res) => {
 
     for (const metric of overviewMetrics) {
       try {
-        const data = await queryDatadog(metric.query, from, now);
-        if (data.series && data.series.length > 0) {
-          const series = data.series[0];
+        // Fetch current data (last hour)
+        const currentData = await queryDatadog(metric.query, from, now);
+
+        // Fetch historical data (2 days ago, 1 hour window)
+        const historicalData = await queryDatadog(metric.query, twoDaysAgo - 3600, twoDaysAgo);
+
+        let currentValue = null;
+        let previousValue = null;
+        let change = null;
+
+        if (currentData.series && currentData.series.length > 0) {
+          const series = currentData.series[0];
           const points = series.pointlist || [];
-          const currentValue = points.length > 0 ? points[points.length - 1][1] : null;
-
-          let status = 'healthy';
-          if (metric.critical !== undefined && currentValue >= metric.critical) {
-            status = 'critical';
-          } else if (metric.warning !== undefined && currentValue >= metric.warning) {
-            status = 'warning';
-          }
-
-          results.push({
-            metric: metric.name,
-            displayName: metric.displayName,
-            currentValue: currentValue !== null ? parseFloat(currentValue.toFixed(2)) : null,
-            unit: metric.unit,
-            status,
-          });
+          currentValue = points.length > 0 ? points[points.length - 1][1] : null;
         }
+
+        if (historicalData.series && historicalData.series.length > 0) {
+          const series = historicalData.series[0];
+          const points = series.pointlist || [];
+          previousValue = points.length > 0 ? points[points.length - 1][1] : null;
+        }
+
+        // Calculate percentage change
+        if (currentValue !== null && previousValue !== null && previousValue !== 0) {
+          const changePercent = ((currentValue - previousValue) / previousValue) * 100;
+          change = {
+            value: parseFloat(Math.abs(changePercent).toFixed(1)),
+            direction: changePercent > 0.5 ? 'up' : changePercent < -0.5 ? 'down' : 'flat',
+            period: 'vs 2 days ago',
+          };
+        }
+
+        let status = 'healthy';
+        if (metric.critical !== undefined && currentValue >= metric.critical) {
+          status = 'critical';
+        } else if (metric.warning !== undefined && currentValue >= metric.warning) {
+          status = 'warning';
+        }
+
+        results.push({
+          metric: metric.name,
+          displayName: metric.displayName,
+          currentValue: currentValue !== null ? parseFloat(currentValue.toFixed(2)) : null,
+          unit: metric.unit,
+          status,
+          change,
+        });
       } catch (error) {
         console.error(`Error fetching ${metric.name}:`, error);
       }
     }
 
     res.json({ metrics: results, queriedAt: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// System uptime endpoint - returns uptime in human-readable format
+app.get('/api/metrics/uptime', async (_req, res) => {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 3600; // Last hour
+
+    const query = 'avg:system.uptime{host:i-040ac6026761030ac}';
+    const data = await queryDatadog(query, from, now);
+
+    if (data.series && data.series.length > 0) {
+      const series = data.series[0];
+      const points = series.pointlist || [];
+      const uptimeSeconds = points.length > 0 ? points[points.length - 1][1] : null;
+
+      // Convert seconds to human-readable format
+      let displayValue = 'N/A';
+      if (uptimeSeconds !== null) {
+        const days = Math.floor(uptimeSeconds / 86400);
+        const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+        const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+
+        if (days > 0) {
+          displayValue = `${days}d ${hours}h`;
+        } else if (hours > 0) {
+          displayValue = `${hours}h ${minutes}m`;
+        } else {
+          displayValue = `${minutes}m`;
+        }
+      }
+
+      res.json({
+        metric: 'uptime',
+        displayName: 'System Uptime',
+        currentValue: displayValue,
+        rawSeconds: uptimeSeconds,
+        unit: '',
+        status: 'healthy',
+        queriedAt: new Date().toISOString(),
+      });
+    } else {
+      res.json({
+        metric: 'uptime',
+        displayName: 'System Uptime',
+        currentValue: 'N/A',
+        rawSeconds: null,
+        unit: '',
+        status: 'unknown',
+        queriedAt: new Date().toISOString(),
+        error: 'No uptime data found',
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }

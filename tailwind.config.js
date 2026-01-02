@@ -7,13 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Custom dark theme inspired by observability tools
+        // Light theme inspired by observability tools
         surface: {
-          0: '#0a0a0f',
-          1: '#12121a',
-          2: '#1a1a24',
-          3: '#22222e',
-          4: '#2a2a38',
+          0: '#ffffff',
+          1: '#f8fafc',
+          2: '#f1f5f9',
+          3: '#e2e8f0',
+          4: '#cbd5e1',
         },
         accent: {
           primary: '#6366f1',    // Indigo
@@ -23,9 +23,9 @@ export default {
           info: '#3b82f6',       // Blue
         },
         text: {
-          primary: '#f1f5f9',
-          secondary: '#94a3b8',
-          muted: '#64748b',
+          primary: '#0f172a',
+          secondary: '#475569',
+          muted: '#94a3b8',
         }
       },
       fontFamily: {
