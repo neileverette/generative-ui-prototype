@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  generative-ui:
+    build: .
+    container_name: generative-ui
+    ports:
+      - "8080:4000"
+    environment:
+      - PORT=4000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - DATADOG_APP_KEY=${DATADOG_APP_KEY}
+      - DATADOG_SITE=${DATADOG_SITE:-us5.datadoghq.com}
+    restart: unless-stopped
