@@ -5,14 +5,23 @@ import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
 
-// IBM Venn Diagram icon
-const VennDiagramIcon = ({ className }: { className?: string }) => (
+// IBM Venn Diagram icon with optional gradient
+const VennDiagramIcon = ({ className, gradient = false }: { className?: string; gradient?: boolean }) => (
   <svg
     className={className}
     viewBox="0 0 32 32"
-    fill="currentColor"
+    fill={gradient ? "url(#venn-gradient)" : "currentColor"}
     xmlns="http://www.w3.org/2000/svg"
   >
+    {gradient && (
+      <defs>
+        <linearGradient id="venn-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6366f1" />
+          <stop offset="50%" stopColor="#8b5cf6" />
+          <stop offset="100%" stopColor="#d946ef" />
+        </linearGradient>
+      </defs>
+    )}
     <path d="M20,6a9.92,9.92,0,0,0-4,.84A9.92,9.92,0,0,0,12,6a10,10,0,0,0,0,20,9.92,9.92,0,0,0,4-.84A9.92,9.92,0,0,0,20,26,10,10,0,0,0,20,6ZM12,24A8,8,0,0,1,12,8a7.91,7.91,0,0,1,1.76.2,10,10,0,0,0,0,15.6A7.91,7.91,0,0,1,12,24Zm8-8a8,8,0,0,1-4,6.92A8,8,0,0,1,16,9.08,8,8,0,0,1,20,16Zm0,8a7.91,7.91,0,0,1-1.76-.2,10,10,0,0,0,0-15.6A7.91,7.91,0,0,1,20,8a8,8,0,0,1,0,16Z" />
   </svg>
 );
@@ -138,7 +147,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   if (components.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center">
-        <VennDiagramIcon className="w-24 h-24 text-text-primary mb-8" />
+        <VennDiagramIcon className="w-24 h-24 mb-8" gradient />
         <h2 className="text-4xl font-normal text-text-primary mb-3">
           Welcome to Sidekick
         </h2>
