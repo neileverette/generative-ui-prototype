@@ -1,8 +1,95 @@
 # Generative UI Prototype
 
-An agent-driven dashboard prototype demonstrating dynamic UI composition based on real-time observability data from Datadog.
+An agent-driven dashboard prototype demonstrating dynamic UI composition using multi-agent orchestration and the Model Context Protocol (MCP).
 
-## Architecture Overview
+## What We're Building
+
+### The Problem with Traditional Dashboards
+
+Traditional monitoring dashboards are **static**—they show the same pre-configured widgets regardless of context. Users have to know which dashboard to look at and interpret the data themselves.
+
+### Our Approach: Agent-Driven Generative UI
+
+This prototype flips the model: instead of a fixed dashboard, an **AI agent dynamically composes the UI** based on what you ask. The interface is generated, not configured.
+
+**Key differentiators:**
+
+| Traditional Dashboard | Generative UI |
+|-----------------------|---------------|
+| Static, pre-configured widgets | Dynamically composed based on context |
+| User navigates to find data | Agent brings relevant data to user |
+| Fixed layout | Priority-based, adaptive layout |
+| Manual interpretation | Agent provides insights |
+
+## Multi-Agent Architecture
+
+This prototype demonstrates **multi-agent orchestration** where a client-side agent coordinates with specialized backend agents via MCP (Model Context Protocol).
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CLIENT APPLICATION                              │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  Client Agent (CopilotKit)                                     │  │
+│  │  • Interprets user intent                                      │  │
+│  │  • Orchestrates backend agents via MCP                         │  │
+│  │  • Receives payloads and renders UI                            │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  A2UI Layer (Agent-to-UI)                                      │  │
+│  │  • Declarative component definitions from agents               │  │
+│  │  • Renders metric cards, charts, tables, alerts                │  │
+│  │  • Priority-based layout (critical issues surface first)       │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────┬───────────────────────────────────┘
+                                  │
+                                  ▼
+                    ┌─────────────────────────┐
+                    │          MCP            │
+                    │   (Model Context        │
+                    │    Protocol)            │
+                    └─────────────────────────┘
+                                  │
+            ┌─────────────────────┼─────────────────────┐
+            ▼                     ▼                     ▼
+   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+   │    Datadog      │   │     Future      │   │     Future      │
+   │    Agent        │   │     Agent       │   │     Agent       │
+   │   (LangFlow)    │   │  (PagerDuty?)   │   │    (AWS?)       │
+   └─────────────────┘   └─────────────────┘   └─────────────────┘
+```
+
+### How Data Flows
+
+1. **User interacts** with the client (types in chat or clicks a tile)
+2. **Client agent** interprets intent and calls appropriate backend agent via MCP
+3. **Backend agent** (e.g., Datadog LangFlow agent) reasons about what data to fetch
+4. **Backend agent** queries the data source and returns a structured payload
+5. **Client receives** payload via MCP and converts to A2UI component definitions
+6. **A2UI layer** renders components (metric cards, charts, etc.) in the dashboard
+
+### Why Multi-Agent?
+
+| Concept | Benefit |
+|---------|---------|
+| **Separation of concerns** | Each agent is an expert in its domain |
+| **Swappable backends** | Replace LangFlow with LangChain, CrewAI, or any agent framework |
+| **Technology agnostic** | Teams can build agents in their preferred stack |
+| **Scalable** | Add new data sources by adding new agents |
+| **MCP as standard** | Common protocol for agent-to-agent communication |
+
+### Agent-as-Tool Pattern
+
+Backend agents aren't just API wrappers—they have their own LLM reasoning:
+
+```
+Simple Tool:        "fetch CPU metrics" → returns raw data
+Agent-as-Tool:      "investigate performance" → agent decides what's relevant,
+                     correlates signals, identifies anomalies, returns insights
+```
+
+## Current Implementation
+
+### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -234,13 +321,29 @@ server {
 
 ## Tech Stack
 
+### Client Application
 - **Frontend**: React 18 + Vite + TypeScript
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
-- **Agent Framework**: CopilotKit
+- **Client Agent**: CopilotKit
 - **LLM**: OpenAI GPT-4
+
+### Backend Agents
+- **Datadog Agent**: LangFlow (in progress)
+- **Agent Communication**: MCP (Model Context Protocol)
+
+### Infrastructure
+- **Backend Server**: Express.js
 - **Data Source**: Datadog API
-- **Backend**: Express.js
+- **Deployment**: Docker, nginx
+
+## Roadmap
+
+- [x] CopilotKit client agent with A2UI rendering
+- [x] Direct Datadog API integration
+- [ ] LangFlow Datadog agent (separate agent with own LLM)
+- [ ] MCP integration between client and LangFlow agent
+- [ ] Additional backend agents (PagerDuty, AWS, etc.)
 
 ## License
 
