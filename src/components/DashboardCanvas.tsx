@@ -5,19 +5,15 @@ import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
 
-// IBM Dashboard pictogram
-const DashboardIcon = ({ className }: { className?: string }) => (
+// IBM Venn Diagram icon
+const VennDiagramIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     viewBox="0 0 32 32"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path d="M31,31.36H1c-0.199,0-0.36-0.161-0.36-0.36V1c0-0.199,0.161-0.36,0.36-0.36h30
-      c0.199,0,0.36,0.161,0.36,0.36v30C31.36,31.199,31.199,31.36,31,31.36z M1.36,30.64h29.28V12.36H1.36V30.64z M13.36,11.64h17.28
-      V1.36H13.36V11.64z M1.36,11.64h11.28V1.36H1.36V11.64z M9,27.36c-2.956,0-5.36-2.405-5.36-5.36h0.72c0,2.559,2.082,4.64,4.64,4.64
-      s4.64-2.081,4.64-4.64S11.559,17.36,9,17.36v-0.72c2.956,0,5.36,2.405,5.36,5.36S11.956,27.36,9,27.36z M27.36,27h-0.72V16h0.721
-      L27.36,27L27.36,27z M23.36,27h-0.72v-8h0.721L23.36,27L23.36,27z M19.36,27h-0.72v-3h0.721L19.36,27L19.36,27z" />
+    <path d="M20,6a9.92,9.92,0,0,0-4,.84A9.92,9.92,0,0,0,12,6a10,10,0,0,0,0,20,9.92,9.92,0,0,0,4-.84A9.92,9.92,0,0,0,20,26,10,10,0,0,0,20,6ZM12,24A8,8,0,0,1,12,8a7.91,7.91,0,0,1,1.76.2,10,10,0,0,0,0,15.6A7.91,7.91,0,0,1,12,24Zm8-8a8,8,0,0,1-4,6.92A8,8,0,0,1,16,9.08,8,8,0,0,1,20,16Zm0,8a7.91,7.91,0,0,1-1.76-.2,10,10,0,0,0,0-15.6A7.91,7.91,0,0,1,20,8a8,8,0,0,1,0,16Z" />
   </svg>
 );
 
@@ -29,9 +25,18 @@ interface ShortcutAction {
   onClick: () => void;
 }
 
+interface CommandAction {
+  id: string;
+  label: string;
+}
+
 interface DashboardCanvasProps {
   state: DashboardState;
   shortcuts?: ShortcutAction[];
+  currentView?: 'home' | 'commands' | 'loading';
+  onBack?: () => void;
+  commands?: CommandAction[];
+  onCommandClick?: (query: string) => void;
 }
 
 // Component registry - maps A2UI component types to React components
@@ -63,20 +68,82 @@ function renderComponent(component: A2UIComponent, index: number) {
   );
 }
 
-export function DashboardCanvas({ state, shortcuts }: DashboardCanvasProps) {
+// Default commands for the commands screen
+// These are example queries that users can click to send to the chat
+const DEFAULT_COMMANDS: CommandAction[] = [
+  { id: 'show-all-metrics', label: 'Show all system metrics' },
+  { id: 'container-status', label: 'Which containers are using the most memory?' },
+  { id: 'workflow-health', label: 'Are my n8n workflows healthy?' },
+  { id: 'disk-space', label: 'How much disk space is left?' },
+  { id: 'cpu-spike', label: 'What is causing high CPU usage?' },
+  { id: 'restart-n8n', label: 'How do I restart the n8n container?' },
+  { id: 'failed-workflows', label: 'Show me failed workflow executions' },
+];
+
+export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
+
+  // Loading screen view
+  if (currentView === 'loading') {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center">
+        <div className="flex items-center gap-3 text-text-secondary">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-lg">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Commands screen view
+  if (currentView === 'commands') {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center">
+        <h2 className="text-xl font-semibold text-text-primary mb-2">
+          Choose any of the following
+        </h2>
+        <p className="text-text-secondary max-w-md mb-8">
+          Or, use chat to find what you want
+        </p>
+
+        {/* Command Pills */}
+        <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
+          {commands.map((command) => (
+            <button
+              key={command.id}
+              onClick={() => onCommandClick?.(command.label)}
+              className="px-5 py-2.5 bg-white/70 hover:bg-white/90 backdrop-blur-sm border border-white/50 hover:border-accent-primary/50 rounded-full transition-all duration-200 text-sm font-medium text-text-primary hover:text-accent-primary shadow-sm hover:shadow-md"
+            >
+              {command.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Back button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mt-8 text-sm text-text-secondary hover:text-accent-primary transition-colors"
+          >
+            Back to home
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (components.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center">
-        <div className="w-20 h-20 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex items-center justify-center mb-6">
-          <DashboardIcon className="w-10 h-10 text-text-muted" />
-        </div>
-        <h2 className="text-xl font-semibold text-text-primary mb-2">
-          Welcome to your Dashboard
+        <VennDiagramIcon className="w-24 h-24 text-text-primary mb-8" />
+        <h2 className="text-4xl font-normal text-text-primary mb-3">
+          Welcome to Sidekick
         </h2>
-        <p className="text-text-secondary max-w-md mb-8">
-          Get started by selecting one of the options below, or ask the assistant for help.
+        <p className="text-text-secondary max-w-md mb-8 text-lg">
+          Choose an option below or use the chat
         </p>
 
         {/* Shortcut Cards */}

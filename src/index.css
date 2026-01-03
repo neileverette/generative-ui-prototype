@@ -196,3 +196,40 @@ div[class*="console-button"],
 .blur-circle-animate {
   animation: float 20s ease-in-out infinite;
 }
+
+/* CopilotKit user message styling - fix white text issue */
+[class*="copilotKitUserMessage"],
+[class*="userMessage"],
+[data-role="user"],
+.copilotKitMessage[data-role="user"],
+[class*="CopilotKit"] [data-role="user"],
+[class*="copilotKit"] [data-role="user"] {
+  color: #1e293b !important;
+}
+
+/* Target user message text content specifically */
+[class*="copilotKitUserMessage"] p,
+[class*="copilotKitUserMessage"] span,
+[class*="copilotKitUserMessage"] div,
+[data-role="user"] p,
+[data-role="user"] span,
+[data-role="user"] div {
+  color: #1e293b !important;
+}
+
+/* Style user message bubbles */
+[class*="copilotKitUserMessage"],
+[class*="userMessage"] > div {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 12px !important;
+}
+
+/* Chat shortcuts container styling */
+.chat-shortcuts-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  justify-content: center;
+}
