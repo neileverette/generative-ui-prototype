@@ -1,6 +1,8 @@
 # Building the LangFlow Datadog Agent
 
-A step-by-step guide to building a LangFlow-based Datadog agent and integrating it with the Generative UI client application via MCP.
+A learning guide to building a LangFlow-based Datadog agent and integrating it with the Generative UI client application via MCP.
+
+---
 
 ## Overview
 
@@ -33,301 +35,335 @@ A step-by-step guide to building a LangFlow-based Datadog agent and integrating 
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Prerequisites
+### Learning Path
 
-- LangFlow instance running (https://langflow.neil-everette.com)
-- Datadog account with API credentials
-- OpenAI or Anthropic API key (for the LLM in LangFlow)
-- The generative-ui-prototype codebase
+| Module | Topic | Outcome |
+|--------|-------|---------|
+| 1 | LangFlow Fundamentals | Understand how LangFlow works |
+| 2 | Building Your First Agent | Create a working agent in LangFlow |
+| 3 | Tool Integration | Add Datadog API as a tool |
+| 4 | Testing & Refinement | Make the agent reliable |
+| 5 | API Exposure | Call the agent from external apps |
+| 6 | MCP Integration | Connect to client via MCP |
 
 ---
 
-## Stage 1: LangFlow Fundamentals & Creating the Base Agent
+## Module 1: LangFlow Fundamentals
 
-### Goal
-Create a basic agent in LangFlow using the "Simple Agent" template and understand how LangFlow flows work.
+### Understanding visual AI agent development
 
-### What You'll Learn
-- LangFlow UI navigation
-- Components and how they connect
-- The flow of data through an agent
-- Testing in the LangFlow playground
+Before building agents, you need to understand what LangFlow is and how it relates to the broader AI development ecosystem. LangFlow is a visual development environment that makes it easier to build AI applications without writing extensive code.
 
-### Steps
+**Core concepts:**
+- What is LangFlow and how it relates to LangChain
+- Visual flow-based programming for AI applications
+- Components: the building blocks of LangFlow (inputs, outputs, LLMs, tools)
+- Flows: how components connect to create AI pipelines
+- The difference between prompting flows and agent flows
+- LangFlow's role in the AI development stack
 
-#### 1.1 Create a New Flow
-1. Open LangFlow: https://langflow.neil-everette.com
-2. Navigate to your project folder (e.g., "Generative UI Prototype")
-3. Click **"+ New Flow"**
-4. Select **"Simple Agent"** template
-5. Name it **"Datadog Agent"**
+**Why this matters for your project:**
+Understanding LangFlow's architecture helps you design agents that are modular and maintainable. You'll be creating a Datadog agent that needs to be reliable, testable, and eventually connected to your client application. Knowing how LangFlow works under the hood helps you debug issues and extend functionality.
 
-#### 1.2 Understand the Simple Agent Template
-The template includes these components:
+### Module 1 Prompt
 
-| Component | Purpose |
-|-----------|---------|
-| **Chat Input** | Receives user messages |
-| **Agent** | The LLM that processes requests and can use tools |
-| **Chat Output** | Returns the agent's response |
+> Create a lesson on LangFlow fundamentals for someone building their first AI agent. Cover: What is LangFlow and how does it relate to LangChain? What problem does it solve compared to writing code directly? Explain the concept of "flows" and "components" - use a plumbing or electrical circuit analogy. What are the core component types (inputs, outputs, LLMs, tools, memory)? What's the difference between a simple prompt flow and an agent flow? How does data move through a flow? What happens when you click "run"? Use practical examples and avoid jargon where possible.
 
-#### 1.3 Configure the LLM
-1. Click on the **Agent** component
-2. In the settings panel, configure:
-   - **Model**: Select OpenAI GPT-4 or Claude
-   - **API Key**: Add your OpenAI/Anthropic key (or use Global Variables)
-   - **Temperature**: 0.7 (balanced between creative and deterministic)
+### Links to Import
 
-#### 1.4 Test in Playground
-1. Click the **"Playground"** button (bottom right)
-2. Type: "Hello, what can you help me with?"
-3. Verify the agent responds
-
-#### 1.5 Success Criteria
-- [ ] Flow created and named "Datadog Agent"
-- [ ] LLM configured and responding
-- [ ] Playground test successful
-
-### Google NotebookLM Section
-
-**Prompt for NotebookLM:**
-```
-I'm learning LangFlow to build AI agents. Please explain:
-1. What is LangFlow and how does it relate to LangChain?
-2. What are the core components in a LangFlow agent (Chat Input, Agent, Chat Output)?
-3. How do "tools" work in LangFlow agents?
-4. What is the difference between a simple prompt flow and an agent flow?
-
-Focus on practical understanding for someone building their first agent.
-```
-
-**Links to Import:**
 - https://docs.langflow.org/
-- https://docs.langflow.org/components-agents
-- https://docs.langflow.org/starter-projects-simple-agent
+- https://docs.langflow.org/get-started-introduction
+- https://docs.langflow.org/concepts-overview
+- https://python.langchain.com/docs/concepts/
 
 ---
 
-## Stage 2: Adding the Datadog Tool
+## Module 2: Building Your First Agent
 
-### Goal
-Add a custom tool that allows the agent to query the Datadog API for infrastructure metrics.
+### Creating a working agent from template
 
-### What You'll Learn
-- Adding tools to a LangFlow agent
-- Configuring API Request components
-- Connecting tools to the agent
-- Handling API authentication
+Now that you understand the concepts, it's time to build. This module walks through creating your first agent using LangFlow's Simple Agent template. You'll learn the practical skills of navigating the UI, configuring components, and testing in the playground.
 
-### Steps
+**Core concepts:**
+- Navigating the LangFlow interface (sidebar, canvas, settings)
+- Creating a new flow from templates
+- The Simple Agent template structure
+- Configuring the LLM component (model selection, API keys, parameters)
+- Understanding the Agent component and its settings
+- Chat Input and Chat Output components
+- The Playground: testing your agent interactively
+- Reading agent execution logs
 
-#### 2.1 Add an API Request Component
-1. In the component sidebar, search for **"API Request"**
-2. Drag it onto the canvas
-3. Position it below the Agent component
+**Why this matters for your project:**
+This is where theory becomes practice. The agent you create here will become your Datadog agent. Getting comfortable with the LangFlow UI now means you'll be faster when adding complexity later. The Simple Agent template gives you a working foundation that you'll extend with Datadog capabilities.
 
-#### 2.2 Configure the Datadog API Request
-Configure the API Request component:
+### Hands-On Steps
 
-| Setting | Value |
-|---------|-------|
-| **URL** | `https://api.us5.datadoghq.com/api/v1/query` |
-| **Method** | GET |
-| **Headers** | See below |
-| **Query Parameters** | See below |
+1. **Open LangFlow** at https://langflow.neil-everette.com
+2. **Create new flow**: Click "+ New Flow" → Select "Simple Agent"
+3. **Name your flow**: "Datadog Agent"
+4. **Explore the canvas**: Identify Chat Input → Agent → Chat Output
+5. **Configure the Agent**:
+   - Click the Agent component
+   - Select your LLM (OpenAI GPT-4 or Claude)
+   - Add your API key (or use Global Variables)
+   - Set temperature to 0.7
+6. **Test in Playground**:
+   - Click "Playground" button
+   - Send: "Hello, what can you help me with?"
+   - Verify you get a response
 
-**Headers (as JSON):**
-```json
-{
-  "DD-API-KEY": "your-datadog-api-key",
-  "DD-APPLICATION-KEY": "your-datadog-app-key",
-  "Content-Type": "application/json"
-}
+### Success Checklist
+
+- [ ] Flow created and named "Datadog Agent"
+- [ ] Can identify all three main components
+- [ ] LLM configured with API key
+- [ ] Playground test returns a response
+- [ ] Can view execution logs
+
+### Module 2 Prompt
+
+> Create a hands-on tutorial for building a first agent in LangFlow. Cover: How to navigate the LangFlow interface (where are templates, components, settings)? Walk through creating a Simple Agent step by step. What does each component in the Simple Agent template do? How do you configure an LLM component (what are the key settings like temperature, model selection)? What is the Playground and how do you use it for testing? How do you read the execution logs to understand what the agent did? What are common mistakes beginners make? Include troubleshooting tips for when things don't work.
+
+### Links to Import
+
+- https://docs.langflow.org/starter-projects-simple-agent
+- https://docs.langflow.org/components-agents
+- https://docs.langflow.org/workspace-playground
+- https://docs.langflow.org/configuration-global-variables
+
+---
+
+## Module 3: Tool Integration (Datadog API)
+
+### Giving your agent the ability to fetch real data
+
+An agent without tools is just a chatbot. Tools give agents the ability to take actions and retrieve information from external systems. This module covers how to add the Datadog API as a tool that your agent can call when users ask about infrastructure metrics.
+
+**Core concepts:**
+- What are tools in the context of AI agents?
+- How LLMs decide when to use tools (function calling)
+- The Tool component in LangFlow
+- API Request component configuration
+- HTTP methods, headers, and authentication
+- Datadog Query API: endpoint, parameters, response format
+- Connecting tools to the Agent component
+- System prompts that guide tool usage
+- Parsing and formatting API responses
+
+**Why this matters for your project:**
+This is the core of what makes your Datadog agent useful. Without the tool integration, your agent can only talk about Datadog—it can't actually fetch real metrics. Understanding how tools work also helps you add more data sources later (PagerDuty, AWS, etc.).
+
+### Datadog API Reference
+
+**Endpoint:** `https://api.us5.datadoghq.com/api/v1/query`
+
+**Authentication Headers:**
+```
+DD-API-KEY: your-api-key
+DD-APPLICATION-KEY: your-app-key
 ```
 
 **Query Parameters:**
-```
-query: {query_string}
-from: {from_timestamp}
-to: {to_timestamp}
-```
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `query` | Datadog metric query | `avg:system.cpu.user{*}` |
+| `from` | Start timestamp (Unix) | `1704067200` |
+| `to` | End timestamp (Unix) | `1704070800` |
 
-#### 2.3 Create a Tool Component
-1. Search for **"Tool"** in the sidebar
-2. Drag a **"Custom Component"** or use **"Python Function"** to create a tool
-3. Configure it to:
-   - Accept a metric query string
-   - Calculate time range (e.g., last hour)
-   - Call the API Request component
-   - Return formatted results
+**Available Metrics:**
+- `system.cpu.user` - CPU user time
+- `system.cpu.system` - CPU system time
+- `system.mem.usable` - Available memory
+- `system.mem.total` - Total memory
+- `system.load.1` - 1-minute load average
+- `system.disk.in_use` - Disk utilization
 
-#### 2.4 Connect Tool to Agent
-1. Connect the Tool's output to the Agent's **tools** input
-2. The agent will now have access to call this tool
+### Hands-On Steps
 
-#### 2.5 Update the Agent's System Prompt
-Click on the Agent and add a system message:
+1. **Add API Request component**:
+   - Search sidebar for "API Request"
+   - Drag onto canvas below Agent
 
-```
-You are a Datadog infrastructure monitoring assistant. You help users query and understand their system metrics.
+2. **Configure Datadog API**:
+   - URL: `https://api.us5.datadoghq.com/api/v1/query`
+   - Method: GET
+   - Headers: Add DD-API-KEY and DD-APPLICATION-KEY
 
-Available metrics you can query:
-- CPU: system.cpu.user, system.cpu.system
-- Memory: system.mem.usable, system.mem.total
-- Load: system.load.1, system.load.5, system.load.15
-- Disk: system.disk.in_use
-- Network: system.net.bytes_rcvd, system.net.bytes_sent
+3. **Create a Tool wrapper**:
+   - Add a Tool component or Python Function
+   - Configure to accept query parameters
+   - Connect to API Request
 
-When users ask about infrastructure health, use the datadog_query tool to fetch real metrics.
-Always explain what the metrics mean and highlight any concerning values.
-```
+4. **Connect Tool to Agent**:
+   - Link Tool output to Agent's "tools" input
+   - Agent can now call this tool
 
-#### 2.6 Test Datadog Integration
-1. Open Playground
-2. Test queries:
+5. **Update System Prompt**:
+   ```
+   You are a Datadog infrastructure monitoring assistant.
+
+   When users ask about system health, use the datadog_query tool.
+
+   Available metrics:
+   - CPU: system.cpu.user, system.cpu.system
+   - Memory: system.mem.usable, system.mem.total
+   - Load: system.load.1, system.load.5, system.load.15
+   - Disk: system.disk.in_use
+
+   Always explain what metrics mean and highlight concerning values.
+   ```
+
+6. **Test Datadog queries**:
    - "What's my current CPU usage?"
    - "Show me memory utilization"
-   - "Are there any performance issues?"
-3. Verify the agent calls the Datadog tool and returns real data
+   - "Is my server healthy?"
 
-#### 2.7 Success Criteria
+### Success Checklist
+
 - [ ] API Request component configured with Datadog credentials
-- [ ] Tool created and connected to agent
-- [ ] Agent can fetch real Datadog metrics
-- [ ] Playground tests return actual infrastructure data
+- [ ] Tool component created and connected to Agent
+- [ ] System prompt updated with available metrics
+- [ ] Agent successfully fetches real Datadog data
+- [ ] Responses include actual metric values
 
-### Google NotebookLM Section
+### Module 3 Prompt
 
-**Prompt for NotebookLM:**
-```
-I'm adding a Datadog API integration to my LangFlow agent. Please explain:
-1. How do tools work in LangFlow/LangChain agents?
-2. What is function calling and how do LLMs decide when to use tools?
-3. How should I structure API responses so the LLM can interpret them?
-4. Best practices for error handling in agent tools
-5. How does the Datadog Query API work (endpoint, authentication, query syntax)?
+> Create a comprehensive lesson on adding tools to LangFlow agents, specifically for Datadog API integration. Cover: What are "tools" in AI agents and why do they matter? How does an LLM decide when to call a tool vs respond directly (explain function calling)? Walk through the LangFlow components needed: API Request, Tool wrapper, connecting to Agent. How do you configure HTTP requests in LangFlow (URL, method, headers, params)? Explain the Datadog Query API: authentication, query syntax, response format. How should you write system prompts that help agents use tools correctly? What are common pitfalls (tool not being called, wrong parameters, auth errors)? Include examples of good vs bad tool configurations.
 
-I want to understand both the LangFlow mechanics and the Datadog API.
-```
+### Links to Import
 
-**Links to Import:**
 - https://docs.langflow.org/components-tools
 - https://docs.langflow.org/components-api-request
 - https://docs.datadoghq.com/api/latest/metrics/#query-timeseries-data
 - https://docs.datadoghq.com/api/latest/authentication/
-
----
-
-## Stage 3: Testing & Refining the Agent
-
-### Goal
-Thoroughly test the agent, handle edge cases, and refine the prompts for reliable operation.
-
-### What You'll Learn
-- Debugging LangFlow agents
-- Prompt engineering for tool-using agents
-- Handling errors gracefully
-- Optimizing agent responses
-
-### Steps
-
-#### 3.1 Test Various Query Types
-Test the agent with different user intents:
-
-| Test Case | Expected Behavior |
-|-----------|-------------------|
-| "Show me CPU metrics" | Queries CPU, returns current value |
-| "Is my server healthy?" | Queries multiple metrics, provides assessment |
-| "What's the memory trend?" | Queries memory over time, describes trend |
-| "Compare CPU and memory" | Queries both, provides comparison |
-| "Hello" | Responds conversationally, doesn't call tool |
-
-#### 3.2 Review Agent Logs
-1. In Playground, click on the agent's execution
-2. Review the chain of thought
-3. Check if tool calls are appropriate
-4. Identify any issues
-
-#### 3.3 Refine System Prompt
-Based on testing, adjust the system prompt to:
-- Clarify when to use tools
-- Improve response formatting
-- Add metric thresholds (e.g., "CPU above 80% is concerning")
-
-#### 3.4 Add Error Handling
-Configure the flow to handle:
-- API failures (Datadog down, auth errors)
-- Invalid queries
-- Rate limiting
-
-#### 3.5 Success Criteria
-- [ ] Agent handles various query types correctly
-- [ ] Errors are handled gracefully
-- [ ] Responses are clear and actionable
-- [ ] Tool calls are appropriate (not over/under used)
-
-### Google NotebookLM Section
-
-**Prompt for NotebookLM:**
-```
-I'm testing and debugging my LangFlow agent. Please explain:
-1. How to debug tool-calling agents - what to look for
-2. Common issues with LLM tool usage (over-calling, under-calling, wrong parameters)
-3. Prompt engineering techniques for reliable tool-using agents
-4. How to structure system prompts for infrastructure monitoring assistants
-5. Best practices for error handling in AI agents
-
-I want to make my agent reliable and predictable.
-```
-
-**Links to Import:**
-- https://docs.langflow.org/workspace-playground
-- https://www.anthropic.com/research/building-effective-agents
 - https://platform.openai.com/docs/guides/function-calling
 
 ---
 
-## Stage 4: Exposing the Agent via API
+## Module 4: Testing & Refinement
 
-### Goal
-Make the LangFlow agent accessible via HTTP API so external applications can call it.
+### Making your agent reliable and production-ready
 
-### What You'll Learn
-- LangFlow API endpoints
-- Authentication for API access
-- Testing API calls externally
-- Response formats
+Building something that works once is easy. Building something that works reliably is hard. This module covers testing strategies, prompt engineering, error handling, and the iterative refinement process that turns a prototype into a production-ready agent.
 
-### Steps
+**Core concepts:**
+- Testing strategies for AI agents
+- Understanding agent "chain of thought"
+- Common failure modes: over-calling tools, under-calling tools, wrong parameters
+- Prompt engineering for tool-using agents
+- Handling API errors gracefully
+- Edge cases: invalid queries, missing data, rate limits
+- Iterative refinement: test → observe → adjust → repeat
+- Logging and debugging in LangFlow
 
-#### 4.1 Get the Flow ID
-1. In LangFlow, open your "Datadog Agent" flow
-2. Look at the URL - it contains the flow ID:
-   `https://langflow.neil-everette.com/flow/{flow-id}`
-3. Copy the flow ID (UUID format)
+**Why this matters for your project:**
+An unreliable agent erodes user trust. If users ask about CPU and sometimes get answers and sometimes get errors, they'll stop using the feature. This module teaches you to identify failure modes and fix them before they reach users.
 
-#### 4.2 Generate an API Key
-1. Go to **Settings** → **Langflow API Keys**
-2. Click **"+ Create new secret key"**
-3. Copy and save the API key securely
+### Testing Matrix
 
-#### 4.3 Test the API Endpoint
-Use curl to test:
+| Test Case | User Input | Expected Agent Behavior |
+|-----------|------------|------------------------|
+| Direct metric query | "What's my CPU usage?" | Calls tool, returns current % |
+| General health check | "Is my server healthy?" | Calls multiple metrics, provides assessment |
+| Conversational | "Hello" | Responds without calling tool |
+| Ambiguous | "How's it going?" | Asks clarifying question or checks health |
+| Invalid metric | "Show me banana metrics" | Explains metric isn't available |
+| Historical | "What was CPU yesterday?" | Adjusts time range, fetches data |
 
-```bash
-curl -X POST "https://langflow.neil-everette.com/api/v1/run/{flow-id}" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
-  -d '{
-    "input_value": "What is my current CPU usage?",
-    "output_type": "chat",
-    "input_type": "chat"
-  }'
+### Prompt Engineering Tips
+
+**Be specific about when to use tools:**
+```
+❌ "Use the datadog tool to get metrics"
+✅ "When users ask about CPU, memory, disk, load, or system health,
+    use the datadog_query tool. For general conversation, respond directly."
 ```
 
-#### 4.4 Understand the Response Format
-The API returns:
+**Define thresholds:**
+```
+✅ "CPU above 80% is concerning. Above 95% is critical.
+    Memory above 90% is concerning. Load above 4.0 is high for most systems."
+```
 
+**Specify response format:**
+```
+✅ "Always include: the current value, what it means,
+    and whether it's normal/concerning/critical."
+```
+
+### Hands-On Steps
+
+1. **Run through test matrix**: Test each case in Playground
+2. **Review execution logs**: For each test, examine chain of thought
+3. **Identify failures**: Note where agent behavior was unexpected
+4. **Adjust prompts**: Refine system prompt based on failures
+5. **Add error handling**: Configure fallback responses for API errors
+6. **Re-test**: Verify fixes work without breaking other cases
+
+### Success Checklist
+
+- [ ] All test matrix cases pass
+- [ ] Agent doesn't call tools unnecessarily
+- [ ] Agent handles errors gracefully
+- [ ] Responses are consistent and useful
+- [ ] Edge cases are handled appropriately
+
+### Module 4 Prompt
+
+> Create a lesson on testing and refining AI agents for production reliability. Cover: What does it mean to "test" an AI agent vs testing traditional software? How do you create a test matrix for agent behavior? What are common failure modes for tool-using agents (over-calling, under-calling, hallucinating parameters)? How do you read and interpret agent execution logs/chain of thought? What are prompt engineering techniques specifically for tool-using agents? How do you handle errors from external APIs gracefully? What's the iterative refinement process: test → observe → adjust? How do you know when an agent is "production ready"? Include examples of prompts that worked vs prompts that failed.
+
+### Links to Import
+
+- https://www.anthropic.com/research/building-effective-agents
+- https://docs.langflow.org/workspace-playground
+- https://platform.openai.com/docs/guides/prompt-engineering
+- https://docs.langchain.com/docs/use-cases/agents
+
+---
+
+## Module 5: API Exposure
+
+### Making your agent callable from external applications
+
+Your agent works in the Playground, but that's just for testing. To integrate with your generative UI application, you need to expose the agent as an API endpoint that your server can call. This module covers LangFlow's API capabilities.
+
+**Core concepts:**
+- LangFlow's API architecture
+- Flow IDs and how to find them
+- API authentication (API keys)
+- The `/api/v1/run/{flow-id}` endpoint
+- Request and response formats
+- Streaming vs non-streaming responses
+- Testing APIs with curl
+- Integrating LangFlow API into Node.js/Express
+
+**Why this matters for your project:**
+This is the bridge between LangFlow and your generative UI application. Without API access, your agent is isolated in LangFlow. With API access, your CopilotKit client can call the agent and receive responses to render in the UI.
+
+### API Reference
+
+**Endpoint:**
+```
+POST https://langflow.neil-everette.com/api/v1/run/{flow-id}
+```
+
+**Headers:**
+```
+Content-Type: application/json
+x-api-key: your-langflow-api-key
+```
+
+**Request Body:**
+```json
+{
+  "input_value": "What is my current CPU usage?",
+  "output_type": "chat",
+  "input_type": "chat"
+}
+```
+
+**Response Format:**
 ```json
 {
   "outputs": [
@@ -346,91 +382,148 @@ The API returns:
 }
 ```
 
-#### 4.5 Test from the Generative UI Server
-Add a test endpoint in `server/index.ts`:
+### Hands-On Steps
 
-```typescript
-app.post('/api/test-langflow', async (req, res) => {
-  const { query } = req.body;
+1. **Get your Flow ID**:
+   - Open your Datadog Agent flow
+   - Look at URL: `https://langflow.neil-everette.com/flow/{flow-id}`
+   - Copy the UUID
 
-  const response = await fetch(
-    `https://langflow.neil-everette.com/api/v1/run/${LANGFLOW_FLOW_ID}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LANGFLOW_API_KEY,
-      },
-      body: JSON.stringify({
-        input_value: query,
-        output_type: 'chat',
-        input_type: 'chat',
-      }),
-    }
-  );
+2. **Generate API Key**:
+   - Go to Settings → Langflow API Keys
+   - Click "+ Create new secret key"
+   - Copy and save securely
 
-  const data = await response.json();
-  res.json(data);
-});
-```
+3. **Test with curl**:
+   ```bash
+   curl -X POST "https://langflow.neil-everette.com/api/v1/run/{flow-id}" \
+     -H "Content-Type: application/json" \
+     -H "x-api-key: your-api-key" \
+     -d '{
+       "input_value": "What is my current CPU usage?",
+       "output_type": "chat",
+       "input_type": "chat"
+     }'
+   ```
 
-#### 4.6 Success Criteria
-- [ ] Flow ID identified
-- [ ] API key generated
-- [ ] curl test successful
-- [ ] Can call LangFlow from generative-ui-prototype server
+4. **Add to Express server** (`server/index.ts`):
+   ```typescript
+   const LANGFLOW_URL = 'https://langflow.neil-everette.com';
+   const LANGFLOW_API_KEY = process.env.LANGFLOW_API_KEY;
+   const LANGFLOW_FLOW_ID = process.env.LANGFLOW_FLOW_ID;
 
-### Google NotebookLM Section
+   app.post('/api/datadog-agent', async (req, res) => {
+     const { query } = req.body;
 
-**Prompt for NotebookLM:**
-```
-I'm exposing my LangFlow agent via API. Please explain:
-1. How LangFlow's API endpoints work (/api/v1/run, etc.)
-2. Authentication methods for LangFlow API
-3. The structure of API requests and responses
-4. How to handle streaming vs non-streaming responses
-5. Best practices for integrating LangFlow APIs into applications
+     const response = await fetch(
+       `${LANGFLOW_URL}/api/v1/run/${LANGFLOW_FLOW_ID}`,
+       {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'x-api-key': LANGFLOW_API_KEY,
+         },
+         body: JSON.stringify({
+           input_value: query,
+           output_type: 'chat',
+           input_type: 'chat',
+         }),
+       }
+     );
 
-I want to call my LangFlow agent from a Node.js/Express backend.
-```
+     const data = await response.json();
+     const message = data.outputs?.[0]?.outputs?.[0]?.results?.message?.text;
+     res.json({ message });
+   });
+   ```
 
-**Links to Import:**
+5. **Test from your app**:
+   ```bash
+   curl -X POST "http://localhost:4000/api/datadog-agent" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "What is my CPU usage?"}'
+   ```
+
+### Success Checklist
+
+- [ ] Flow ID identified and saved
+- [ ] API key generated and stored in environment variables
+- [ ] curl test returns expected response
+- [ ] Express endpoint created and working
+- [ ] Can call LangFlow agent from generative-ui-prototype server
+
+### Module 5 Prompt
+
+> Create a lesson on exposing LangFlow agents via API for integration with external applications. Cover: How does LangFlow's API work architecturally? What are flow IDs and how do you find them? How does API authentication work in LangFlow (API keys vs JWT)? Walk through the /api/v1/run endpoint: request format, headers, body structure. What does the response look like and how do you parse it? What's the difference between streaming and non-streaming responses? How do you test APIs with curl before integrating? Show how to integrate LangFlow API calls into a Node.js/Express application. What are common issues (CORS, auth failures, timeout) and how to debug them?
+
+### Links to Import
+
 - https://docs.langflow.org/configuration-api-keys
 - https://docs.langflow.org/workspace-api
+- https://docs.langflow.org/deployment-api
 
 ---
 
-## Stage 5: Setting Up MCP Integration
+## Module 6: MCP Integration
 
-### Goal
-Connect the LangFlow Datadog agent to the client application using MCP (Model Context Protocol).
+### Connecting agents using the Model Context Protocol
 
-### What You'll Learn
-- What MCP is and why it's useful
-- LangFlow's MCP Server feature
-- Creating an MCP client in Node.js
-- Bidirectional agent communication
+MCP (Model Context Protocol) is a standardized way for AI applications to communicate with tools and data sources. Instead of custom API integrations, MCP provides a common protocol that makes agents interoperable. This module covers implementing MCP to connect your LangFlow agent to the CopilotKit client.
 
-### Steps
+**Core concepts:**
+- What is MCP and why was it created?
+- MCP architecture: servers, clients, transports
+- Tools in MCP: how agents discover and call capabilities
+- MCP server implementation (wrapping LangFlow)
+- MCP client implementation (in CopilotKit)
+- Transport options: stdio, HTTP, WebSocket
+- The benefits of MCP over direct API calls
+- Future-proofing: adding more agents via MCP
 
-#### 5.1 Understand MCP
-MCP (Model Context Protocol) is a standardized way for AI applications to connect to data sources and tools. It provides:
-- Tool discovery
-- Standardized request/response format
-- Secure communication between agents
+**Why this matters for your project:**
+MCP is the glue that connects your client agent to backend agents. Using MCP instead of direct API calls means you can easily add more agents later (PagerDuty, AWS, etc.) without rewriting integration code. It's an investment in extensibility.
 
-#### 5.2 Option A: LangFlow Native MCP Server
-If LangFlow supports MCP Server natively:
+### Architecture with MCP
 
-1. Go to **Settings** → **MCP Servers**
-2. Click **"+ Add MCP Server"**
-3. Configure to expose your Datadog Agent flow
-4. Note the MCP endpoint URL
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CLIENT APPLICATION                              │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  CopilotKit Agent                                            │    │
+│  │         │                                                    │    │
+│  │         ▼                                                    │    │
+│  │  ┌─────────────┐                                            │    │
+│  │  │ MCP Client  │  ◄── Discovers tools, calls them           │    │
+│  │  └──────┬──────┘                                            │    │
+│  │         │                                                    │    │
+│  └─────────┼────────────────────────────────────────────────────┘    │
+└────────────┼────────────────────────────────────────────────────────┘
+             │
+        MCP Protocol (HTTP/WebSocket)
+             │
+             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        MCP SERVER                                    │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  Tools Registry                                              │    │
+│  │  • query_datadog - "Query infrastructure metrics"           │    │
+│  │  • (future) query_pagerduty - "Check incidents"             │    │
+│  │  • (future) query_aws - "Get AWS resource status"           │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                         │                                            │
+│                         ▼                                            │
+│                  ┌─────────────┐                                    │
+│                  │  LangFlow   │                                    │
+│                  │  API Call   │                                    │
+│                  └─────────────┘                                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-#### 5.3 Option B: Create MCP Wrapper
-If native MCP isn't available, create a wrapper:
+### MCP Server Implementation
 
-Create `server/mcp-langflow-bridge.ts`:
+Create `server/mcp-server.ts`:
 
 ```typescript
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -445,17 +538,17 @@ const server = new Server(
   { capabilities: { tools: {} } }
 );
 
-// Register the Datadog query tool
+// Register available tools
 server.setRequestHandler('tools/list', async () => ({
   tools: [{
     name: 'query_datadog',
-    description: 'Query Datadog infrastructure metrics using natural language',
+    description: 'Query Datadog infrastructure metrics. Ask about CPU, memory, disk, load, or general system health.',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Natural language query about infrastructure metrics'
+          description: 'Natural language query about infrastructure'
         }
       },
       required: ['query']
@@ -475,7 +568,7 @@ server.setRequestHandler('tools/call', async (request) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': LANGFLOW_API_KEY,
+          'x-api-key': LANGFLOW_API_KEY!,
         },
         body: JSON.stringify({
           input_value: query,
@@ -486,205 +579,107 @@ server.setRequestHandler('tools/call', async (request) => {
     );
 
     const data = await response.json();
-    const message = data.outputs?.[0]?.outputs?.[0]?.results?.message?.text;
+    const message = data.outputs?.[0]?.outputs?.[0]?.results?.message?.text
+      || 'No response from Datadog agent';
 
     return {
-      content: [{ type: 'text', text: message || 'No response from agent' }]
+      content: [{ type: 'text', text: message }]
     };
   }
+
+  throw new Error(`Unknown tool: ${request.params.name}`);
 });
 
-// Start the server
+// Start server
 const transport = new StdioServerTransport();
 await server.connect(transport);
+console.log('MCP server running');
 ```
 
-#### 5.4 Connect CopilotKit to MCP
-Update `server/index.ts` to use MCP:
+### Connecting CopilotKit to MCP
+
+Update the CopilotKit action to use MCP:
 
 ```typescript
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
-// Create MCP client
-const mcpClient = new Client(
-  { name: 'copilotkit-client', version: '1.0.0' },
-  { capabilities: {} }
-);
-
-// Connect to the Datadog agent MCP server
-await mcpClient.connect(/* transport config */);
-
-// List available tools
-const tools = await mcpClient.request({ method: 'tools/list' });
-console.log('Available MCP tools:', tools);
-```
-
-#### 5.5 Add CopilotKit Action for MCP
-Update `src/App.tsx` to use the MCP-connected agent:
-
-```typescript
+// In src/App.tsx
 useCopilotAction({
-  name: 'queryDatadogAgent',
-  description: 'Query the Datadog agent for infrastructure metrics and insights',
+  name: 'queryInfrastructure',
+  description: 'Query infrastructure metrics via the Datadog agent',
   parameters: [
     {
       name: 'query',
       type: 'string',
-      description: 'What to ask about infrastructure health',
+      description: 'What to ask about infrastructure',
       required: true,
     },
   ],
   handler: async ({ query }) => {
-    const response = await fetch('/api/mcp/datadog', {
+    // Call MCP endpoint
+    const response = await fetch('/api/mcp/tools/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({
+        name: 'query_datadog',
+        arguments: { query }
+      }),
     });
+
     const data = await response.json();
-    return data.message;
+
+    // Parse response and create A2UI components
+    // ... (render logic)
+
+    return data.content[0].text;
   },
 });
 ```
 
-#### 5.6 Success Criteria
-- [ ] MCP server configured (native or wrapper)
-- [ ] MCP client can connect and list tools
-- [ ] CopilotKit can call Datadog agent via MCP
-- [ ] End-to-end query works: UI → CopilotKit → MCP → LangFlow → Datadog
+### Hands-On Steps
 
-### Google NotebookLM Section
+1. **Install MCP SDK**:
+   ```bash
+   npm install @modelcontextprotocol/sdk
+   ```
 
-**Prompt for NotebookLM:**
-```
-I'm connecting my LangFlow agent to a client application using MCP (Model Context Protocol). Please explain:
-1. What is MCP and why was it created?
-2. The architecture of MCP (servers, clients, transports)
-3. How to create an MCP server that wraps an existing API
-4. How to create an MCP client in Node.js
-5. How MCP compares to direct API calls - what are the benefits?
-6. Real-world examples of MCP usage
+2. **Create MCP server** (`server/mcp-server.ts`)
 
-I want to understand MCP well enough to implement it correctly.
-```
+3. **Add MCP endpoint** to Express server
 
-**Links to Import:**
+4. **Update CopilotKit** action to call MCP
+
+5. **Test end-to-end**:
+   - User asks "What's my CPU usage?" in chat
+   - CopilotKit calls MCP tool
+   - MCP server calls LangFlow
+   - LangFlow queries Datadog
+   - Response flows back and renders
+
+### Success Checklist
+
+- [ ] MCP SDK installed
+- [ ] MCP server created with query_datadog tool
+- [ ] MCP endpoint added to Express
+- [ ] CopilotKit action updated to use MCP
+- [ ] End-to-end test successful
+- [ ] UI renders Datadog data from agent
+
+### Module 6 Prompt
+
+> Create a comprehensive lesson on MCP (Model Context Protocol) for connecting AI agents. Cover: What is MCP and what problem does it solve? Who created it and why? Explain the architecture: servers, clients, transports - use a restaurant analogy (menu = tools, waiter = transport, kitchen = server). How do tools work in MCP: registration, discovery, calling? Walk through implementing an MCP server in Node.js that wraps an existing API. How do you implement an MCP client? What are the transport options (stdio, HTTP, WebSocket) and when to use each? What are the benefits of MCP over direct API integration? How does MCP enable multi-agent systems? Include code examples and common pitfalls.
+
+### Links to Import
+
 - https://modelcontextprotocol.io/introduction
 - https://modelcontextprotocol.io/quickstart/server
 - https://modelcontextprotocol.io/quickstart/client
 - https://github.com/modelcontextprotocol/servers
-
----
-
-## Stage 6: End-to-End Integration & Testing
-
-### Goal
-Complete the integration, test the full data flow, and ensure the UI renders agent responses correctly.
-
-### What You'll Learn
-- Full system integration testing
-- Converting agent responses to A2UI components
-- Error handling across the stack
-- Performance optimization
-
-### Steps
-
-#### 6.1 Test Full Data Flow
-Verify the complete path:
-
-```
-User types "Show me CPU metrics"
-    │
-    ▼
-CopilotKit interprets intent
-    │
-    ▼
-Calls queryDatadogAgent action
-    │
-    ▼
-Server calls MCP Datadog tool
-    │
-    ▼
-MCP server calls LangFlow agent
-    │
-    ▼
-LangFlow agent queries Datadog API
-    │
-    ▼
-Response flows back through MCP
-    │
-    ▼
-CopilotKit receives response
-    │
-    ▼
-A2UI renders metric cards
-```
-
-#### 6.2 Convert Agent Response to A2UI Components
-Update the action handler to parse agent responses and create A2UI components:
-
-```typescript
-handler: async ({ query }) => {
-  const response = await fetch('/api/mcp/datadog', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  const data = await response.json();
-
-  // Parse the agent's response and create A2UI components
-  const components = parseAgentResponseToA2UI(data.message);
-
-  setDashboardState({
-    components,
-    lastUpdated: new Date().toISOString(),
-    agentMessage: data.message,
-  });
-
-  return `Displayed ${components.length} metrics from Datadog agent`;
-},
-```
-
-#### 6.3 Test Error Scenarios
-Test handling of:
-- LangFlow agent unavailable
-- Datadog API errors
-- Invalid user queries
-- Network timeouts
-
-#### 6.4 Performance Optimization
-- Add caching for repeated queries
-- Implement request timeouts
-- Consider streaming responses
-
-#### 6.5 Success Criteria
-- [ ] Full data flow works end-to-end
-- [ ] Agent responses render as A2UI components
-- [ ] Errors are handled gracefully at every layer
-- [ ] Performance is acceptable (<5s for typical queries)
-
-### Google NotebookLM Section
-
-**Prompt for NotebookLM:**
-```
-I'm completing the integration of my multi-agent system. Please explain:
-1. Best practices for testing multi-agent systems end-to-end
-2. How to handle errors that can occur at different layers of the stack
-3. Strategies for parsing LLM responses into structured data
-4. Performance optimization for agent chains
-5. Monitoring and observability for multi-agent systems
-
-I want my system to be reliable, performant, and debuggable.
-```
-
-**Links to Import:**
-- https://docs.langflow.org/configuration-environment-variables
-- https://docs.copilotkit.ai/
+- https://github.com/modelcontextprotocol/typescript-sdk
 
 ---
 
 ## Quick Reference
 
-### Environment Variables Needed
+### Environment Variables
 
 ```env
 # LangFlow
@@ -692,12 +687,12 @@ LANGFLOW_URL=https://langflow.neil-everette.com
 LANGFLOW_API_KEY=sk-...
 LANGFLOW_FLOW_ID=your-flow-uuid
 
-# Datadog (used by LangFlow agent)
+# Datadog (used in LangFlow)
 DATADOG_API_KEY=your-datadog-api-key
 DATADOG_APP_KEY=your-datadog-app-key
 DATADOG_SITE=us5.datadoghq.com
 
-# OpenAI (used by LangFlow agent LLM)
+# OpenAI (used by LangFlow LLM)
 OPENAI_API_KEY=sk-...
 ```
 
@@ -708,26 +703,27 @@ OPENAI_API_KEY=sk-...
 | LangFlow UI | https://langflow.neil-everette.com |
 | LangFlow API | https://langflow.neil-everette.com/api/v1 |
 | Datadog API | https://api.us5.datadoghq.com/api/v1 |
-| MCP Documentation | https://modelcontextprotocol.io |
+| MCP Docs | https://modelcontextprotocol.io |
 
 ### Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| LangFlow API returns HTML | Check API key, check nginx proxy config |
-| Agent doesn't call tools | Adjust system prompt, check tool connection |
-| Datadog returns no data | Verify host filter, check time range |
-| MCP connection fails | Check transport config, verify server running |
+| Issue | Possible Cause | Solution |
+|-------|---------------|----------|
+| LangFlow API returns HTML | Auth not working | Check API key, check nginx config |
+| Agent doesn't call tools | Poor system prompt | Be more explicit about when to use tools |
+| Datadog returns no data | Wrong host filter | Check query syntax, verify time range |
+| MCP connection fails | Transport mismatch | Verify server/client use same transport |
+| Slow responses | LLM latency | Consider streaming, add loading states |
 
 ---
 
-## Changelog
+## Progress Tracker
 
-| Date | Stage | Notes |
-|------|-------|-------|
-| | Stage 1 | |
-| | Stage 2 | |
-| | Stage 3 | |
-| | Stage 4 | |
-| | Stage 5 | |
-| | Stage 6 | |
+| Module | Status | Date Completed | Notes |
+|--------|--------|----------------|-------|
+| 1. LangFlow Fundamentals | ⬜ Not Started | | |
+| 2. Building Your First Agent | ⬜ Not Started | | |
+| 3. Tool Integration | ⬜ Not Started | | |
+| 4. Testing & Refinement | ⬜ Not Started | | |
+| 5. API Exposure | ⬜ Not Started | | |
+| 6. MCP Integration | ⬜ Not Started | | |
