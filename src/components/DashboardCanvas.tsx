@@ -149,7 +149,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       <div className="h-full flex flex-col items-center justify-center text-center">
         <VennDiagramIcon className="w-24 h-24 mb-8" gradient />
         <h2 className="text-4xl font-normal text-text-primary mb-3">
-          Welcome to Sidekick
+          Welcome to Slash GenUI
         </h2>
         <p className="text-text-secondary max-w-md mb-8 text-lg">
           Choose an option below or use the chat
@@ -183,14 +183,23 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     );
   }
 
-  // Group components by size for layout
-  // metric_card and status_indicator are small (fit in grid)
-  // time_series_chart, data_table, alert_list are large (full width or half)
-  const smallComponents = components.filter(c => 
-    ['metric_card', 'status_indicator', 'progress_bar'].includes(c.component)
+  // Group components by layout
+  // Featured components go at the top in a 2-column layout (table first, then card)
+  const featuredIds = ['containers-list-table', 'running-containers-count'];
+  const featuredComponents = components
+    .filter(c => featuredIds.includes(c.id))
+    .sort((a, b) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
+
+  // Small components (metric_card, status_indicator, progress_bar) - excluding featured
+  const smallComponents = components.filter(c =>
+    ['metric_card', 'status_indicator', 'progress_bar'].includes(c.component) &&
+    !featuredIds.includes(c.id)
   );
+
+  // Large components (data_table, alert_list) - excluding featured
   const largeComponents = components.filter(c =>
-    ['data_table', 'alert_list'].includes(c.component)
+    ['data_table', 'alert_list'].includes(c.component) &&
+    !featuredIds.includes(c.id)
   );
 
   return (
@@ -202,10 +211,28 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         </div>
       )}
 
+      {/* Featured components - 2-column layout at top, same height */}
+      {featuredComponents.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          {featuredComponents.map((component, index) => (
+            <div
+              key={component.id || index}
+              className="animate-slide-up h-full"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              {(() => {
+                const Component = COMPONENT_REGISTRY[component.component];
+                return Component ? <Component component={component} className="h-full" /> : null;
+              })()}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Small components grid */}
       {smallComponents.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {smallComponents.map((component, index) => renderComponent(component, index))}
+          {smallComponents.map((component, index) => renderComponent(component, featuredComponents.length + index))}
         </div>
       )}
 
@@ -213,7 +240,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       {largeComponents.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {largeComponents.map((component, index) =>
-            renderComponent(component, smallComponents.length + index)
+            renderComponent(component, featuredComponents.length + smallComponents.length + index)
           )}
         </div>
       )}

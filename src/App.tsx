@@ -28,6 +28,8 @@ function DashboardWithAgent() {
   });
   const [currentView, setCurrentView] = useState<'home' | 'commands' | 'loading'>('home');
   const [chatWidth, setChatWidth] = useState(400);
+  const [timeWindow, setTimeWindow] = useState('1h');
+  const [lastAction, setLastAction] = useState<'system' | 'containers' | 'automations' | null>(null);
   const isResizing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +44,6 @@ function DashboardWithAgent() {
     if (!isResizing.current || !containerRef.current) return;
     const containerRect = containerRef.current.getBoundingClientRect();
     const newWidth = containerRect.right - e.clientX;
-    // Clamp between 300 and 600px
     setChatWidth(Math.max(300, Math.min(600, newWidth)));
   }, []);
 
@@ -52,7 +53,6 @@ function DashboardWithAgent() {
     document.body.style.userSelect = '';
   }, []);
 
-  // Set up global mouse event listeners for resizing
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -62,10 +62,30 @@ function DashboardWithAgent() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  // Auto-refresh data when time window changes
+  useEffect(() => {
+    if (!lastAction || dashboardState.components.length === 0) return;
+
+    // Re-fetch the data based on what was last displayed
+    if (lastAction === 'system') {
+      handleFetchSystemInfrastructure();
+    } else if (lastAction === 'containers') {
+      handleFetchContainersList();
+    } else if (lastAction === 'automations') {
+      handleFetchAutomations();
+    }
+  }, [timeWindow]); // Only trigger on timeWindow changes, not on lastAction
+
   // Make dashboard state readable by the agent
   useCopilotReadable({
     description: 'Current dashboard state with all displayed components',
     value: dashboardState,
+  });
+
+  // Make time window readable by the agent
+  useCopilotReadable({
+    description: 'Selected time window for Datadog metrics queries (5m, 15m, 30m, 1h, 4h, 1d, 2d, 1w, 1mo)',
+    value: timeWindow,
   });
 
   // Hook for programmatic chat messaging
@@ -159,7 +179,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/overview');
+        const response = await fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error) {
@@ -213,7 +233,7 @@ function DashboardWithAgent() {
 
   // Helper function to fetch container metrics
   const fetchContainerCPU = useCallback(async (containerName: string) => {
-    const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName)}`);
+    const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName)}?timeWindow=${timeWindow}`);
     const data = await response.json();
 
     if (data.error && !data.currentValue) {
@@ -237,7 +257,7 @@ function DashboardWithAgent() {
     };
 
     return component;
-  }, []);
+  }, [timeWindow]);
 
   // Action to fetch container CPU metrics
   useCopilotAction({
@@ -286,7 +306,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/uptime');
+        const response = await fetch(`/api/metrics/uptime?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error && !data.currentValue) {
@@ -333,7 +353,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/running-containers');
+        const response = await fetch(`/api/metrics/running-containers?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error) {
@@ -386,7 +406,7 @@ function DashboardWithAgent() {
     ],
     handler: async ({ containerName }) => {
       try {
-        const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName as string)}/memory`);
+        const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName as string)}/memory?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error && !data.currentValue) {
@@ -432,7 +452,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/n8n/gmail-filter');
+        const response = await fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error) {
@@ -509,7 +529,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/n8n/image-generator');
+        const response = await fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error) {
@@ -578,6 +598,40 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to query the LangFlow Datadog Agent
+  useCopilotAction({
+    name: 'queryDatadogAgent',
+    description: 'Query the LangFlow-based Datadog agent with natural language questions about infrastructure metrics. The agent can interpret questions, fetch metrics from Datadog, and provide intelligent insights. Use this for complex metric queries or when the user wants analysis and recommendations.',
+    parameters: [
+      {
+        name: 'query',
+        type: 'string',
+        description: 'Natural language question about infrastructure (e.g., "What is my current CPU usage?", "Is my server healthy?", "Check memory metrics")',
+        required: true,
+      },
+    ],
+    handler: async ({ query }) => {
+      try {
+        const response = await fetch('/api/langflow/agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, timeWindow }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          return `Error from Datadog agent: ${data.error}`;
+        }
+
+        // Return the agent's message - it will appear in the chat
+        return data.message || 'No response from agent';
+      } catch (error) {
+        return `Failed to query Datadog agent: ${error}`;
+      }
+    },
+  });
+
   // Action to fetch running containers list as a table
   useCopilotAction({
     name: 'fetchContainersList',
@@ -585,7 +639,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch('/api/metrics/containers-list');
+        const response = await fetch(`/api/metrics/containers-list?timeWindow=${timeWindow}`);
         const data = await response.json();
 
         if (data.error) {
@@ -635,8 +689,8 @@ function DashboardWithAgent() {
     try {
       // Fetch containers list and running count in parallel
       const [containersResponse, countResponse] = await Promise.all([
-        fetch('/api/metrics/containers-list'),
-        fetch('/api/metrics/running-containers'),
+        fetch(`/api/metrics/containers-list?timeWindow=${timeWindow}`),
+        fetch(`/api/metrics/running-containers?timeWindow=${timeWindow}`),
       ]);
 
       const containersData = await containersResponse.json();
@@ -646,7 +700,7 @@ function DashboardWithAgent() {
 
       const newComponents: A2UIComponent[] = [];
 
-      // Add running containers count card
+      // Add running containers count card with loading state for insights
       if (!countData.error) {
         newComponents.push({
           id: 'running-containers-count',
@@ -660,6 +714,7 @@ function DashboardWithAgent() {
             unit: '',
             status: 'healthy' as const,
             description: 'Total active containers',
+            insightsLoading: true,  // Show skeleton while loading insights
           },
         });
       }
@@ -777,20 +832,76 @@ function DashboardWithAgent() {
       setDashboardState({
         components: sortByPriority(newComponents),
         lastUpdated: new Date().toISOString(),
-        agentMessage: `Showing ${containersData.count} containers with individual metrics`,
+        agentMessage: `Showing ${containersData.count} containers. Loading AI insights...`,
       });
+      setLastAction('containers');
+
+      // Fetch AI interpretations for containers in background
+      fetch(`/api/metrics/container-interpretations?timeWindow=${timeWindow}`)
+        .then(res => res.json())
+        .then(interpretationsData => {
+          if (interpretationsData.error || !interpretationsData.interpretation) {
+            // Remove loading state on error
+            setDashboardState(prev => ({
+              ...prev,
+              components: prev.components.map(comp =>
+                comp.id === 'running-containers-count' && comp.component === 'metric_card'
+                  ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                  : comp
+              ),
+            }));
+            return;
+          }
+
+          // Update the running containers card with interpretation and insight
+          setDashboardState(prev => {
+            const updatedComponents = prev.components.map(comp => {
+              if (comp.id === 'running-containers-count' && comp.component === 'metric_card') {
+                return {
+                  ...comp,
+                  props: {
+                    ...comp.props,
+                    interpretation: interpretationsData.interpretation,
+                    actionableInsights: interpretationsData.insight ? [interpretationsData.insight] : undefined,
+                    insightsLoading: false,
+                  },
+                };
+              }
+              return comp;
+            });
+
+            return {
+              ...prev,
+              components: updatedComponents,
+              agentMessage: `Showing ${containersData.count} containers with AI insights`,
+            };
+          });
+        })
+        .catch(err => {
+          console.error('Failed to fetch container interpretations:', err);
+          // Remove loading state on error
+          setDashboardState(prev => ({
+            ...prev,
+            components: prev.components.map(comp =>
+              comp.id === 'running-containers-count' && comp.component === 'metric_card'
+                ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                : comp
+            ),
+          }));
+        });
+
     } catch (error) {
       console.error('Failed to fetch containers list:', error);
     }
-  }, []);
+  }, [timeWindow]);
 
   // Handler for System & Infrastructure (combines system metrics + uptime)
   const handleFetchSystemInfrastructure = useCallback(async () => {
     try {
-      // Fetch both system metrics and uptime in parallel
+      // Fetch both system metrics and uptime in parallel (FAST)
       const [metricsResponse, uptimeResponse] = await Promise.all([
-        fetch('/api/metrics/overview'),
-        fetch('/api/metrics/uptime'),
+        fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`),
+        fetch(`/api/metrics/uptime?timeWindow=${timeWindow}`),
       ]);
 
       const metricsData = await metricsResponse.json();
@@ -816,7 +927,7 @@ function DashboardWithAgent() {
         });
       }
 
-      // Add system metrics
+      // Add system metrics with loading state for insights
       if (!metricsData.error) {
         metricsData.metrics.forEach((metric: {
           metric: string;
@@ -839,28 +950,88 @@ function DashboardWithAgent() {
               status: metric.status as 'healthy' | 'warning' | 'critical',
               description: `Current ${metric.displayName.toLowerCase()}`,
               change: metric.change,
+              insightsLoading: true,  // Show skeleton while loading insights
             },
           });
         });
       }
 
+      // Show metrics immediately (fast)
       setDashboardState({
         components: sortByPriority(newComponents),
         lastUpdated: new Date().toISOString(),
-        agentMessage: `Showing system infrastructure metrics`,
+        agentMessage: `Showing system infrastructure metrics. Loading AI insights...`,
       });
+      setLastAction('system');
+
+      // Fetch AI interpretations in background (slower, but adds value)
+      fetch(`/api/metrics/interpretations?timeWindow=${timeWindow}`)
+        .then(res => res.json())
+        .then(interpretationsData => {
+          if (interpretationsData.error || !interpretationsData.interpretations) return;
+
+          // Update components with interpretations and remove loading state
+          setDashboardState(prev => {
+            const updatedComponents = prev.components.map(comp => {
+              if (comp.component !== 'metric_card') return comp;
+
+              // Extract metric ID from component ID (e.g., 'system-metric-cpu_total' -> 'cpu_total')
+              const metricId = comp.id.replace('system-metric-', '');
+              const interp = interpretationsData.interpretations[metricId];
+
+              if (interp) {
+                return {
+                  ...comp,
+                  props: {
+                    ...comp.props,
+                    interpretation: interp.interpretation,
+                    actionableInsights: interp.insight ? [interp.insight] : undefined,
+                    insightsLoading: false,  // Done loading
+                  },
+                };
+              }
+              // Remove loading state even if no interpretation found
+              return {
+                ...comp,
+                props: {
+                  ...comp.props,
+                  insightsLoading: false,
+                },
+              };
+            });
+
+            return {
+              ...prev,
+              components: updatedComponents,
+              agentMessage: `System metrics with AI insights`,
+            };
+          });
+        })
+        .catch(err => {
+          console.error('Failed to fetch interpretations:', err);
+          // Remove loading state on error
+          setDashboardState(prev => ({
+            ...prev,
+            components: prev.components.map(comp =>
+              comp.component === 'metric_card'
+                ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                : comp
+            ),
+          }));
+        });
+
     } catch (error) {
       console.error('Failed to fetch system infrastructure:', error);
     }
-  }, []);
+  }, [timeWindow]);
 
   // Handler for Automations (n8n workflow metrics)
   const handleFetchAutomations = useCallback(async () => {
     try {
       // Fetch both workflow metrics in parallel
       const [gmailResponse, imageGenResponse] = await Promise.all([
-        fetch('/api/metrics/n8n/gmail-filter'),
-        fetch('/api/metrics/n8n/image-generator'),
+        fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+        fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
       ]);
 
       const gmailData = await gmailResponse.json();
@@ -969,10 +1140,11 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: `Showing automation workflow metrics`,
       });
+      setLastAction('automations');
     } catch (error) {
       console.error('Failed to fetch automations:', error);
     }
-  }, []);
+  }, [timeWindow]);
 
   // Handler for navigating to commands screen
   const handleShowCommands = useCallback(() => {
@@ -1046,6 +1218,22 @@ function DashboardWithAgent() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          {/* Time Window Selector */}
+          <select
+            value={timeWindow}
+            onChange={(e) => setTimeWindow(e.target.value)}
+            className="px-3 py-1.5 text-sm bg-white/70 border border-white/50 rounded-lg text-text-primary hover:bg-white/90 hover:border-accent-primary/50 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
+          >
+            <option value="5m">Past 5 Minutes</option>
+            <option value="15m">Past 15 Minutes</option>
+            <option value="30m">Past 30 Minutes</option>
+            <option value="1h">Past 1 Hour</option>
+            <option value="4h">Past 4 Hours</option>
+            <option value="1d">Past 1 Day</option>
+            <option value="2d">Past 2 Days</option>
+            <option value="1w">Past 1 Week</option>
+            <option value="1mo">Past 1 Month</option>
+          </select>
           <span className="text-xs text-text-muted font-mono">
             {dashboardState.components.length} components
           </span>

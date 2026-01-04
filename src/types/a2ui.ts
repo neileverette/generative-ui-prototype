@@ -42,6 +42,9 @@ export interface MetricCardComponent extends A2UIComponentBase {
     };
     status: MetricStatus;
     description?: string;
+    interpretation?: string;  // AI-generated explanation of the metric
+    actionableInsights?: string[];  // AI-generated recommendations
+    insightsLoading?: boolean;  // Show skeleton loader while fetching insights
     thresholds?: {
       warning?: number;
       critical?: number;

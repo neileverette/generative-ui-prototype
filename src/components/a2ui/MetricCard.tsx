@@ -3,6 +3,19 @@ import { TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle, AlertTriangl
 
 interface MetricCardProps {
   component: MetricCardComponent;
+  className?: string;
+}
+
+// Skeleton shimmer component for loading state
+function SkeletonLoader() {
+  return (
+    <div className="animate-pulse pt-3 border-t border-gray-100">
+      <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+      <div className="h-3 bg-gray-200 rounded w-4/5 mb-3"></div>
+      <div className="h-2 bg-gray-100 rounded w-16 mb-2"></div>
+      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+    </div>
+  );
 }
 
 const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon: typeof CheckCircle }> = {
@@ -28,9 +41,9 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
   },
 };
 
-export function MetricCard({ component }: MetricCardProps) {
+export function MetricCard({ component, className }: MetricCardProps) {
   const { props, priority } = component;
-  const { title, value, unit, change, status, description } = props;
+  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading } = props;
 
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
@@ -42,19 +55,19 @@ export function MetricCard({ component }: MetricCardProps) {
       className={`
         bg-white/70 backdrop-blur-sm rounded-xl p-5 border transition-all duration-300 shadow-sm
         ${isCritical ? 'border-accent-danger/50 animate-pulse-critical' : 'border-white/50'}
-        card-hover
+        card-hover flex flex-col ${className || ''}
       `}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-lg ${statusConfig.bgColor}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`p-1.5 rounded-lg ${statusConfig.bgColor} flex-shrink-0`}>
             <StatusIcon className={`w-4 h-4 ${statusConfig.color}`} />
           </div>
-          <span className="text-sm font-medium text-text-secondary">{title}</span>
+          <span className="text-sm font-medium text-text-secondary truncate">{title}</span>
         </div>
         {priority === 'critical' && (
-          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-accent-danger/20 text-accent-danger rounded-full">
+          <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-accent-danger/20 text-accent-danger rounded-full flex-shrink-0">
             Critical
           </span>
         )}
@@ -72,7 +85,7 @@ export function MetricCard({ component }: MetricCardProps) {
 
       {/* Change indicator */}
       {change && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-3">
           {change.direction === 'up' && (
             <TrendingUp className={`w-4 h-4 ${change.value > 0 ? 'text-accent-danger' : 'text-accent-success'}`} />
           )}
@@ -93,10 +106,39 @@ export function MetricCard({ component }: MetricCardProps) {
         </div>
       )}
 
-      {/* Description */}
-      {description && (
-        <p className="mt-3 text-xs text-text-muted">{description}</p>
-      )}
+      {/* Content area */}
+      <div className="mt-2">
+        {/* Show skeleton while loading insights */}
+        {insightsLoading && !interpretation && <SkeletonLoader />}
+
+        {/* Interpretation */}
+        {interpretation && (
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-sm text-text-secondary leading-relaxed">{interpretation}</p>
+          </div>
+        )}
+
+        {/* Actionable Insight */}
+        {actionableInsights && actionableInsights.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <h4 className="text-sm font-bold text-text-primary mb-1">
+              Actionable
+            </h4>
+            {actionableInsights.map((insight, index) => (
+              <p key={index} className="text-sm text-text-secondary">
+                {insight}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* Legacy description (fallback) - only show if not loading and no other content */}
+        {!insightsLoading && !interpretation && !actionableInsights && description && (
+          <div className="pt-3">
+            <p className="text-xs text-text-muted line-clamp-2">{description}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

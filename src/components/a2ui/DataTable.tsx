@@ -3,9 +3,10 @@ import { Table, ArrowUpDown } from 'lucide-react';
 
 interface DataTableProps {
   component: DataTableComponent;
+  className?: string;
 }
 
-export function DataTable({ component }: DataTableProps) {
+export function DataTable({ component, className }: DataTableProps) {
   const { props } = component;
   const { title, columns, rows, sortBy } = props;
 
@@ -39,7 +40,7 @@ export function DataTable({ component }: DataTableProps) {
   };
 
   return (
-    <div className="bg-surface-2 rounded-xl border border-surface-3 overflow-hidden">
+    <div className={`bg-surface-2 rounded-xl border border-surface-3 overflow-hidden flex flex-col ${className || ''}`}>
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-surface-3">
         <Table className="w-4 h-4 text-accent-primary" />
@@ -50,7 +51,7 @@ export function DataTable({ component }: DataTableProps) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto flex-1">
         <table className="w-full">
           <thead>
             <tr className="border-b border-surface-3 bg-surface-3/30">
