@@ -28,7 +28,7 @@ function DashboardWithAgent() {
   });
   const [currentView, setCurrentView] = useState<'home' | 'commands' | 'loading'>('home');
   const [chatWidth, setChatWidth] = useState(400);
-  const [timeWindow, setTimeWindow] = useState('1h');
+  const [timeWindow, setTimeWindow] = useState('4h');
   const [lastAction, setLastAction] = useState<'system' | 'containers' | 'automations' | null>(null);
   const isResizing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);

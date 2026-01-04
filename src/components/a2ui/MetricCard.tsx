@@ -50,7 +50,7 @@ const SIZE_CONFIG = {
 
 export function MetricCard({ component, className }: MetricCardProps) {
   const { props, priority } = component;
-  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading, size = 'default' } = props;
+  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading, size = 'default', metadata } = props;
 
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
@@ -147,6 +147,15 @@ export function MetricCard({ component, className }: MetricCardProps) {
           </div>
         )}
       </div>
+
+      {/* Footer metadata - total executions, etc */}
+      {metadata && (
+        <div className="mt-auto pt-3 border-t border-gray-100">
+          <p className="text-xs text-text-muted">
+            {metadata}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

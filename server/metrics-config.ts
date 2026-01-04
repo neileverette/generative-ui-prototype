@@ -188,17 +188,6 @@ export const METRICS_CONFIG: MetricDefinition[] = [
     description: 'Network bytes received per second'
   },
   {
-    id: 'swap_used_percent',
-    displayName: 'Swap Usage',
-    query: `100 - avg:system.swap.pct_free{host:${DEFAULT_HOST}}`,
-    unit: '%',
-    category: 'system',
-    keywords: ['swap', 'swap usage', 'virtual memory'],
-    warning: 20,
-    critical: 50,
-    description: 'Swap space in use. Any swap usage indicates RAM pressure. Healthy: 0%, Warning: >20%, Critical: >50%'
-  },
-  {
     id: 'process_count',
     displayName: 'Processes',
     query: `avg:system.processes.number{host:${DEFAULT_HOST}}`,
@@ -331,8 +320,8 @@ export function findMetricsByKeywords(query: string): MetricDefinition[] {
 
 /**
  * Get all system overview metrics (for dashboard)
- * Tier 1: Uptime, Container Count, CPU Idle, Network I/O, Disk I/O Wait
- * Tier 2: Swap, Container Status, Process Count, Open FDs, Network Errors
+ * Tier 1: Uptime, CPU Idle, Network I/O, Disk I/O Wait
+ * Tier 2: Process Count, Open FDs, Network Errors
  */
 export function getSystemOverviewMetrics(): MetricDefinition[] {
   return METRICS_CONFIG.filter(m =>
@@ -349,7 +338,6 @@ export function getSystemOverviewMetrics(): MetricDefinition[] {
       'network_bytes_sent',
       'network_bytes_recv',
       // Tier 2 additions
-      'swap_used_percent',
       'process_count',
       'open_files',
       'network_errors',

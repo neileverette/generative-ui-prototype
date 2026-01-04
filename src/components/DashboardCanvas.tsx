@@ -68,10 +68,12 @@ function renderComponent(component: A2UIComponent, index: number) {
     return null;
   }
 
+  const colSpanClass = component.columnSpan ? `col-span-${component.columnSpan}` : '';
+
   return (
     <div
       key={component.id || index}
-      className="animate-slide-up h-full"
+      className={`animate-slide-up h-full ${colSpanClass}`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <Component component={component} className="h-full" />
