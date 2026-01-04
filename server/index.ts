@@ -224,6 +224,21 @@ import OpenAI from 'openai';
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const serviceAdapter = new OpenAIAdapter({ openai });
 
+// Import MCP client
+import { getMCPClient } from './mcp-client.js';
+
+// Initialize MCP client on startup
+let mcpClient: Awaited<ReturnType<typeof getMCPClient>> | null = null;
+(async () => {
+  try {
+    mcpClient = await getMCPClient();
+    console.log('[MCP] Connected to MCP Datadog server');
+  } catch (error) {
+    console.error('[MCP] Failed to connect to MCP server:', error);
+    console.error('[MCP] Continuing without MCP integration');
+  }
+})();
+
 // Create CopilotKit runtime (using frontend actions only due to CopilotKit 1.50 bug with server-side actions)
 const copilotKit = new CopilotRuntime();
 
@@ -304,6 +319,108 @@ app.post('/api/langflow/agent', async (req, res) => {
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// =============================================================================
+// MCP-POWERED ENDPOINTS
+// These endpoints demonstrate the MCP orchestration layer
+// =============================================================================
+
+// MCP System Metrics - demonstrates MCP tool orchestration
+app.get('/api/mcp/metrics/system', async (req, res) => {
+  try {
+    if (!mcpClient) {
+      return res.status(503).json({
+        error: 'MCP client not available',
+        fallback: 'Use /api/metrics/overview/fast instead'
+      });
+    }
+
+    const timeWindow = (req.query.timeWindow as string) || '1h';
+    const result = await mcpClient.getSystemMetrics(timeWindow);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-endpoint'
+    });
+  }
+});
+
+// MCP Container Metrics - demonstrates MCP tool orchestration
+app.get('/api/mcp/metrics/containers', async (req, res) => {
+  try {
+    if (!mcpClient) {
+      return res.status(503).json({
+        error: 'MCP client not available',
+        fallback: 'Use /api/metrics/containers-list instead'
+      });
+    }
+
+    const timeWindow = (req.query.timeWindow as string) || '1h';
+    const result = await mcpClient.getContainerMetrics(timeWindow);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-endpoint'
+    });
+  }
+});
+
+// MCP Workflow Metrics - demonstrates MCP tool orchestration
+app.get('/api/mcp/metrics/workflow/:workflow', async (req, res) => {
+  try {
+    if (!mcpClient) {
+      return res.status(503).json({
+        error: 'MCP client not available',
+        fallback: 'Use /api/metrics/n8n/:workflow instead'
+      });
+    }
+
+    const { workflow } = req.params;
+    const timeWindow = (req.query.timeWindow as string) || '1d';
+
+    if (workflow !== 'gmail_filter' && workflow !== 'image_generator') {
+      return res.status(400).json({
+        error: 'Invalid workflow. Must be gmail_filter or image_generator'
+      });
+    }
+
+    const result = await mcpClient.getWorkflowMetrics(workflow, timeWindow);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-endpoint'
+    });
+  }
+});
+
+// MCP Tools List - shows available MCP tools
+app.get('/api/mcp/tools', async (req, res) => {
+  try {
+    if (!mcpClient) {
+      return res.status(503).json({
+        error: 'MCP client not available'
+      });
+    }
+
+    const tools = await mcpClient.listTools();
+    res.json(tools);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-endpoint'
+    });
+  }
+});
+
+// =============================================================================
+// END MCP ENDPOINTS
+// =============================================================================
 
 // Metrics configuration endpoint - for LangFlow agent to fetch available metrics
 app.get('/api/metrics/config', (_req, res) => {
