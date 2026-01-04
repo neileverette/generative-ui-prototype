@@ -531,7 +531,9 @@ app.get('/api/metrics/overview/fast', async (req, res) => {
         if (points.length > 0) {
           value = points[points.length - 1][1];
           // Round to 2 decimal places
-          value = parseFloat(value.toFixed(2));
+          if (value !== null) {
+            value = parseFloat(value.toFixed(2));
+          }
         }
       }
 

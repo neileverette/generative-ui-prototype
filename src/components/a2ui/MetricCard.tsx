@@ -43,7 +43,7 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
 
 // Size configuration for the value display
 const SIZE_CONFIG = {
-  default: { value: 'text-3xl', unit: 'text-lg' },
+  default: { value: 'text-4xl', unit: 'text-lg' },
   large: { value: 'text-5xl', unit: 'text-xl' },
   xl: { value: 'text-7xl', unit: 'text-2xl' },
 };
@@ -83,7 +83,7 @@ export function MetricCard({ component, className }: MetricCardProps) {
 
       {/* Value */}
       <div className={`flex items-baseline gap-1.5 ${size === 'xl' ? 'mb-4 flex-1' : 'mb-2'}`}>
-        <span className={`${sizeConfig.value} font-bold text-text-primary`}>
+        <span className={`${sizeConfig.value} font-semibold text-text-primary`}>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {unit && (

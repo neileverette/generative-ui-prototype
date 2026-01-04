@@ -9,15 +9,21 @@ import { useCopilotAction, useCopilotReadable, useCopilotChat } from '@copilotki
 import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
 import { Server, Container, Workflow, Terminal, ArrowLeft } from 'lucide-react';
 
-// IBM Venn Diagram icon
-const VennDiagramIcon = ({ className }: { className?: string }) => (
+// Command Center icon
+const CommandCenterIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
     viewBox="0 0 32 32"
     fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path d="M20,6a9.92,9.92,0,0,0-4,.84A9.92,9.92,0,0,0,12,6a10,10,0,0,0,0,20,9.92,9.92,0,0,0,4-.84A9.92,9.92,0,0,0,20,26,10,10,0,0,0,20,6ZM12,24A8,8,0,0,1,12,8a7.91,7.91,0,0,1,1.76.2,10,10,0,0,0,0,15.6A7.91,7.91,0,0,1,12,24Zm8-8a8,8,0,0,1-4,6.92A8,8,0,0,1,16,9.08,8,8,0,0,1,20,16Zm0,8a7.91,7.91,0,0,1-1.76-.2,10,10,0,0,0,0-15.6A7.91,7.91,0,0,1,20,8a8,8,0,0,1,0,16Z" />
+    <path d="m31.5,23c-.8271,0-1.5-.6729-1.5-1.5v-1.5c0-1.1025-.8972-2-2-2h-2v2h2v1.5c0,.98.4072,1.8643,1.0581,2.5-.6509.6357-1.0581,1.52-1.0581,2.5v1.5h-2v2h2c1.1028,0,2-.8975,2-2v-1.5c0-.8271.6729-1.5,1.5-1.5h.5v-2h-.5Z"/>
+    <path d="m16,20v1.5c0,.8271-.6729,1.5-1.5,1.5h-.5v2h.5c.8271,0,1.5.6729,1.5,1.5v1.5c0,1.1025.8972,2,2,2h2v-2h-2v-1.5c0-.98-.4072-1.8643-1.0581-2.5.6509-.6357,1.0581-1.52,1.0581-2.5v-1.5h2v-2h-2c-1.1028,0-2,.8975-2,2Z"/>
+    <path d="m28,15h2V5c0-1.103-.8975-2-2-2h-3v2h3v10Z"/>
+    <circle cx="23" cy="13" r="2"/>
+    <circle cx="16" cy="13" r="2"/>
+    <circle cx="9" cy="13" r="2"/>
+    <path d="m7,23h-3c-1.103,0-2-.8975-2-2V5c0-1.103.897-2,2-2h3v2h-3v16h3v2Z"/>
   </svg>
 );
 
@@ -813,15 +819,15 @@ function DashboardWithAgent() {
 
       // Add container groups - each container gets a card with CPU and Memory
       containersData.containers.forEach((container: { name: string; memory: number | null; cpu: number | null }) => {
-        const cpuStatus = container.cpu !== null
+        const cpuStatus: 'healthy' | 'warning' | 'critical' | 'unknown' = container.cpu !== null
           ? (container.cpu >= 80 ? 'critical' : container.cpu >= 50 ? 'warning' : 'healthy')
           : 'unknown';
-        const memStatus = container.memory !== null
-          ? (container.memory >= 1024 ? 'warning' : 'healthy')
+        const memStatus: 'healthy' | 'warning' | 'critical' | 'unknown' = container.memory !== null
+          ? (container.memory >= 2048 ? 'critical' : container.memory >= 1024 ? 'warning' : 'healthy')
           : 'unknown';
 
         // Overall status is the worst of CPU or Memory
-        const overallStatus = cpuStatus === 'critical' || memStatus === 'critical'
+        const overallStatus: 'healthy' | 'warning' | 'critical' = cpuStatus === 'critical' || memStatus === 'critical'
           ? 'critical'
           : cpuStatus === 'warning' || memStatus === 'warning'
             ? 'warning'
@@ -1127,18 +1133,24 @@ function DashboardWithAgent() {
         const lastRunTimestamp = gmailData.metrics.lastRunTimestamp;
 
         // Build metrics array
-        const metricsArray = [
+        const metricsArray: Array<{
+          label: string;
+          value: number | string;
+          unit?: string;
+          status?: 'healthy' | 'warning' | 'critical' | 'unknown';
+          trend?: { direction: 'up' | 'down' | 'flat'; value?: number };
+        }> = [
           {
             label: 'Successful Executions',
             value: gmailData.metrics.successful,
-            status: 'healthy' as const,
-            trend: { direction: successRateTrend.direction === 'up' ? 'up' as const : successRateTrend.direction === 'down' ? 'down' as const : 'flat' as const }
+            status: 'healthy',
+            trend: { direction: successRateTrend.direction === 'up' ? 'up' : successRateTrend.direction === 'down' ? 'down' : 'flat' }
           },
           {
             label: 'Failed Executions',
             value: gmailData.metrics.failed,
-            status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
-            trend: { direction: gmailData.metrics.failed > 0 ? 'up' as const : 'flat' as const }
+            status: gmailData.metrics.failed > 0 ? 'warning' : 'healthy',
+            trend: { direction: gmailData.metrics.failed > 0 ? 'up' : 'flat' }
           },
           {
             label: 'Success Rate',
@@ -1147,7 +1159,7 @@ function DashboardWithAgent() {
             status: getStatusFromRate(rate),
             trend: successRateTrend
           },
-          { label: 'Total Times Run', value: allTime, status: 'healthy' as const },
+          { label: 'Total Times Run', value: allTime, status: 'healthy' },
         ];
 
         // Only add runtime metric if we have data
@@ -1226,18 +1238,24 @@ function DashboardWithAgent() {
         const lastRunTimestamp = imageGenData.metrics.lastRunTimestamp;
 
         // Build metrics array, only include runtime if data is available
-        const metricsArray = [
+        const metricsArray: Array<{
+          label: string;
+          value: number | string;
+          unit?: string;
+          status?: 'healthy' | 'warning' | 'critical' | 'unknown';
+          trend?: { direction: 'up' | 'down' | 'flat'; value?: number };
+        }> = [
           {
             label: 'Successful',
             value: imagesGenerated30d,
-            status: 'healthy' as const,
-            trend: { direction: successRateTrend.direction === 'up' ? 'up' as const : successRateTrend.direction === 'down' ? 'down' as const : 'flat' as const }
+            status: 'healthy',
+            trend: { direction: successRateTrend.direction === 'up' ? 'up' : successRateTrend.direction === 'down' ? 'down' : 'flat' }
           },
           {
             label: 'Failed',
             value: Math.round(allTimeTotal - imagesGenerated30d),
-            status: (allTimeTotal - imagesGenerated30d) > 0 ? 'warning' as const : 'healthy' as const,
-            trend: { direction: (allTimeTotal - imagesGenerated30d) > 0 ? 'up' as const : 'flat' as const }
+            status: (allTimeTotal - imagesGenerated30d) > 0 ? 'warning' : 'healthy',
+            trend: { direction: (allTimeTotal - imagesGenerated30d) > 0 ? 'up' : 'flat' }
           },
           {
             label: 'Success Rate',
@@ -1246,7 +1264,7 @@ function DashboardWithAgent() {
             status: getStatusFromRate(imageGenData.metrics.successRate),
             trend: successRateTrend
           },
-          { label: 'Total Times Run', value: allTimeTotal, status: 'healthy' as const },
+          { label: 'Total Times Run', value: allTimeTotal, status: 'healthy' },
         ];
 
         // Only add runtime metric if we have data
@@ -1385,9 +1403,9 @@ function DashboardWithAgent() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <VennDiagramIcon className="w-8 h-8 text-accent-primary" />
+          <CommandCenterIcon className="w-8 h-8 text-accent-primary" />
           <h1 className="text-lg font-sans font-normal">
-            <span className="gradient-text">Generative UI</span> Example
+            <span className="gradient-text">Welcome to Command Center</span>
           </h1>
         </div>
         <div className="flex items-center gap-4">
