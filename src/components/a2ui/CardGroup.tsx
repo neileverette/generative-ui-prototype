@@ -1,5 +1,5 @@
 import { CardGroupComponent, MetricStatus } from '../../types/a2ui';
-import { Box, CheckCircle, AlertTriangle, AlertCircle, HelpCircle } from 'lucide-react';
+import { Box, CheckCircle, AlertTriangle, AlertCircle, HelpCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface CardGroupProps {
   component: CardGroupComponent;
@@ -31,7 +31,7 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
 
 export function CardGroup({ component, className }: CardGroupProps) {
   const { props } = component;
-  const { title, metrics, status = 'healthy', description } = props;
+  const { title, subtitle, metrics, status = 'healthy', insight, description } = props;
 
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
@@ -58,8 +58,13 @@ export function CardGroup({ component, className }: CardGroupProps) {
         <div className={`p-2 rounded-lg ${finalStatusConfig.bgColor}`}>
           <Box className={`w-5 h-5 ${finalStatusConfig.color}`} />
         </div>
-        <h3 className="font-semibold text-text-primary flex-1 truncate">{title}</h3>
-        <StatusIcon className={`w-4 h-4 ${finalStatusConfig.color}`} />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-text-primary truncate">
+            {title}
+            {subtitle && <span className="ml-2 text-sm font-normal text-text-muted">{subtitle}</span>}
+          </h3>
+        </div>
+        <StatusIcon className={`w-4 h-4 ${finalStatusConfig.color} flex-shrink-0`} />
       </div>
 
       {/* Metrics Grid */}
@@ -71,15 +76,24 @@ export function CardGroup({ component, className }: CardGroupProps) {
               key={index}
               className="bg-white/30 rounded-lg p-3 flex flex-col"
             >
-              <span className="text-xs text-text-muted uppercase tracking-wide mb-1">
-                {metric.label}
-              </span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-text-muted uppercase tracking-wide">
+                  {metric.label}
+                </span>
+                {metric.trend && (
+                  <div className="flex items-center gap-0.5">
+                    {metric.trend.direction === 'up' && <TrendingUp className="w-3 h-3 text-accent-success" />}
+                    {metric.trend.direction === 'down' && <TrendingDown className="w-3 h-3 text-accent-danger" />}
+                    {metric.trend.direction === 'flat' && <Minus className="w-3 h-3 text-text-muted" />}
+                  </div>
+                )}
+              </div>
               <div className="flex items-baseline gap-1">
-                <span className={`text-xl font-bold ${metricStatusConfig.color}`}>
+                <span className={`text-2xl font-bold ${metricStatusConfig.color}`}>
                   {typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}
                 </span>
                 {metric.unit && (
-                  <span className="text-sm text-text-muted">{metric.unit}</span>
+                  <span className="text-base text-text-muted">{metric.unit}</span>
                 )}
               </div>
             </div>
@@ -87,9 +101,16 @@ export function CardGroup({ component, className }: CardGroupProps) {
         })}
       </div>
 
-      {/* Description/Insight */}
-      {description && (
+      {/* Insight (prominent, before description) */}
+      {insight && (
         <div className="mt-3 pt-3 border-t border-gray-100">
+          <p className="text-sm font-semibold text-text-primary">{insight}</p>
+        </div>
+      )}
+
+      {/* Description */}
+      {description && (
+        <div className={insight ? 'mt-2' : 'mt-3 pt-3 border-t border-gray-100'}>
           <p className="text-sm text-text-secondary">{description}</p>
         </div>
       )}

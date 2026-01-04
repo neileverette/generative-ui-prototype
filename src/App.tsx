@@ -1097,8 +1097,101 @@ function DashboardWithAgent() {
 
       // Add Gmail Filter as CardGroup
       if (!gmailData.error) {
-        const total = gmailData.metrics.successful + gmailData.metrics.failed;
+        const total = gmailData.metrics.totalExecutions || gmailData.metrics.successful + gmailData.metrics.failed;
         const rate = gmailData.metrics.successRate;
+        const allTime = gmailData.metrics.allTimeTotal || 0;
+
+        // Calculate time saved (30 seconds per successful execution) - using 30-day rolling window
+        const emailsProcessed30d = allTime; // allTimeTotal is actually 30-day total from backend
+        const secondsSaved = emailsProcessed30d * 30;
+        const minutesSaved = Math.floor(secondsSaved / 60);
+        const hoursSaved = Math.floor(minutesSaved / 60);
+        const remainingMinutes = minutesSaved % 60;
+
+        let timeSavedText = '';
+        if (hoursSaved > 0) {
+          timeSavedText = remainingMinutes > 0
+            ? `${hoursSaved} hour${hoursSaved !== 1 ? 's' : ''} ${remainingMinutes} min`
+            : `${hoursSaved} hour${hoursSaved !== 1 ? 's' : ''}`;
+        } else if (minutesSaved > 0) {
+          timeSavedText = `${minutesSaved} min`;
+        } else {
+          timeSavedText = `${secondsSaved} sec`;
+        }
+
+        const timeSavedInsight = `${emailsProcessed30d} email${emailsProcessed30d !== 1 ? 's' : ''} converted to unread in last 30 days, saving you ${timeSavedText}`;
+
+        // Get trend data from backend (if available)
+        const successRateTrend = gmailData.metrics.trend || { direction: 'flat' as const, value: 0 };
+        const runtime = gmailData.metrics.avgRuntime;
+        const lastRunTimestamp = gmailData.metrics.lastRunTimestamp;
+
+        // Build metrics array
+        const metricsArray = [
+          {
+            label: 'Successful Executions',
+            value: gmailData.metrics.successful,
+            status: 'healthy' as const,
+            trend: { direction: successRateTrend.direction === 'up' ? 'up' as const : successRateTrend.direction === 'down' ? 'down' as const : 'flat' as const }
+          },
+          {
+            label: 'Failed Executions',
+            value: gmailData.metrics.failed,
+            status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
+            trend: { direction: gmailData.metrics.failed > 0 ? 'up' as const : 'flat' as const }
+          },
+          {
+            label: 'Success Rate',
+            value: rate,
+            unit: '%',
+            status: getStatusFromRate(rate),
+            trend: successRateTrend
+          },
+          { label: 'Total Times Run', value: allTime, status: 'healthy' as const },
+        ];
+
+        // Only add runtime metric if we have data
+        if (runtime !== null && runtime !== undefined) {
+          let runtimeDisplay: number;
+          let runtimeUnit: string;
+
+          if (runtime >= 60) {
+            runtimeDisplay = parseFloat((runtime / 60).toFixed(1));
+            runtimeUnit = 'min';
+          } else {
+            runtimeDisplay = parseFloat(runtime.toFixed(1));
+            runtimeUnit = 's';
+          }
+
+          metricsArray.push({
+            label: 'Avg Runtime',
+            value: runtimeDisplay,
+            unit: runtimeUnit,
+            status: 'healthy' as const
+          });
+        }
+
+        // Only add last run timestamp if we have data
+        if (lastRunTimestamp !== null && lastRunTimestamp !== undefined) {
+          const date = new Date(lastRunTimestamp);
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const month = monthNames[date.getMonth()];
+          const day = date.getDate();
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          const displayMinutes = minutes.toString().padStart(2, '0');
+
+          const lastRunDisplay = `${month} ${day}, ${displayHours}:${displayMinutes} ${ampm}`;
+
+          metricsArray.push({
+            label: 'Last Run',
+            value: lastRunDisplay,
+            status: 'healthy' as const
+          });
+        }
+
         newComponents.push({
           id: 'automation-gmail-filter',
           component: 'card_group' as const,
@@ -1107,22 +1200,97 @@ function DashboardWithAgent() {
           timestamp: new Date().toISOString(),
           props: {
             title: 'Gmail Filter',
+            subtitle: '(filters bulk email as unread)',
             status: getStatusFromRate(rate),
-            description: `Runs every 5 minutes to filter incoming emails. ${total} executions in the last 24h with ${rate}% success rate.`,
-            metrics: [
-              { label: 'Successful', value: gmailData.metrics.successful, status: 'healthy' as const },
-              { label: 'Failed', value: gmailData.metrics.failed, status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
-              { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
-              { label: 'Total Runs', value: total, status: 'healthy' as const },
-            ],
+            insight: timeSavedInsight,
+            description: `Runs every 5 minutes to filter incoming emails. ${total} executions in the last ${timeWindow} with ${rate}% success rate.`,
+            metrics: metricsArray,
           },
         });
       }
 
       // Add Image Generator as CardGroup
       if (!imageGenData.error) {
-        const total = imageGenData.metrics.successful + imageGenData.metrics.failed;
-        const rate = imageGenData.metrics.successRate;
+        // Use 30-day totals for Image Generator
+        const allTimeTotal = imageGenData.metrics.allTimeTotal || 0;
+
+        // Calculate time saved (4 hours per successful generation) - using 30-day rolling window
+        const imagesGenerated30d = Math.round((imageGenData.metrics.allTimeTotal || 0) * (imageGenData.metrics.successRate / 100));
+        const hoursSaved = imagesGenerated30d * 4;
+
+        const timeSavedInsight = `${imagesGenerated30d} illustration${imagesGenerated30d !== 1 ? 's' : ''} generated in last 30 days, saving you ${hoursSaved} hour${hoursSaved !== 1 ? 's' : ''} of work`;
+
+        // Get trend data from backend (if available)
+        const successRateTrend = imageGenData.metrics.trend || { direction: 'flat' as const, value: 0 };
+        const runtime = imageGenData.metrics.avgRuntime;
+        const lastRunTimestamp = imageGenData.metrics.lastRunTimestamp;
+
+        // Build metrics array, only include runtime if data is available
+        const metricsArray = [
+          {
+            label: 'Successful',
+            value: imagesGenerated30d,
+            status: 'healthy' as const,
+            trend: { direction: successRateTrend.direction === 'up' ? 'up' as const : successRateTrend.direction === 'down' ? 'down' as const : 'flat' as const }
+          },
+          {
+            label: 'Failed',
+            value: Math.round(allTimeTotal - imagesGenerated30d),
+            status: (allTimeTotal - imagesGenerated30d) > 0 ? 'warning' as const : 'healthy' as const,
+            trend: { direction: (allTimeTotal - imagesGenerated30d) > 0 ? 'up' as const : 'flat' as const }
+          },
+          {
+            label: 'Success Rate',
+            value: imageGenData.metrics.successRate,
+            unit: '%',
+            status: getStatusFromRate(imageGenData.metrics.successRate),
+            trend: successRateTrend
+          },
+          { label: 'Total Times Run', value: allTimeTotal, status: 'healthy' as const },
+        ];
+
+        // Only add runtime metric if we have data
+        if (runtime !== null && runtime !== undefined) {
+          let runtimeDisplay: number;
+          let runtimeUnit: string;
+
+          if (runtime >= 60) {
+            runtimeDisplay = parseFloat((runtime / 60).toFixed(1));
+            runtimeUnit = 'min';
+          } else {
+            runtimeDisplay = parseFloat(runtime.toFixed(1));
+            runtimeUnit = 's';
+          }
+
+          metricsArray.push({
+            label: 'Avg Runtime',
+            value: runtimeDisplay,
+            unit: runtimeUnit,
+            status: 'healthy' as const
+          });
+        }
+
+        // Only add last run timestamp if we have data
+        if (lastRunTimestamp !== null && lastRunTimestamp !== undefined) {
+          const date = new Date(lastRunTimestamp);
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const month = monthNames[date.getMonth()];
+          const day = date.getDate();
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
+          const displayMinutes = minutes.toString().padStart(2, '0');
+
+          const lastRunDisplay = `${month} ${day}, ${displayHours}:${displayMinutes} ${ampm}`;
+
+          metricsArray.push({
+            label: 'Last Run',
+            value: lastRunDisplay,
+            status: 'healthy' as const
+          });
+        }
+
         newComponents.push({
           id: 'automation-image-generator',
           component: 'card_group' as const,
@@ -1131,14 +1299,11 @@ function DashboardWithAgent() {
           timestamp: new Date().toISOString(),
           props: {
             title: 'Image Generator',
-            status: getStatusFromRate(rate),
-            description: `Triggered on-demand to generate images via AI. ${total} executions in the last 24h with ${rate}% success rate.`,
-            metrics: [
-              { label: 'Successful', value: imageGenData.metrics.successful, status: 'healthy' as const },
-              { label: 'Failed', value: imageGenData.metrics.failed, status: imageGenData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
-              { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
-              { label: 'Total Runs', value: total, status: 'healthy' as const },
-            ],
+            subtitle: '(generates custom illustrations)',
+            status: getStatusFromRate(imageGenData.metrics.successRate),
+            insight: timeSavedInsight,
+            description: `Triggered on-demand to generate images via AI.`,
+            metrics: metricsArray,
           },
         });
       }

@@ -27,6 +27,7 @@ export interface A2UIComponentBase {
   source: string;  // Which agent/tool provided this
   priority: Priority;
   timestamp: string;
+  columnSpan?: number;  // Optional: span multiple columns in grid (1, 2, 3, etc.)
 }
 
 // Metric Card - displays a single value with context
@@ -47,6 +48,7 @@ export interface MetricCardComponent extends A2UIComponentBase {
     interpretation?: string;  // AI-generated explanation of the metric
     actionableInsights?: string[];  // AI-generated recommendations
     insightsLoading?: boolean;  // Show skeleton loader while fetching insights
+    metadata?: string;  // Additional small text metadata (e.g., "4 executions in last 24h")
     thresholds?: {
       warning?: number;
       critical?: number;
@@ -59,13 +61,19 @@ export interface CardGroupComponent extends A2UIComponentBase {
   component: 'card_group';
   props: {
     title: string;
+    subtitle?: string;  // Optional subtitle text (smaller, normal weight, displayed after title)
     icon?: string;  // Optional icon name
+    insight?: string;  // Optional prominent insight text (displayed before description)
     description?: string;  // Optional insight/description text
     metrics: Array<{
       label: string;
       value: number | string;
       unit?: string;
       status?: MetricStatus;
+      trend?: {
+        direction: 'up' | 'down' | 'flat';
+        value?: number;
+      };
     }>;
     status?: MetricStatus;  // Overall group status
   };

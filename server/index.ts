@@ -82,7 +82,17 @@ async function queryDatadog(query: string, from: number, to: number) {
     throw new Error(`Datadog API error: ${response.status} - ${error}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // Debug logging for runtime queries
+  if (query.includes('runtime_seconds')) {
+    console.log('[DEBUG] Runtime query:', query);
+    console.log('[DEBUG] From:', new Date(from * 1000).toISOString());
+    console.log('[DEBUG] To:', new Date(to * 1000).toISOString());
+    console.log('[DEBUG] Response:', JSON.stringify(data, null, 2));
+  }
+
+  return data;
 }
 
 /**
@@ -826,12 +836,23 @@ app.get('/api/metrics/n8n/gmail-filter', async (req, res) => {
     const from = now - parseTimeWindow(timeWindow);
 
     // Query for successful and failed executions
-    const successQuery = 'sum:gmail.filter_executions{status:success}.as_count()';
-    const failedQuery = 'sum:gmail.filter_executions{status:failure}.as_count()';
+    const successQuery = 'sum:gmail_filter.executions{automation:gmail_filter,status:success}.as_count()';
+    const failedQuery = 'sum:gmail_filter.executions{automation:gmail_filter,status:failure}.as_count()';
+    const durationQuery = 'avg:gmail.filter_execution_time{*}';
+    const runtimeQuery = 'avg:gmail_filter.runtime_seconds{automation:gmail_filter}';
 
-    const [successData, failedData] = await Promise.all([
+    // Query all-time history (last 30 days as max for historical total)
+    const historicalFrom = now - (30 * 24 * 3600); // 30 days ago
+    const allTimeSuccessQuery = 'sum:gmail_filter.executions{automation:gmail_filter,status:success}.as_count()';
+    const allTimeFailedQuery = 'sum:gmail_filter.executions{automation:gmail_filter,status:failure}.as_count()';
+
+    const [successData, failedData, durationData, runtimeData, allTimeSuccessData, allTimeFailedData] = await Promise.all([
       queryDatadog(successQuery, from, now),
       queryDatadog(failedQuery, from, now),
+      queryDatadog(durationQuery, from, now).catch(() => null), // Optional metric
+      queryDatadog(runtimeQuery, from, now).catch(() => null), // Optional metric
+      queryDatadog(allTimeSuccessQuery, historicalFrom, now),
+      queryDatadog(allTimeFailedQuery, historicalFrom, now),
     ]);
 
     let successCount = 0;
@@ -848,7 +869,78 @@ app.get('/api/metrics/n8n/gmail-filter', async (req, res) => {
     }
 
     const totalCount = successCount + failedCount;
-    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
+    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 100;
+
+    // Query previous period for trend calculation
+    const periodLength = now - from;
+    const prevFrom = from - periodLength;
+    const prevTo = from;
+
+    const [prevSuccessData, prevFailedData] = await Promise.all([
+      queryDatadog(successQuery, prevFrom, prevTo),
+      queryDatadog(failedQuery, prevFrom, prevTo),
+    ]);
+
+    let prevSuccessCount = 0;
+    let prevFailedCount = 0;
+
+    if (prevSuccessData.series && prevSuccessData.series.length > 0) {
+      const points = prevSuccessData.series[0].pointlist || [];
+      prevSuccessCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (prevFailedData.series && prevFailedData.series.length > 0) {
+      const points = prevFailedData.series[0].pointlist || [];
+      prevFailedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const prevTotalCount = prevSuccessCount + prevFailedCount;
+    const prevSuccessRate = prevTotalCount > 0 ? (prevSuccessCount / prevTotalCount) * 100 : 100;
+
+    // Calculate trend
+    const trend = successRate - prevSuccessRate;
+    const trendDirection = trend > 1 ? 'up' : trend < -1 ? 'down' : 'flat';
+
+    // Calculate average execution duration
+    let avgDuration = null;
+    if (durationData && durationData.series && durationData.series.length > 0) {
+      const points = durationData.series[0].pointlist || [];
+      if (points.length > 0) {
+        const sum = points.reduce((acc: number, point: number[]) => acc + (point[1] || 0), 0);
+        avgDuration = parseFloat((sum / points.length).toFixed(2));
+      }
+    }
+
+    // Calculate average runtime and last execution timestamp
+    let avgRuntime = null;
+    let lastRunTimestamp = null;
+    if (runtimeData && runtimeData.series && runtimeData.series.length > 0) {
+      const points = runtimeData.series[0].pointlist || [];
+      if (points.length > 0) {
+        const sum = points.reduce((acc: number, point: number[]) => acc + (point[1] || 0), 0);
+        avgRuntime = parseFloat((sum / points.length).toFixed(2));
+
+        // Get the most recent timestamp (last point in the series)
+        const lastPoint = points[points.length - 1];
+        lastRunTimestamp = lastPoint[0]; // timestamp is in milliseconds
+      }
+    }
+
+    // Calculate all-time historical total
+    let allTimeSuccessCount = 0;
+    let allTimeFailedCount = 0;
+
+    if (allTimeSuccessData && allTimeSuccessData.series && allTimeSuccessData.series.length > 0) {
+      const points = allTimeSuccessData.series[0].pointlist || [];
+      allTimeSuccessCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (allTimeFailedData && allTimeFailedData.series && allTimeFailedData.series.length > 0) {
+      const points = allTimeFailedData.series[0].pointlist || [];
+      allTimeFailedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const allTimeTotal = Math.round(allTimeSuccessCount + allTimeFailedCount);
 
     res.json({
       workflow: 'gmail_filter',
@@ -857,6 +949,16 @@ app.get('/api/metrics/n8n/gmail-filter', async (req, res) => {
         successful: Math.round(successCount),
         failed: Math.round(failedCount),
         successRate: parseFloat(successRate.toFixed(1)),
+        totalExecutions: Math.round(totalCount),
+        allTimeTotal,
+        avgDuration,
+        avgRuntime,
+        lastRunTimestamp,
+        trend: {
+          direction: trendDirection,
+          value: parseFloat(Math.abs(trend).toFixed(1)),
+          period: `vs prev ${timeWindow}`,
+        },
       },
       status: failedCount > 0 ? 'warning' : 'healthy',
       queriedAt: new Date().toISOString(),
@@ -875,10 +977,21 @@ app.get('/api/metrics/n8n/image-generator', async (req, res) => {
 
     const successQuery = 'sum:image_generator.executions{status:success}.as_count()';
     const failedQuery = 'sum:image_generator.executions{status:failure}.as_count()';
+    const durationQuery = 'avg:image_generator.execution_time{*}';
+    const runtimeQuery = 'avg:image_generator.runtime_seconds{*}';
 
-    const [successData, failedData] = await Promise.all([
+    // Query all-time history (last 30 days as max for historical total)
+    const historicalFrom = now - (30 * 24 * 3600); // 30 days ago
+    const allTimeSuccessQuery = 'sum:image_generator.executions{status:success}.as_count()';
+    const allTimeFailedQuery = 'sum:image_generator.executions{status:failure}.as_count()';
+
+    const [successData, failedData, durationData, runtimeData, allTimeSuccessData, allTimeFailedData] = await Promise.all([
       queryDatadog(successQuery, from, now),
       queryDatadog(failedQuery, from, now),
+      queryDatadog(durationQuery, from, now).catch(() => null), // Optional metric
+      queryDatadog(runtimeQuery, from, now).catch(() => null), // Optional metric
+      queryDatadog(allTimeSuccessQuery, historicalFrom, now),
+      queryDatadog(allTimeFailedQuery, historicalFrom, now),
     ]);
 
     let successCount = 0;
@@ -895,7 +1008,78 @@ app.get('/api/metrics/n8n/image-generator', async (req, res) => {
     }
 
     const totalCount = successCount + failedCount;
-    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
+    const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 100;
+
+    // Query previous period for trend calculation
+    const periodLength = now - from;
+    const prevFrom = from - periodLength;
+    const prevTo = from;
+
+    const [prevSuccessData, prevFailedData] = await Promise.all([
+      queryDatadog(successQuery, prevFrom, prevTo),
+      queryDatadog(failedQuery, prevFrom, prevTo),
+    ]);
+
+    let prevSuccessCount = 0;
+    let prevFailedCount = 0;
+
+    if (prevSuccessData.series && prevSuccessData.series.length > 0) {
+      const points = prevSuccessData.series[0].pointlist || [];
+      prevSuccessCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (prevFailedData.series && prevFailedData.series.length > 0) {
+      const points = prevFailedData.series[0].pointlist || [];
+      prevFailedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const prevTotalCount = prevSuccessCount + prevFailedCount;
+    const prevSuccessRate = prevTotalCount > 0 ? (prevSuccessCount / prevTotalCount) * 100 : 100;
+
+    // Calculate trend
+    const trend = successRate - prevSuccessRate;
+    const trendDirection = trend > 1 ? 'up' : trend < -1 ? 'down' : 'flat';
+
+    // Calculate average execution duration
+    let avgDuration = null;
+    if (durationData && durationData.series && durationData.series.length > 0) {
+      const points = durationData.series[0].pointlist || [];
+      if (points.length > 0) {
+        const sum = points.reduce((acc: number, point: number[]) => acc + (point[1] || 0), 0);
+        avgDuration = parseFloat((sum / points.length).toFixed(2));
+      }
+    }
+
+    // Calculate average runtime and last execution timestamp
+    let avgRuntime = null;
+    let lastRunTimestamp = null;
+    if (runtimeData && runtimeData.series && runtimeData.series.length > 0) {
+      const points = runtimeData.series[0].pointlist || [];
+      if (points.length > 0) {
+        const sum = points.reduce((acc: number, point: number[]) => acc + (point[1] || 0), 0);
+        avgRuntime = parseFloat((sum / points.length).toFixed(2));
+
+        // Get the most recent timestamp (last point in the series)
+        const lastPoint = points[points.length - 1];
+        lastRunTimestamp = lastPoint[0]; // timestamp is in milliseconds
+      }
+    }
+
+    // Calculate all-time historical total
+    let allTimeSuccessCount = 0;
+    let allTimeFailedCount = 0;
+
+    if (allTimeSuccessData && allTimeSuccessData.series && allTimeSuccessData.series.length > 0) {
+      const points = allTimeSuccessData.series[0].pointlist || [];
+      allTimeSuccessCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    if (allTimeFailedData && allTimeFailedData.series && allTimeFailedData.series.length > 0) {
+      const points = allTimeFailedData.series[0].pointlist || [];
+      allTimeFailedCount = points.reduce((sum: number, point: number[]) => sum + (point[1] || 0), 0);
+    }
+
+    const allTimeTotal = Math.round(allTimeSuccessCount + allTimeFailedCount);
 
     res.json({
       workflow: 'image_generator',
@@ -904,6 +1088,16 @@ app.get('/api/metrics/n8n/image-generator', async (req, res) => {
         successful: Math.round(successCount),
         failed: Math.round(failedCount),
         successRate: parseFloat(successRate.toFixed(1)),
+        totalExecutions: Math.round(totalCount),
+        allTimeTotal,
+        avgDuration,
+        avgRuntime,
+        lastRunTimestamp,
+        trend: {
+          direction: trendDirection,
+          value: parseFloat(Math.abs(trend).toFixed(1)),
+          period: `vs prev ${timeWindow}`,
+        },
       },
       status: failedCount > 0 ? 'warning' : 'healthy',
       queriedAt: new Date().toISOString(),
