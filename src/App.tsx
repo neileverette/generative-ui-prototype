@@ -648,6 +648,222 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to get automation count
+  useCopilotAction({
+    name: 'getAutomationCount',
+    description: 'Get the total number of automations/workflows configured. Use this when the user asks "how many automations do I have" or "how many workflows".',
+    parameters: [],
+    handler: async () => {
+      try {
+        // Fetch both workflows to count them
+        const [gmailResponse, imageGenResponse] = await Promise.all([
+          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        ]);
+
+        const gmailData = await gmailResponse.json();
+        const imageGenData = await imageGenResponse.json();
+
+        let count = 0;
+        const workflows = [];
+
+        if (!gmailData.error) {
+          count++;
+          workflows.push('Gmail Filter');
+        }
+        if (!imageGenData.error) {
+          count++;
+          workflows.push('Image Generator');
+        }
+
+        return `You have ${count} automation${count !== 1 ? 's' : ''}: ${workflows.join(', ')}`;
+      } catch (error) {
+        return `Failed to fetch automation count: ${error}`;
+      }
+    },
+  });
+
+  // Action to get total automation executions
+  useCopilotAction({
+    name: 'getTotalAutomationExecutions',
+    description: 'Get the total number of times all automations have executed. Use this when the user asks "how many times have the automations executed" or "total automation runs".',
+    parameters: [],
+    handler: async () => {
+      try {
+        const [gmailResponse, imageGenResponse] = await Promise.all([
+          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        ]);
+
+        const gmailData = await gmailResponse.json();
+        const imageGenData = await imageGenResponse.json();
+
+        const gmailTotal = gmailData.metrics?.allTimeTotal || 0;
+        const imageGenTotal = imageGenData.metrics?.allTimeTotal || 0;
+        const totalExecutions = gmailTotal + imageGenTotal;
+
+        const breakdown = [];
+        if (gmailTotal > 0) breakdown.push(`Gmail Filter: ${gmailTotal}`);
+        if (imageGenTotal > 0) breakdown.push(`Image Generator: ${imageGenTotal}`);
+
+        return `Total automation executions (30-day window): ${totalExecutions}\n\nBreakdown:\n${breakdown.join('\n')}`;
+      } catch (error) {
+        return `Failed to fetch automation executions: ${error}`;
+      }
+    },
+  });
+
+  // Action to calculate time saved by automations
+  useCopilotAction({
+    name: 'getTimeSavedByAutomations',
+    description: 'Calculate the total time saved by all automations. Use this when the user asks "how much time have I saved with automation" or "time saved by workflows".',
+    parameters: [],
+    handler: async () => {
+      try {
+        const [gmailResponse, imageGenResponse] = await Promise.all([
+          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        ]);
+
+        const gmailData = await gmailResponse.json();
+        const imageGenData = await imageGenResponse.json();
+
+        // Gmail Filter: 30 seconds per execution
+        const gmailTotal = gmailData.metrics?.allTimeTotal || 0;
+        const gmailSeconds = gmailTotal * 30;
+
+        // Image Generator: 4 hours per successful execution
+        const imageGenTotal = imageGenData.metrics?.allTimeTotal || 0;
+        const imageGenSuccessRate = imageGenData.metrics?.successRate || 0;
+        const imageGenSuccessful = Math.round(imageGenTotal * (imageGenSuccessRate / 100));
+        const imageGenHours = imageGenSuccessful * 4;
+
+        // Convert Gmail seconds to hours
+        const gmailHours = gmailSeconds / 3600;
+        const totalHours = gmailHours + imageGenHours;
+        const totalDays = Math.floor(totalHours / 24);
+        const remainingHours = Math.round(totalHours % 24);
+
+        let timeString = '';
+        if (totalDays > 0) {
+          timeString = `${totalDays} day${totalDays !== 1 ? 's' : ''} ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
+        } else {
+          timeString = `${Math.round(totalHours)} hour${Math.round(totalHours) !== 1 ? 's' : ''}`;
+        }
+
+        return `Time saved by automations (30-day window): ${timeString}\n\nBreakdown:\n- Gmail Filter: ${Math.round(gmailHours)} hours (${gmailTotal} emails processed)\n- Image Generator: ${imageGenHours} hours (${imageGenSuccessful} images generated)`;
+      } catch (error) {
+        return `Failed to calculate time saved: ${error}`;
+      }
+    },
+  });
+
+  // Action to check for broken automations
+  useCopilotAction({
+    name: 'checkBrokenAutomations',
+    description: 'Check if any automations are broken or have failures. Use this when the user asks "do I have any broken automations" or "are any workflows failing".',
+    parameters: [],
+    handler: async () => {
+      try {
+        const [gmailResponse, imageGenResponse] = await Promise.all([
+          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        ]);
+
+        const gmailData = await gmailResponse.json();
+        const imageGenData = await imageGenResponse.json();
+
+        const issues = [];
+        const gmailFailed = gmailData.metrics?.failed || 0;
+        const gmailRate = gmailData.metrics?.successRate || 100;
+        const imageGenFailed = imageGenData.metrics?.failed || 0;
+        const imageGenRate = imageGenData.metrics?.successRate || 100;
+
+        if (gmailFailed > 0 || gmailRate < 95) {
+          issues.push(`⚠️ Gmail Filter: ${gmailFailed} failed executions, ${gmailRate}% success rate`);
+        }
+        if (imageGenFailed > 0 || imageGenRate < 95) {
+          issues.push(`⚠️ Image Generator: ${imageGenFailed} failed executions, ${imageGenRate}% success rate`);
+        }
+
+        if (issues.length === 0) {
+          return '✅ All automations are running smoothly with no failures!';
+        } else {
+          return `Found ${issues.length} automation${issues.length !== 1 ? 's' : ''} with issues:\n\n${issues.join('\n')}`;
+        }
+      } catch (error) {
+        return `Failed to check automation status: ${error}`;
+      }
+    },
+  });
+
+  // Action to get next scheduled automation
+  useCopilotAction({
+    name: 'getNextScheduledAutomation',
+    description: 'Get information about the next scheduled automation. Use this when the user asks "when is the next automation scheduled" or "next workflow run".',
+    parameters: [],
+    handler: async () => {
+      try {
+        const [gmailResponse, imageGenResponse] = await Promise.all([
+          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
+          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        ]);
+
+        const gmailData = await gmailResponse.json();
+        const imageGenData = await imageGenResponse.json();
+
+        const schedules = [];
+
+        // Gmail Filter runs every 5 minutes
+        if (!gmailData.error && gmailData.metrics?.lastRunTimestamp) {
+          const lastRun = new Date(gmailData.metrics.lastRunTimestamp);
+          const nextRun = new Date(lastRun.getTime() + 5 * 60 * 1000);
+          const now = new Date();
+          const minutesUntil = Math.max(0, Math.round((nextRun.getTime() - now.getTime()) / 60000));
+
+          schedules.push({
+            name: 'Gmail Filter',
+            schedule: 'Every 5 minutes',
+            nextRun: nextRun,
+            minutesUntil: minutesUntil,
+          });
+        }
+
+        // Image Generator is triggered on-demand
+        if (!imageGenData.error) {
+          schedules.push({
+            name: 'Image Generator',
+            schedule: 'On-demand (webhook triggered)',
+            nextRun: null,
+            minutesUntil: null,
+          });
+        }
+
+        if (schedules.length === 0) {
+          return 'No automation schedule information available.';
+        }
+
+        let response = 'Automation Schedules:\n\n';
+        schedules.forEach(sched => {
+          if (sched.nextRun) {
+            const time = sched.nextRun.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+            response += `📅 ${sched.name}\n   Schedule: ${sched.schedule}\n   Next run: ${time} (in ${sched.minutesUntil} minute${sched.minutesUntil !== 1 ? 's' : ''})\n\n`;
+          } else {
+            response += `📅 ${sched.name}\n   Schedule: ${sched.schedule}\n\n`;
+          }
+        });
+
+        return response;
+      } catch (error) {
+        return `Failed to fetch automation schedules: ${error}`;
+      }
+    },
+  });
+
   // Action to query the LangFlow Datadog Agent
   useCopilotAction({
     name: 'queryDatadogAgent',
