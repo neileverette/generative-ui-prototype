@@ -1,5 +1,6 @@
 import { DashboardState, A2UIComponent } from '../types/a2ui';
 import { MetricCard } from './a2ui/MetricCard';
+import { CardGroup } from './a2ui/CardGroup';
 import { DataTable } from './a2ui/DataTable';
 import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
@@ -52,6 +53,7 @@ interface DashboardCanvasProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   metric_card: MetricCard,
+  card_group: CardGroup,
   data_table: DataTable,
   alert_list: AlertList,
   status_indicator: StatusIndicator,
@@ -60,7 +62,7 @@ const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
 
 function renderComponent(component: A2UIComponent, index: number) {
   const Component = COMPONENT_REGISTRY[component.component];
-  
+
   if (!Component) {
     console.warn(`Unknown component type: ${component.component}`);
     return null;
@@ -69,10 +71,10 @@ function renderComponent(component: A2UIComponent, index: number) {
   return (
     <div
       key={component.id || index}
-      className="animate-slide-up"
+      className="animate-slide-up h-full"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <Component component={component} />
+      <Component component={component} className="h-full" />
     </div>
   );
 }
@@ -196,6 +198,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     !featuredIds.includes(c.id)
   );
 
+  // Card groups get their own 2-column layout (automations, container groups)
+  const cardGroupComponents = components.filter(c =>
+    c.component === 'card_group' && !featuredIds.includes(c.id)
+  );
+
   // Large components (data_table, alert_list) - excluding featured
   const largeComponents = components.filter(c =>
     ['data_table', 'alert_list'].includes(c.component) &&
@@ -229,10 +236,25 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         </div>
       )}
 
-      {/* Small components grid */}
+      {/* Card groups - 2 column layout (automations, container groups) */}
+      {cardGroupComponents.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {cardGroupComponents.map((component, index) => (
+            <div key={component.id || index}>
+              {renderComponent(component, featuredComponents.length + index)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Small components grid - equal height per row */}
       {smallComponents.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {smallComponents.map((component, index) => renderComponent(component, featuredComponents.length + index))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+          {smallComponents.map((component, index) => (
+            <div key={component.id || index}>
+              {renderComponent(component, featuredComponents.length + cardGroupComponents.length + index)}
+            </div>
+          ))}
         </div>
       )}
 
@@ -240,7 +262,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       {largeComponents.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {largeComponents.map((component, index) =>
-            renderComponent(component, featuredComponents.length + smallComponents.length + index)
+            renderComponent(component, featuredComponents.length + cardGroupComponents.length + smallComponents.length + index)
           )}
         </div>
       )}

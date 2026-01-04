@@ -574,13 +574,20 @@ app.get('/api/metrics/interpretations', async (req, res) => {
     }
 
     // Ask LangFlow for interpretations of all system metrics
-    const query = `Query Datadog for CPU, Memory, Load, and Disk metrics. For each metric, provide a single concise sentence describing its current state and health.
+    const query = `Query Datadog for system infrastructure metrics. For each metric category, provide a single concise sentence describing its current state.
 
 Format your response exactly like this (no numbers, no bullet points):
-CPU: [one sentence about current CPU state]
+Uptime: [one sentence about system uptime/stability]
+CPU: [one sentence about CPU usage]
+CPUIdle: [one sentence about CPU headroom/availability]
 Memory: [one sentence about memory health]
 Load: [one sentence about load average]
 Disk: [one sentence about disk usage]
+IOWait: [one sentence about disk I/O wait]
+NetworkIn: [one sentence about incoming network traffic]
+NetworkOut: [one sentence about outgoing network traffic]
+Swap: [one sentence about swap usage]
+NetworkErrors: [one sentence about network errors]
 
 (Use time range: from=${from} to=${now}, which is the last ${timeWindow})`;
 
@@ -619,28 +626,26 @@ Disk: [one sentence about disk usage]
         .trim();
     };
 
-    // Extract CPU interpretation (format: "CPU: sentence")
-    const cpuMatch = message.match(/CPU:?\s*([^\n]+)/i);
-    if (cpuMatch) {
-      interpretations['cpu_total'] = { interpretation: cleanText(cpuMatch[1]) };
-    }
+    // Map of response keys to metric IDs
+    const metricMappings: Array<{ pattern: RegExp; metricId: string }> = [
+      { pattern: /Uptime:?\s*([^\n]+)/i, metricId: 'system_uptime' },
+      { pattern: /CPU:?\s*([^\n]+)/i, metricId: 'cpu_total' },
+      { pattern: /CPUIdle:?\s*([^\n]+)/i, metricId: 'cpu_idle' },
+      { pattern: /Memory:?\s*([^\n]+)/i, metricId: 'memory_used_percent' },
+      { pattern: /Load:?\s*([^\n]+)/i, metricId: 'load_1min' },
+      { pattern: /Disk:?\s*([^\n]+)/i, metricId: 'disk_used_percent' },
+      { pattern: /IOWait:?\s*([^\n]+)/i, metricId: 'cpu_iowait' },
+      { pattern: /NetworkIn:?\s*([^\n]+)/i, metricId: 'network_bytes_recv' },
+      { pattern: /NetworkOut:?\s*([^\n]+)/i, metricId: 'network_bytes_sent' },
+      { pattern: /Swap:?\s*([^\n]+)/i, metricId: 'swap_used_percent' },
+      { pattern: /NetworkErrors:?\s*([^\n]+)/i, metricId: 'network_errors' },
+    ];
 
-    // Extract Memory interpretation
-    const memMatch = message.match(/Memory:?\s*([^\n]+)/i);
-    if (memMatch) {
-      interpretations['memory_used_percent'] = { interpretation: cleanText(memMatch[1]) };
-    }
-
-    // Extract Load interpretation
-    const loadMatch = message.match(/Load:?\s*([^\n]+)/i);
-    if (loadMatch) {
-      interpretations['load_1min'] = { interpretation: cleanText(loadMatch[1]) };
-    }
-
-    // Extract Disk interpretation
-    const diskMatch = message.match(/Disk:?\s*([^\n]+)/i);
-    if (diskMatch) {
-      interpretations['disk_used_percent'] = { interpretation: cleanText(diskMatch[1]) };
+    for (const { pattern, metricId } of metricMappings) {
+      const match = message.match(pattern);
+      if (match) {
+        interpretations[metricId] = { interpretation: cleanText(match[1]) };
+      }
     }
 
     res.json({

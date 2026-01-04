@@ -138,6 +138,99 @@ export const METRICS_CONFIG: MetricDefinition[] = [
     critical: 95,
     description: 'Percentage of disk space in use. Healthy: <80%, Warning: 80-95%, Critical: >95%'
   },
+  {
+    id: 'system_uptime',
+    displayName: 'System Uptime',
+    query: `avg:system.uptime{host:${DEFAULT_HOST}}`,
+    unit: 'seconds',
+    category: 'system',
+    keywords: ['uptime', 'running', 'up time', 'online'],
+    description: 'How long the system has been running since last boot'
+  },
+  {
+    id: 'cpu_idle',
+    displayName: 'CPU Idle',
+    query: `avg:system.cpu.idle{host:${DEFAULT_HOST}}`,
+    unit: '%',
+    category: 'system',
+    keywords: ['cpu idle', 'cpu free', 'cpu available', 'headroom'],
+    warning: 30,  // Warning when idle drops below 30%
+    critical: 10, // Critical when idle drops below 10%
+    description: 'CPU idle percentage - indicates available headroom. Healthy: >50%, Warning: 10-30%, Critical: <10%'
+  },
+  {
+    id: 'cpu_iowait',
+    displayName: 'Disk I/O Wait',
+    query: `avg:system.cpu.iowait{host:${DEFAULT_HOST}}`,
+    unit: '%',
+    category: 'system',
+    keywords: ['iowait', 'io wait', 'disk wait', 'disk bottleneck', 'io'],
+    warning: 10,
+    critical: 25,
+    description: 'CPU time waiting for I/O operations. High values indicate disk bottleneck. Healthy: <5%, Warning: 10-25%, Critical: >25%'
+  },
+  {
+    id: 'network_bytes_sent',
+    displayName: 'Network Out',
+    query: `avg:system.net.bytes_sent{host:${DEFAULT_HOST}}`,
+    unit: 'B/s',
+    category: 'system',
+    keywords: ['network out', 'bytes sent', 'upload', 'egress'],
+    description: 'Network bytes sent per second'
+  },
+  {
+    id: 'network_bytes_recv',
+    displayName: 'Network In',
+    query: `avg:system.net.bytes_rcvd{host:${DEFAULT_HOST}}`,
+    unit: 'B/s',
+    category: 'system',
+    keywords: ['network in', 'bytes received', 'download', 'ingress'],
+    description: 'Network bytes received per second'
+  },
+  {
+    id: 'swap_used_percent',
+    displayName: 'Swap Usage',
+    query: `100 - avg:system.swap.pct_free{host:${DEFAULT_HOST}}`,
+    unit: '%',
+    category: 'system',
+    keywords: ['swap', 'swap usage', 'virtual memory'],
+    warning: 20,
+    critical: 50,
+    description: 'Swap space in use. Any swap usage indicates RAM pressure. Healthy: 0%, Warning: >20%, Critical: >50%'
+  },
+  {
+    id: 'process_count',
+    displayName: 'Processes',
+    query: `avg:system.processes.number{host:${DEFAULT_HOST}}`,
+    unit: '',
+    category: 'system',
+    keywords: ['processes', 'process count', 'running processes'],
+    warning: 300,
+    critical: 500,
+    description: 'Total number of running processes'
+  },
+  {
+    id: 'open_files',
+    displayName: 'Open File Handles',
+    query: `avg:system.fs.file_handles.used{host:${DEFAULT_HOST}}`,
+    unit: '',
+    category: 'system',
+    keywords: ['file handles', 'open files', 'file descriptors', 'fd'],
+    warning: 10000,
+    critical: 50000,
+    description: 'Number of open file descriptors. Can hit limits and cause failures if too high.'
+  },
+  {
+    id: 'network_errors',
+    displayName: 'Network Errors',
+    query: `avg:system.net.packets_in.error{host:${DEFAULT_HOST}} + avg:system.net.packets_out.error{host:${DEFAULT_HOST}}`,
+    unit: '/s',
+    category: 'system',
+    keywords: ['network errors', 'packet errors', 'dropped packets'],
+    warning: 1,
+    critical: 10,
+    description: 'Network packet errors (in + out). Any errors indicate connectivity issues.'
+  },
 
   // ============================================
   // DOCKER CONTAINER METRICS
@@ -238,10 +331,29 @@ export function findMetricsByKeywords(query: string): MetricDefinition[] {
 
 /**
  * Get all system overview metrics (for dashboard)
+ * Tier 1: Uptime, Container Count, CPU Idle, Network I/O, Disk I/O Wait
+ * Tier 2: Swap, Container Status, Process Count, Open FDs, Network Errors
  */
 export function getSystemOverviewMetrics(): MetricDefinition[] {
   return METRICS_CONFIG.filter(m =>
-    ['cpu_total', 'memory_used_percent', 'load_1min', 'disk_used_percent'].includes(m.id)
+    [
+      // Core metrics
+      'system_uptime',
+      'cpu_total',
+      'cpu_idle',
+      'memory_used_percent',
+      'load_1min',
+      'disk_used_percent',
+      // Tier 1 additions
+      'cpu_iowait',
+      'network_bytes_sent',
+      'network_bytes_recv',
+      // Tier 2 additions
+      'swap_used_percent',
+      'process_count',
+      'open_files',
+      'network_errors',
+    ].includes(m.id)
   );
 }
 

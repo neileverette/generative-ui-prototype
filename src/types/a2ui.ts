@@ -11,6 +11,7 @@ export type Priority = 'critical' | 'high' | 'medium' | 'low';
 // Supported component types
 export type ComponentType =
   | 'metric_card'
+  | 'card_group'
   | 'data_table'
   | 'alert_list'
   | 'status_indicator'
@@ -35,6 +36,7 @@ export interface MetricCardComponent extends A2UIComponentBase {
     title: string;
     value: number | string;
     unit?: string;
+    size?: 'default' | 'large' | 'xl';  // Size of the value display
     change?: {
       value: number;
       direction: 'up' | 'down' | 'flat';
@@ -49,6 +51,23 @@ export interface MetricCardComponent extends A2UIComponentBase {
       warning?: number;
       critical?: number;
     };
+  };
+}
+
+// Card Group - clusters related metric cards together
+export interface CardGroupComponent extends A2UIComponentBase {
+  component: 'card_group';
+  props: {
+    title: string;
+    icon?: string;  // Optional icon name
+    description?: string;  // Optional insight/description text
+    metrics: Array<{
+      label: string;
+      value: number | string;
+      unit?: string;
+      status?: MetricStatus;
+    }>;
+    status?: MetricStatus;  // Overall group status
   };
 }
 
@@ -111,6 +130,7 @@ export interface ProgressBarComponent extends A2UIComponentBase {
 // Union type for all components
 export type A2UIComponent =
   | MetricCardComponent
+  | CardGroupComponent
   | DataTableComponent
   | AlertListComponent
   | StatusIndicatorComponent

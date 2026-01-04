@@ -172,6 +172,24 @@ function DashboardWithAgent() {
     },
   });
 
+  // Helper to format uptime from seconds
+  const formatUptime = (seconds: number): string => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
+
+  // Helper to format bytes to human readable
+  const formatBytes = (bytes: number): { value: number; unit: string } => {
+    if (bytes >= 1e9) return { value: parseFloat((bytes / 1e9).toFixed(1)), unit: 'GB/s' };
+    if (bytes >= 1e6) return { value: parseFloat((bytes / 1e6).toFixed(1)), unit: 'MB/s' };
+    if (bytes >= 1e3) return { value: parseFloat((bytes / 1e3).toFixed(1)), unit: 'KB/s' };
+    return { value: Math.round(bytes), unit: 'B/s' };
+  };
+
   // Action to fetch real metrics from Datadog and display them
   useCopilotAction({
     name: 'fetchSystemMetrics',
@@ -186,29 +204,55 @@ function DashboardWithAgent() {
           return `Error fetching metrics: ${data.error}`;
         }
 
-        // Convert metrics to A2UI components with stable IDs (no timestamp)
-        const newComponents: A2UIComponent[] = data.metrics.map((metric: {
-          metric: string;
-          displayName: string;
-          currentValue: number;
-          unit: string;
-          status: string;
-          change?: { value: number; direction: 'up' | 'down' | 'flat'; period: string };
-        }) => ({
-          id: `system-metric-${metric.metric}`,
-          component: 'metric_card' as const,
-          source: 'datadog',
-          priority: metric.status === 'critical' ? 'critical' : metric.status === 'warning' ? 'high' : 'medium',
-          timestamp: new Date().toISOString(),
-          props: {
-            title: metric.displayName,
-            value: metric.currentValue,
-            unit: metric.unit,
-            status: metric.status as 'healthy' | 'warning' | 'critical',
-            description: `Current ${metric.displayName.toLowerCase()}`,
-            change: metric.change,
-          },
-        }));
+        // Convert metrics to A2UI components with stable IDs (skip metrics with no data)
+        const newComponents: A2UIComponent[] = data.metrics
+          .filter((metric: { currentValue: number | null }) => metric.currentValue !== null)
+          .map((metric: {
+            metric: string;
+            displayName: string;
+            currentValue: number;
+            unit: string;
+            status: string;
+            change?: { value: number; direction: 'up' | 'down' | 'flat'; period: string };
+          }) => {
+            let displayValue: number | string = metric.currentValue;
+            let displayUnit = metric.unit;
+
+            // Format uptime specially
+            if (metric.metric === 'system_uptime' && metric.currentValue) {
+              displayValue = formatUptime(metric.currentValue);
+              displayUnit = '';
+            }
+            // Format network bytes
+            else if ((metric.metric === 'network_bytes_sent' || metric.metric === 'network_bytes_recv') && metric.currentValue) {
+              const formatted = formatBytes(metric.currentValue);
+              displayValue = formatted.value;
+              displayUnit = formatted.unit;
+            }
+            // For CPU Idle, invert the status logic (lower is worse)
+            let status = metric.status as 'healthy' | 'warning' | 'critical' | 'unknown';
+            if (metric.metric === 'cpu_idle' && metric.currentValue !== null) {
+              if (metric.currentValue < 10) status = 'critical';
+              else if (metric.currentValue < 30) status = 'warning';
+              else status = 'healthy';
+            }
+
+            return {
+              id: `system-metric-${metric.metric}`,
+              component: 'metric_card' as const,
+              source: 'datadog',
+              priority: status === 'critical' ? 'critical' : status === 'warning' ? 'high' : 'medium',
+              timestamp: new Date().toISOString(),
+              props: {
+                title: metric.displayName,
+                value: displayValue,
+                unit: displayUnit,
+                status,
+                description: `Current ${metric.displayName.toLowerCase()}`,
+                change: metric.change,
+              },
+            };
+          });
 
         setDashboardState(prev => {
           // Remove existing system metrics to avoid duplicates, keep other components
@@ -712,8 +756,9 @@ function DashboardWithAgent() {
             title: 'Running Containers',
             value: countData.currentValue ?? containersData.count,
             unit: '',
+            size: 'xl' as const,  // Large featured number
             status: 'healthy' as const,
-            description: 'Total active containers',
+            description: `Docker containers currently running across your infrastructure.`,
             insightsLoading: true,  // Show skeleton while loading insights
           },
         });
@@ -766,45 +811,47 @@ function DashboardWithAgent() {
         });
       }
 
-      // Add individual container metric cards for CPU and memory
+      // Add container groups - each container gets a card with CPU and Memory
       containersData.containers.forEach((container: { name: string; memory: number | null; cpu: number | null }) => {
-        // CPU card for each container
-        if (container.cpu !== null) {
-          const cpuStatus = container.cpu >= 80 ? 'critical' : container.cpu >= 50 ? 'warning' : 'healthy';
-          newComponents.push({
-            id: `container-${container.name}-cpu`,
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: cpuStatus === 'critical' ? 'critical' : cpuStatus === 'warning' ? 'high' : 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: `${container.name} CPU`,
-              value: container.cpu,
-              unit: '%',
-              status: cpuStatus as 'healthy' | 'warning' | 'critical',
-              description: `CPU usage for ${container.name}`,
-            },
-          });
-        }
+        const cpuStatus = container.cpu !== null
+          ? (container.cpu >= 80 ? 'critical' : container.cpu >= 50 ? 'warning' : 'healthy')
+          : 'unknown';
+        const memStatus = container.memory !== null
+          ? (container.memory >= 1024 ? 'warning' : 'healthy')
+          : 'unknown';
 
-        // Memory card for each container
-        if (container.memory !== null) {
-          const memStatus = container.memory >= 1024 ? 'warning' : 'healthy';
-          newComponents.push({
-            id: `container-${container.name}-memory`,
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: memStatus === 'warning' ? 'high' : 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: `${container.name} Memory`,
-              value: container.memory,
-              unit: 'MiB',
-              status: memStatus as 'healthy' | 'warning',
-              description: `Memory usage for ${container.name}`,
-            },
-          });
-        }
+        // Overall status is the worst of CPU or Memory
+        const overallStatus = cpuStatus === 'critical' || memStatus === 'critical'
+          ? 'critical'
+          : cpuStatus === 'warning' || memStatus === 'warning'
+            ? 'warning'
+            : 'healthy';
+
+        newComponents.push({
+          id: `container-group-${container.name}`,
+          component: 'card_group' as const,
+          source: 'datadog',
+          priority: overallStatus === 'critical' ? 'critical' : overallStatus === 'warning' ? 'high' : 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: container.name,
+            status: overallStatus as 'healthy' | 'warning' | 'critical',
+            metrics: [
+              {
+                label: 'CPU',
+                value: container.cpu ?? 'N/A',
+                unit: container.cpu !== null ? '%' : '',
+                status: cpuStatus as 'healthy' | 'warning' | 'critical' | 'unknown',
+              },
+              {
+                label: 'Memory',
+                value: container.memory ?? 'N/A',
+                unit: container.memory !== null ? 'MiB' : '',
+                status: memStatus as 'healthy' | 'warning' | 'unknown',
+              },
+            ],
+          },
+        });
       });
 
       // Add the containers table
@@ -898,62 +945,64 @@ function DashboardWithAgent() {
   // Handler for System & Infrastructure (combines system metrics + uptime)
   const handleFetchSystemInfrastructure = useCallback(async () => {
     try {
-      // Fetch both system metrics and uptime in parallel (FAST)
-      const [metricsResponse, uptimeResponse] = await Promise.all([
-        fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`),
-        fetch(`/api/metrics/uptime?timeWindow=${timeWindow}`),
-      ]);
-
+      // Fetch system metrics (FAST) - uptime is now included in overview
+      const metricsResponse = await fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`);
       const metricsData = await metricsResponse.json();
-      const uptimeData = await uptimeResponse.json();
 
       const newComponents: A2UIComponent[] = [];
 
-      // Add uptime first
-      if (!uptimeData.error || uptimeData.currentValue) {
-        newComponents.push({
-          id: 'system-uptime',
-          component: 'metric_card' as const,
-          source: 'datadog',
-          priority: 'low',
-          timestamp: new Date().toISOString(),
-          props: {
-            title: uptimeData.displayName,
-            value: uptimeData.currentValue,
-            unit: uptimeData.unit,
-            status: uptimeData.status as 'healthy' | 'warning' | 'critical' | 'unknown',
-            description: 'Time since last system restart',
-          },
-        });
-      }
-
-      // Add system metrics with loading state for insights
+      // Add system metrics with loading state for insights (skip metrics with no data)
       if (!metricsData.error) {
-        metricsData.metrics.forEach((metric: {
-          metric: string;
-          displayName: string;
-          currentValue: number;
-          unit: string;
-          status: string;
-          change?: { value: number; direction: 'up' | 'down' | 'flat'; period: string };
-        }) => {
-          newComponents.push({
-            id: `system-metric-${metric.metric}`,
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: metric.status === 'critical' ? 'critical' : metric.status === 'warning' ? 'high' : 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: metric.displayName,
-              value: metric.currentValue,
-              unit: metric.unit,
-              status: metric.status as 'healthy' | 'warning' | 'critical',
-              description: `Current ${metric.displayName.toLowerCase()}`,
-              change: metric.change,
-              insightsLoading: true,  // Show skeleton while loading insights
-            },
+        metricsData.metrics
+          .filter((metric: { currentValue: number | null }) => metric.currentValue !== null)
+          .forEach((metric: {
+            metric: string;
+            displayName: string;
+            currentValue: number;
+            unit: string;
+            status: string;
+            change?: { value: number; direction: 'up' | 'down' | 'flat'; period: string };
+          }) => {
+            let displayValue: number | string = metric.currentValue;
+            let displayUnit = metric.unit;
+
+            // Format uptime specially
+            if (metric.metric === 'system_uptime' && metric.currentValue) {
+              displayValue = formatUptime(metric.currentValue);
+              displayUnit = '';
+            }
+            // Format network bytes
+            else if ((metric.metric === 'network_bytes_sent' || metric.metric === 'network_bytes_recv') && metric.currentValue) {
+              const formatted = formatBytes(metric.currentValue);
+              displayValue = formatted.value;
+              displayUnit = formatted.unit;
+            }
+
+            // For CPU Idle, invert the status logic (lower is worse)
+            let status = metric.status as 'healthy' | 'warning' | 'critical' | 'unknown';
+            if (metric.metric === 'cpu_idle' && metric.currentValue !== null) {
+              if (metric.currentValue < 10) status = 'critical';
+              else if (metric.currentValue < 30) status = 'warning';
+              else status = 'healthy';
+            }
+
+            newComponents.push({
+              id: `system-metric-${metric.metric}`,
+              component: 'metric_card' as const,
+              source: 'datadog',
+              priority: status === 'critical' ? 'critical' : status === 'warning' ? 'high' : 'medium',
+              timestamp: new Date().toISOString(),
+              props: {
+                title: metric.displayName,
+                value: displayValue,
+                unit: displayUnit,
+                status,
+                description: `Current ${metric.displayName.toLowerCase()}`,
+                change: metric.change,
+                insightsLoading: true,  // Show skeleton while loading insights
+              },
+            });
           });
-        });
       }
 
       // Show metrics immediately (fast)
@@ -1039,106 +1088,65 @@ function DashboardWithAgent() {
 
       const newComponents: A2UIComponent[] = [];
 
-      // Add Gmail Filter metrics
+      // Helper to determine status from success rate
+      const getStatusFromRate = (rate: number): 'healthy' | 'warning' | 'critical' => {
+        if (rate >= 95) return 'healthy';
+        if (rate >= 80) return 'warning';
+        return 'critical';
+      };
+
+      // Add Gmail Filter as CardGroup
       if (!gmailData.error) {
-        newComponents.push(
-          {
-            id: 'gmail-filter-success',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Gmail Filter: Successful',
-              value: gmailData.metrics.successful,
-              unit: '',
-              status: 'healthy' as const,
-              description: 'Successful executions (24h)',
-            },
+        const total = gmailData.metrics.successful + gmailData.metrics.failed;
+        const rate = gmailData.metrics.successRate;
+        newComponents.push({
+          id: 'automation-gmail-filter',
+          component: 'card_group' as const,
+          source: 'datadog',
+          priority: gmailData.metrics.failed > 0 ? 'high' : 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: 'Gmail Filter',
+            status: getStatusFromRate(rate),
+            description: `Runs every 5 minutes to filter incoming emails. ${total} executions in the last 24h with ${rate}% success rate.`,
+            metrics: [
+              { label: 'Successful', value: gmailData.metrics.successful, status: 'healthy' as const },
+              { label: 'Failed', value: gmailData.metrics.failed, status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
+              { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
+              { label: 'Total Runs', value: total, status: 'healthy' as const },
+            ],
           },
-          {
-            id: 'gmail-filter-failed',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: gmailData.metrics.failed > 0 ? 'high' : 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Gmail Filter: Failed',
-              value: gmailData.metrics.failed,
-              unit: '',
-              status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
-              description: 'Failed executions (24h)',
-            },
-          },
-          {
-            id: 'gmail-filter-rate',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Gmail Filter: Success Rate',
-              value: gmailData.metrics.successRate,
-              unit: '%',
-              status: gmailData.metrics.successRate >= 95 ? 'healthy' as const : gmailData.metrics.successRate >= 80 ? 'warning' as const : 'critical' as const,
-              description: 'Success rate (24h)',
-            },
-          }
-        );
+        });
       }
 
-      // Add Image Generator metrics
+      // Add Image Generator as CardGroup
       if (!imageGenData.error) {
-        newComponents.push(
-          {
-            id: 'image-gen-success',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Image Generator: Successful',
-              value: imageGenData.metrics.successful,
-              unit: '',
-              status: 'healthy' as const,
-              description: 'Successful executions (24h)',
-            },
+        const total = imageGenData.metrics.successful + imageGenData.metrics.failed;
+        const rate = imageGenData.metrics.successRate;
+        newComponents.push({
+          id: 'automation-image-generator',
+          component: 'card_group' as const,
+          source: 'datadog',
+          priority: imageGenData.metrics.failed > 0 ? 'high' : 'medium',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: 'Image Generator',
+            status: getStatusFromRate(rate),
+            description: `Triggered on-demand to generate images via AI. ${total} executions in the last 24h with ${rate}% success rate.`,
+            metrics: [
+              { label: 'Successful', value: imageGenData.metrics.successful, status: 'healthy' as const },
+              { label: 'Failed', value: imageGenData.metrics.failed, status: imageGenData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
+              { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
+              { label: 'Total Runs', value: total, status: 'healthy' as const },
+            ],
           },
-          {
-            id: 'image-gen-failed',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: imageGenData.metrics.failed > 0 ? 'high' : 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Image Generator: Failed',
-              value: imageGenData.metrics.failed,
-              unit: '',
-              status: imageGenData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const,
-              description: 'Failed executions (24h)',
-            },
-          },
-          {
-            id: 'image-gen-rate',
-            component: 'metric_card' as const,
-            source: 'datadog',
-            priority: 'medium',
-            timestamp: new Date().toISOString(),
-            props: {
-              title: 'Image Generator: Success Rate',
-              value: imageGenData.metrics.successRate,
-              unit: '%',
-              status: imageGenData.metrics.successRate >= 95 ? 'healthy' as const : imageGenData.metrics.successRate >= 80 ? 'warning' as const : 'critical' as const,
-              description: 'Success rate (24h)',
-            },
-          }
-        );
+        });
       }
 
       setDashboardState({
         components: sortByPriority(newComponents),
         lastUpdated: new Date().toISOString(),
-        agentMessage: `Showing automation workflow metrics`,
+        agentMessage: `Showing ${newComponents.length} automation workflows`,
       });
       setLastAction('automations');
     } catch (error) {

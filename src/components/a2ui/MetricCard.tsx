@@ -41,12 +41,20 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
   },
 };
 
+// Size configuration for the value display
+const SIZE_CONFIG = {
+  default: { value: 'text-3xl', unit: 'text-lg' },
+  large: { value: 'text-5xl', unit: 'text-xl' },
+  xl: { value: 'text-7xl', unit: 'text-2xl' },
+};
+
 export function MetricCard({ component, className }: MetricCardProps) {
   const { props, priority } = component;
-  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading } = props;
+  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading, size = 'default' } = props;
 
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
+  const sizeConfig = SIZE_CONFIG[size];
 
   const isCritical = status === 'critical';
 
@@ -74,12 +82,12 @@ export function MetricCard({ component, className }: MetricCardProps) {
       </div>
 
       {/* Value */}
-      <div className="flex items-baseline gap-1.5 mb-2">
-        <span className="text-3xl font-bold text-text-primary">
+      <div className={`flex items-baseline gap-1.5 ${size === 'xl' ? 'mb-4 flex-1' : 'mb-2'}`}>
+        <span className={`${sizeConfig.value} font-bold text-text-primary`}>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {unit && (
-          <span className="text-lg text-text-muted">{unit}</span>
+          <span className={`${sizeConfig.unit} text-text-muted`}>{unit}</span>
         )}
       </div>
 
@@ -132,10 +140,10 @@ export function MetricCard({ component, className }: MetricCardProps) {
           </div>
         )}
 
-        {/* Legacy description (fallback) - only show if not loading and no other content */}
-        {!insightsLoading && !interpretation && !actionableInsights && description && (
-          <div className="pt-3">
-            <p className="text-xs text-text-muted line-clamp-2">{description}</p>
+        {/* Description - always show for xl size, otherwise only as fallback */}
+        {description && (size === 'xl' || (!insightsLoading && !interpretation && !actionableInsights)) && (
+          <div className={size === 'xl' ? 'mt-auto pt-3 border-t border-gray-100' : 'pt-3'}>
+            <p className={`${size === 'xl' ? 'text-sm text-text-secondary' : 'text-xs text-text-muted'} line-clamp-2`}>{description}</p>
           </div>
         )}
       </div>

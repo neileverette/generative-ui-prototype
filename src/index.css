@@ -233,3 +233,20 @@ div[class*="console-button"],
   padding: 12px 16px;
   justify-content: center;
 }
+
+/* Move CopilotKit floating button to bottom left */
+[class*="copilotKitButton"],
+[class*="CopilotKitButton"],
+button[aria-label*="Open chat"],
+button[aria-label*="chat"],
+[class*="copilotkit-button"],
+[role="button"][class*="copilot"],
+cpk-web-inspector {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 24px !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+}
