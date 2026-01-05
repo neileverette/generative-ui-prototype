@@ -1,6 +1,6 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 3,
+  "totalDeployments": 4,
   "deployments": [
     {
       "id": 1,
@@ -63,6 +63,20 @@
         }
       ],
       "notes": "Added deployment history panel showing version tags, dates, and commit summaries"
+    },
+    {
+      "id": 4,
+      "tag": "v1.2.1",
+      "name": "Layout Responsiveness Fix",
+      "date": "2026-01-05T22:30:00Z",
+      "summary": "Fix home screen tiles and deployments grid layout",
+      "commits": [
+        {
+          "hash": "52b64c6",
+          "message": "Fix home screen tile layout and deployments grid responsiveness"
+        }
+      ],
+      "notes": "Changed home screen to display 5 tiles in a row, improved deployments view to show metric card and table side-by-side"
     }
   ]
 }
