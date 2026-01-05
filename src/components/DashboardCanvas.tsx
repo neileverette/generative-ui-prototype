@@ -181,11 +181,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         </p>
 
         {/* Voice Content Area - switches between cards and voice overlay */}
-        <div className="relative w-full max-w-4xl min-h-[200px] flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-5xl min-h-[200px] flex flex-col items-center justify-center">
           {/* Shortcut Cards - Fade out during voice input */}
           {shortcuts && shortcuts.length > 0 && (
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full transition-all duration-300 ${
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 w-full transition-all duration-300 ${
                 isVoiceActive ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'
               }`}
             >
@@ -282,14 +282,14 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
           if (isDeploymentView) {
             // Deployment view: 1 column for card, 3 columns for table (1/4 + 3/4)
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">
                 {featuredComponents.map((component, index) => {
                   const Component = COMPONENT_REGISTRY[component.component];
                   const isTable = component.component === 'data_table';
                   return (
                     <div
                       key={component.id || index}
-                      className={`animate-slide-up h-full ${isTable ? 'lg:col-span-3' : ''}`}
+                      className={`animate-slide-up h-full ${isTable ? 'md:col-span-3' : ''}`}
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {Component ? <Component component={component} className="h-full" /> : null}
