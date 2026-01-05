@@ -105,6 +105,9 @@ const DEFAULT_COMMANDS: CommandAction[] = [
   { id: 'cpu-spike', label: 'What is causing high CPU usage?' },
   { id: 'restart-n8n', label: 'How do I restart the n8n container?' },
   { id: 'failed-workflows', label: 'Show me failed workflow executions' },
+  { id: 'show-deployments', label: 'Show deployments' },
+  { id: 'deployment-count', label: 'How many deployments do I have?' },
+  { id: 'last-deployment', label: 'When was my last deployment?' },
 ];
 
 export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput }: DashboardCanvasProps) {

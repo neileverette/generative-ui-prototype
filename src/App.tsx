@@ -1585,6 +1585,71 @@ function DashboardWithAgent() {
     setCurrentView('commands');
   }, []);
 
+  // Action to show deployments dashboard
+  useCopilotAction({
+    name: 'showDeployments',
+    description: 'Show the deployments dashboard with deployment history. Use this when the user asks to see deployments, show deployments, or view deployment history.',
+    parameters: [],
+    handler: async () => {
+      // Trigger the deployments view
+      const deployments = deploymentsData.deployments;
+
+      const deploymentsTable: A2UIComponent = {
+        id: 'deployments-table',
+        component: 'data_table' as const,
+        source: 'local',
+        priority: 'high',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: `Deployments (${deploymentsData.totalDeployments} total)`,
+          columns: [
+            { key: 'id', label: '#' },
+            { key: 'date', label: 'Date & Time' },
+            { key: 'summary', label: 'Summary' },
+            { key: 'commits', label: 'Commits' },
+          ],
+          rows: deployments.map((d) => ({
+            id: d.id,
+            date: new Date(d.date).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            }),
+            summary: d.summary,
+            commits: d.commits.map((c) => `${c.hash}: ${c.message}`).join('\n'),
+          })),
+        },
+      };
+
+      const deploymentCount: A2UIComponent = {
+        id: 'deployment-count',
+        component: 'metric_card' as const,
+        source: 'local',
+        priority: 'high',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Total Deployments',
+          value: deploymentsData.totalDeployments,
+          unit: '',
+          size: 'xl' as const,
+          status: 'healthy' as const,
+          description: `${deploymentsData.container} container`,
+        },
+      };
+
+      setDashboardState({
+        components: [deploymentCount, deploymentsTable],
+        lastUpdated: new Date().toISOString(),
+        agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container}`,
+      });
+
+      return `Showing ${deploymentsData.totalDeployments} deployments`;
+    },
+  });
+
   // Handler for Deployments
   const handleFetchDeployments = useCallback(() => {
     const deployments = deploymentsData.deployments;
