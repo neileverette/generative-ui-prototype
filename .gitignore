@@ -34,3 +34,17 @@ pnpm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# TypeScript build artifacts (compiled JS from TS)
+server/*.js
+server/*.d.ts
+vite.config.js
+vite.config.d.ts
+
+# Temporary/helper files
+*.zip
+test-*.js
+langflow-*.py
+langflow-*.txt
+update-*.txt
+PASTE_*.txt

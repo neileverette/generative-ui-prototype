@@ -224,18 +224,19 @@ import OpenAI from 'openai';
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const serviceAdapter = new OpenAIAdapter({ openai });
 
-// Import MCP client
-import { getMCPClient } from './mcp-client.js';
+// Import MCP Registry (orchestration layer for multiple MCP servers)
+import { getMCPRegistry, MCPServerRegistry } from './mcp-registry.js';
 
-// Initialize MCP client on startup
-let mcpClient: Awaited<ReturnType<typeof getMCPClient>> | null = null;
+// Initialize MCP Registry on startup
+let mcpRegistry: MCPServerRegistry | null = null;
 (async () => {
   try {
-    mcpClient = await getMCPClient();
-    console.log('[MCP] Connected to MCP Datadog server');
+    mcpRegistry = await getMCPRegistry();
+    const statuses = mcpRegistry.getServerStatuses();
+    console.log('[MCP Registry] Initialized with servers:', statuses.map(s => `${s.id} (${s.status})`).join(', '));
   } catch (error) {
-    console.error('[MCP] Failed to connect to MCP server:', error);
-    console.error('[MCP] Continuing without MCP integration');
+    console.error('[MCP Registry] Failed to initialize:', error);
+    console.error('[MCP Registry] Continuing without MCP integration');
   }
 })();
 
@@ -321,22 +322,150 @@ app.get('/api/health', (_req, res) => {
 });
 
 // =============================================================================
-// MCP-POWERED ENDPOINTS
-// These endpoints demonstrate the MCP orchestration layer
+// MCP ORCHESTRATION LAYER ENDPOINTS
+// These endpoints provide a unified interface to multiple MCP servers
 // =============================================================================
 
-// MCP System Metrics - demonstrates MCP tool orchestration
+// List all connected MCP servers and their status
+app.get('/api/mcp/servers', async (req, res) => {
+  try {
+    if (!mcpRegistry) {
+      return res.status(503).json({
+        error: 'MCP Registry not available'
+      });
+    }
+
+    const servers = mcpRegistry.getServerStatuses();
+    res.json({
+      servers,
+      count: servers.length,
+      connectedCount: servers.filter(s => s.status === 'connected').length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-registry'
+    });
+  }
+});
+
+// List all tools from all connected servers (namespaced)
+app.get('/api/mcp/tools', async (req, res) => {
+  try {
+    if (!mcpRegistry) {
+      return res.status(503).json({
+        error: 'MCP Registry not available'
+      });
+    }
+
+    const tools = await mcpRegistry.getAllTools();
+
+    // Group tools by server for easier consumption
+    const toolsByServer: Record<string, any[]> = {};
+    for (const tool of tools) {
+      if (!toolsByServer[tool.serverId]) {
+        toolsByServer[tool.serverId] = [];
+      }
+      toolsByServer[tool.serverId].push({
+        name: tool.name,
+        namespacedName: `${tool.serverId}:${tool.name}`,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      });
+    }
+
+    res.json({
+      tools: toolsByServer,
+      totalCount: tools.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-registry'
+    });
+  }
+});
+
+// Generic tool execution endpoint - call any tool on any server
+app.post('/api/mcp/call', async (req, res) => {
+  try {
+    if (!mcpRegistry) {
+      return res.status(503).json({
+        error: 'MCP Registry not available'
+      });
+    }
+
+    const { serverId, toolName, args } = req.body;
+
+    if (!serverId || !toolName) {
+      return res.status(400).json({
+        error: 'Missing required fields: serverId and toolName'
+      });
+    }
+
+    const result = await mcpRegistry.callTool(serverId, toolName, args || {});
+
+    res.json({
+      serverId,
+      toolName,
+      result,
+      executedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-registry'
+    });
+  }
+});
+
+// Call a tool using namespaced name (e.g., "datadog:get_system_metrics")
+app.get('/api/mcp/call/:namespacedTool', async (req, res) => {
+  try {
+    if (!mcpRegistry) {
+      return res.status(503).json({
+        error: 'MCP Registry not available'
+      });
+    }
+
+    const { namespacedTool } = req.params;
+    const args = req.query as Record<string, any>;
+
+    // Remove any non-arg query params if needed
+    delete args._;
+
+    const result = await mcpRegistry.callNamespacedTool(namespacedTool, args);
+
+    res.json({
+      tool: namespacedTool,
+      result,
+      executedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'mcp-registry'
+    });
+  }
+});
+
+// =============================================================================
+// LEGACY MCP ENDPOINTS (backward compatibility)
+// These will be deprecated in favor of the generic /api/mcp/call endpoint
+// =============================================================================
+
+// MCP System Metrics - legacy endpoint (uses registry internally)
 app.get('/api/mcp/metrics/system', async (req, res) => {
   try {
-    if (!mcpClient) {
+    if (!mcpRegistry) {
       return res.status(503).json({
-        error: 'MCP client not available',
+        error: 'MCP Registry not available',
         fallback: 'Use /api/metrics/overview/fast instead'
       });
     }
 
     const timeWindow = (req.query.timeWindow as string) || '1h';
-    const result = await mcpClient.getSystemMetrics(timeWindow);
+    const result = await mcpRegistry.callTool('datadog', 'get_system_metrics', { timeWindow });
 
     res.json(result);
   } catch (error) {
@@ -347,18 +476,18 @@ app.get('/api/mcp/metrics/system', async (req, res) => {
   }
 });
 
-// MCP Container Metrics - demonstrates MCP tool orchestration
+// MCP Container Metrics - legacy endpoint (uses registry internally)
 app.get('/api/mcp/metrics/containers', async (req, res) => {
   try {
-    if (!mcpClient) {
+    if (!mcpRegistry) {
       return res.status(503).json({
-        error: 'MCP client not available',
+        error: 'MCP Registry not available',
         fallback: 'Use /api/metrics/containers-list instead'
       });
     }
 
     const timeWindow = (req.query.timeWindow as string) || '1h';
-    const result = await mcpClient.getContainerMetrics(timeWindow);
+    const result = await mcpRegistry.callTool('datadog', 'get_container_metrics', { timeWindow });
 
     res.json(result);
   } catch (error) {
@@ -369,12 +498,12 @@ app.get('/api/mcp/metrics/containers', async (req, res) => {
   }
 });
 
-// MCP Workflow Metrics - demonstrates MCP tool orchestration
+// MCP Workflow Metrics - legacy endpoint (uses registry internally)
 app.get('/api/mcp/metrics/workflow/:workflow', async (req, res) => {
   try {
-    if (!mcpClient) {
+    if (!mcpRegistry) {
       return res.status(503).json({
-        error: 'MCP client not available',
+        error: 'MCP Registry not available',
         fallback: 'Use /api/metrics/n8n/:workflow instead'
       });
     }
@@ -388,28 +517,9 @@ app.get('/api/mcp/metrics/workflow/:workflow', async (req, res) => {
       });
     }
 
-    const result = await mcpClient.getWorkflowMetrics(workflow, timeWindow);
+    const result = await mcpRegistry.callTool('datadog', 'get_workflow_metrics', { workflow, timeWindow });
 
     res.json(result);
-  } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      source: 'mcp-endpoint'
-    });
-  }
-});
-
-// MCP Tools List - shows available MCP tools
-app.get('/api/mcp/tools', async (req, res) => {
-  try {
-    if (!mcpClient) {
-      return res.status(503).json({
-        error: 'MCP client not available'
-      });
-    }
-
-    const tools = await mcpClient.listTools();
-    res.json(tools);
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Unknown error',
