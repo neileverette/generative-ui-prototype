@@ -3,26 +3,36 @@
   "totalDeployments": 4,
   "deployments": [
     {
-      "id": 1,
-      "tag": "v1.0.0",
-      "name": "Initial Deployment",
-      "date": "2026-01-02T01:30:33Z",
-      "summary": "Generative UI Dashboard with CopilotKit and Datadog integration",
+      "id": 4,
+      "tag": "v1.2.1",
+      "name": "Layout Responsiveness Fix",
+      "date": "2026-01-06T04:30:00Z",
+      "summary": "Fix home screen tiles and deployments grid layout",
       "commits": [
         {
-          "hash": "b333994",
-          "message": "Add generative UI dashboard with CopilotKit integration"
-        },
-        {
-          "hash": "080c640",
-          "message": "Add container metrics, uptime widget, and UI improvements"
-        },
-        {
-          "hash": "f23a287",
-          "message": "Add workflow metrics, containers list, and visual polish"
+          "hash": "52b64c6",
+          "message": "Fix home screen tile layout and deployments grid responsiveness"
         }
       ],
-      "notes": "First deployment of generative UI dashboard to EC2"
+      "notes": "Changed home screen to display 5 tiles in a row, improved deployments view to show metric card and table side-by-side"
+    },
+    {
+      "id": 3,
+      "tag": "v1.2.0",
+      "name": "Deployment Tracking Feature",
+      "date": "2026-01-05T21:15:00Z",
+      "summary": "Deployment tracking with visual history in dashboard",
+      "commits": [
+        {
+          "hash": "dbb91ab",
+          "message": "Add deployment tracking configuration"
+        },
+        {
+          "hash": "e0948a5",
+          "message": "Add deployments tracking feature"
+        }
+      ],
+      "notes": "Added deployment history panel showing version tags, dates, and commit summaries"
     },
     {
       "id": 2,
@@ -47,36 +57,26 @@
       "notes": "Added voice input with Web Speech API, waveform animation, and CopilotKit chat integration"
     },
     {
-      "id": 3,
-      "tag": "v1.2.0",
-      "name": "Deployment Tracking Feature",
-      "date": "2026-01-05T21:15:00Z",
-      "summary": "Deployment tracking with visual history in dashboard",
+      "id": 1,
+      "tag": "v1.0.0",
+      "name": "Initial Deployment",
+      "date": "2026-01-02T01:30:33Z",
+      "summary": "Generative UI Dashboard with CopilotKit and Datadog integration",
       "commits": [
         {
-          "hash": "dbb91ab",
-          "message": "Add deployment tracking configuration"
+          "hash": "b333994",
+          "message": "Add generative UI dashboard with CopilotKit integration"
         },
         {
-          "hash": "e0948a5",
-          "message": "Add deployments tracking feature"
-        }
-      ],
-      "notes": "Added deployment history panel showing version tags, dates, and commit summaries"
-    },
-    {
-      "id": 4,
-      "tag": "v1.1.1",
-      "name": "Layout Responsiveness Fix",
-      "date": "2026-01-06T04:30:00Z",
-      "summary": "Fix home screen tiles and deployments grid layout",
-      "commits": [
+          "hash": "080c640",
+          "message": "Add container metrics, uptime widget, and UI improvements"
+        },
         {
-          "hash": "52b64c6",
-          "message": "Fix home screen tile layout and deployments grid responsiveness"
+          "hash": "f23a287",
+          "message": "Add workflow metrics, containers list, and visual polish"
         }
       ],
-      "notes": "Changed home screen to display 5 tiles in a row, improved deployments view to show metric card and table side-by-side"
+      "notes": "First deployment of generative UI dashboard to EC2"
     }
   ]
 }
