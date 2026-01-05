@@ -8,6 +8,7 @@ import { A2UIComponent, DashboardState, sortByPriority } from './types/a2ui';
 import { useCopilotAction, useCopilotReadable, useCopilotChat } from '@copilotkit/react-core';
 import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
 import { Server, Container, Workflow, Terminal, ArrowLeft } from 'lucide-react';
+import { useVoiceDictation } from './hooks/useVoiceDictation';
 
 // Command Center icon
 const CommandCenterIcon = ({ className }: { className?: string }) => (
@@ -96,6 +97,31 @@ function DashboardWithAgent() {
 
   // Hook for programmatic chat messaging
   const { appendMessage } = useCopilotChat();
+
+  // Voice dictation hook - sends transcript to chat when complete
+  const handleVoiceTranscriptComplete = useCallback(async (transcript: string) => {
+    if (transcript.trim()) {
+      // Don't set loading here - let the CopilotAction handlers manage the view
+      // The action handlers (renderDashboard, fetchSystemMetrics, etc.) will set currentView to 'home'
+      await appendMessage(
+        new TextMessage({
+          role: MessageRole.User,
+          content: transcript,
+        })
+      );
+    }
+  }, [appendMessage]);
+
+  const {
+    voiceState,
+    transcript,
+    startListening,
+    stopListening,
+    isSupported: isVoiceSupported,
+  } = useVoiceDictation({
+    onTranscriptComplete: handleVoiceTranscriptComplete,
+    onError: (error) => console.error('Voice error:', error),
+  });
 
   // Handler for command clicks - sends query to chat
   const handleCommandClick = useCallback(async (query: string) => {
@@ -1621,7 +1647,7 @@ function DashboardWithAgent() {
           </button>
           <CommandCenterIcon className="w-8 h-8 text-accent-primary" />
           <h1 className="text-lg font-sans font-normal">
-            <span className="gradient-text">Welcome to Command Center</span>
+            <span className="gradient-text">Command Central</span>
           </h1>
         </div>
         <div className="flex items-center gap-4">
@@ -1657,6 +1683,13 @@ function DashboardWithAgent() {
             currentView={currentView}
             onBack={handleBackToHome}
             onCommandClick={handleCommandClick}
+            voiceInput={{
+              voiceState,
+              transcript,
+              onStartListening: startListening,
+              onStopListening: stopListening,
+              isSupported: isVoiceSupported,
+            }}
           />
         </main>
 

@@ -5,6 +5,9 @@ import { DataTable } from './a2ui/DataTable';
 import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
+import { VoiceOverlay } from './VoiceOverlay';
+import { VoiceButton } from './VoiceButton';
+import { VoiceState } from '../hooks/useVoiceDictation';
 
 // Main Icon with optional gradient
 const VennDiagramIcon = ({ className, gradient = false }: { className?: string; gradient?: boolean }) => (
@@ -42,6 +45,14 @@ interface CommandAction {
   label: string;
 }
 
+interface VoiceInputProps {
+  voiceState: VoiceState;
+  transcript: string;
+  onStartListening: () => void;
+  onStopListening: () => void;
+  isSupported: boolean;
+}
+
 interface DashboardCanvasProps {
   state: DashboardState;
   shortcuts?: ShortcutAction[];
@@ -49,6 +60,7 @@ interface DashboardCanvasProps {
   onBack?: () => void;
   commands?: CommandAction[];
   onCommandClick?: (query: string) => void;
+  voiceInput?: VoiceInputProps;
 }
 
 // Component registry - maps A2UI component types to React components
@@ -95,8 +107,11 @@ const DEFAULT_COMMANDS: CommandAction[] = [
   { id: 'failed-workflows', label: 'Show me failed workflow executions' },
 ];
 
-export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick }: DashboardCanvasProps) {
+export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
+
+  // Determine if voice is active (listening or transcribing)
+  const isVoiceActive = voiceInput && voiceInput.voiceState !== 'idle';
 
   // Loading screen view
   if (currentView === 'loading') {
@@ -153,36 +168,69 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   if (components.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center">
+        {/* Header - Always visible */}
         <VennDiagramIcon className="w-96 h-auto mb-8" gradient />
         <h2 className="text-4xl font-normal text-text-primary mb-3">
-          Welcome to Command Central GenUI
+          Command Central
         </h2>
         <p className="text-text-secondary max-w-md mb-8 text-lg">
           Choose an option below or use the chat
         </p>
 
-        {/* Shortcut Cards */}
-        {shortcuts && shortcuts.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl w-full">
-            {shortcuts.map((shortcut) => (
-              <button
-                key={shortcut.id}
-                onClick={shortcut.onClick}
-                className="group p-6 bg-white/70 hover:bg-white/90 backdrop-blur-sm border border-white/50 hover:border-accent-primary/50 rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md"
-              >
-                <div className="w-12 h-12 rounded-lg bg-white/60 group-hover:bg-accent-primary/20 flex items-center justify-center mb-4 transition-colors">
-                  <span className="text-text-muted group-hover:text-accent-primary transition-colors">
-                    {shortcut.icon}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-text-primary mb-1">
-                  {shortcut.title}
-                </h3>
-                <p className="text-sm text-text-secondary">
-                  {shortcut.description}
-                </p>
-              </button>
-            ))}
+        {/* Voice Content Area - switches between cards and voice overlay */}
+        <div className="relative w-full max-w-4xl min-h-[200px] flex flex-col items-center justify-center">
+          {/* Shortcut Cards - Fade out during voice input */}
+          {shortcuts && shortcuts.length > 0 && (
+            <div
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full transition-all duration-300 ${
+                isVoiceActive ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'
+              }`}
+            >
+              {shortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.id}
+                  onClick={shortcut.onClick}
+                  className="group p-6 bg-white/70 hover:bg-white/90 backdrop-blur-sm border border-white/50 hover:border-accent-primary/50 rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                >
+                  <div className="w-12 h-12 rounded-lg bg-white/60 group-hover:bg-accent-primary/20 flex items-center justify-center mb-4 transition-colors">
+                    <span className="text-text-muted group-hover:text-accent-primary transition-colors">
+                      {shortcut.icon}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-text-primary mb-1">
+                    {shortcut.title}
+                  </h3>
+                  <p className="text-sm text-text-secondary">
+                    {shortcut.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Voice Overlay - Fade in during voice input */}
+          {voiceInput && (
+            <div
+              className={`w-full transition-all duration-300 ${
+                isVoiceActive ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'
+              }`}
+            >
+              <VoiceOverlay
+                voiceState={voiceInput.voiceState}
+                transcript={voiceInput.transcript}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Voice Button - Always visible, centered below content */}
+        {voiceInput && voiceInput.isSupported && (
+          <div className="mt-8">
+            <VoiceButton
+              voiceState={voiceInput.voiceState}
+              onStart={voiceInput.onStartListening}
+              onStop={voiceInput.onStopListening}
+            />
           </div>
         )}
       </div>
