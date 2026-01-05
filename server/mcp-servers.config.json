@@ -1,0 +1,11 @@
+{
+  "servers": [
+    {
+      "id": "datadog",
+      "name": "Datadog Metrics Server",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["tsx", "mcp-server.ts"]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
 import { Server, Container, Workflow, Terminal, ArrowLeft, Rocket } from 'lucide-react';
 import deploymentsData from './data/deployments.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
+import { mcpClient } from './services/mcp-client';
 
 // Command Center icon
 const CommandCenterIcon = ({ className }: { className?: string }) => (
@@ -230,8 +231,8 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API if MCP tool not available)
+        const data = await mcpClient.getOverviewFast(timeWindow);
 
         if (data.error) {
           return `Error fetching metrics: ${data.error}`;
@@ -310,8 +311,8 @@ function DashboardWithAgent() {
 
   // Helper function to fetch container metrics
   const fetchContainerCPU = useCallback(async (containerName: string) => {
-    const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName)}?timeWindow=${timeWindow}`);
-    const data = await response.json();
+    // Use MCP client (falls back to direct API if MCP tool not available)
+    const data = await mcpClient.getContainerCPU(containerName, timeWindow);
 
     if (data.error && !data.currentValue) {
       return null;
@@ -383,8 +384,8 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/uptime?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API if MCP tool not available)
+        const data = await mcpClient.getUptime(timeWindow);
 
         if (data.error && !data.currentValue) {
           return `Error fetching uptime: ${data.error}`;
@@ -430,8 +431,8 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/running-containers?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API if MCP tool not available)
+        const data = await mcpClient.getRunningContainers(timeWindow);
 
         if (data.error) {
           return `Error fetching containers: ${data.error}`;
@@ -483,8 +484,8 @@ function DashboardWithAgent() {
     ],
     handler: async ({ containerName }) => {
       try {
-        const response = await fetch(`/api/metrics/container/${encodeURIComponent(containerName as string)}/memory?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API if MCP tool not available)
+        const data = await mcpClient.getContainerMemory(containerName as string, timeWindow);
 
         if (data.error && !data.currentValue) {
           return `No memory data found for container "${containerName}".`;
@@ -529,8 +530,8 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API for richer data format)
+        const data = await mcpClient.getGmailFilterMetrics(timeWindow);
 
         if (data.error) {
           return `Error fetching Gmail Filter metrics: ${data.error}`;
@@ -606,8 +607,8 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        // Use MCP client (falls back to direct API for richer data format)
+        const data = await mcpClient.getImageGeneratorMetrics(timeWindow);
 
         if (data.error) {
           return `Error fetching Image Generator metrics: ${data.error}`;
@@ -682,14 +683,11 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        // Fetch both workflows to count them
-        const [gmailResponse, imageGenResponse] = await Promise.all([
-          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        // Fetch both workflows to count them via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
         ]);
-
-        const gmailData = await gmailResponse.json();
-        const imageGenData = await imageGenResponse.json();
 
         let count = 0;
         const workflows = [];
@@ -717,13 +715,11 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const [gmailResponse, imageGenResponse] = await Promise.all([
-          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        // Fetch workflow metrics via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
         ]);
-
-        const gmailData = await gmailResponse.json();
-        const imageGenData = await imageGenResponse.json();
 
         const gmailTotal = gmailData.metrics?.allTimeTotal || 0;
         const imageGenTotal = imageGenData.metrics?.allTimeTotal || 0;
@@ -747,13 +743,11 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const [gmailResponse, imageGenResponse] = await Promise.all([
-          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        // Fetch workflow metrics via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
         ]);
-
-        const gmailData = await gmailResponse.json();
-        const imageGenData = await imageGenResponse.json();
 
         // Gmail Filter: 30 seconds per execution
         const gmailTotal = gmailData.metrics?.allTimeTotal || 0;
@@ -792,13 +786,11 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const [gmailResponse, imageGenResponse] = await Promise.all([
-          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        // Fetch workflow metrics via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
         ]);
-
-        const gmailData = await gmailResponse.json();
-        const imageGenData = await imageGenResponse.json();
 
         const issues = [];
         const gmailFailed = gmailData.metrics?.failed || 0;
@@ -831,13 +823,11 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const [gmailResponse, imageGenResponse] = await Promise.all([
-          fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-          fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+        // Fetch workflow metrics via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
         ]);
-
-        const gmailData = await gmailResponse.json();
-        const imageGenData = await imageGenResponse.json();
 
         const schedules = [];
 
@@ -932,8 +922,7 @@ function DashboardWithAgent() {
     parameters: [],
     handler: async () => {
       try {
-        const response = await fetch(`/api/metrics/containers-list?timeWindow=${timeWindow}`);
-        const data = await response.json();
+        const data = await mcpClient.getContainersList(timeWindow);
 
         if (data.error) {
           return `Error fetching containers list: ${data.error}`;
@@ -980,14 +969,11 @@ function DashboardWithAgent() {
   // Shortcut handlers for the welcome screen
   const handleFetchContainersList = useCallback(async () => {
     try {
-      // Fetch containers list and running count in parallel
-      const [containersResponse, countResponse] = await Promise.all([
-        fetch(`/api/metrics/containers-list?timeWindow=${timeWindow}`),
-        fetch(`/api/metrics/running-containers?timeWindow=${timeWindow}`),
+      // Fetch containers list and running count in parallel via MCP client
+      const [containersData, countData] = await Promise.all([
+        mcpClient.getContainersList(timeWindow),
+        mcpClient.getRunningContainers(timeWindow),
       ]);
-
-      const containersData = await containersResponse.json();
-      const countData = await countResponse.json();
 
       if (containersData.error) return;
 
@@ -1132,9 +1118,8 @@ function DashboardWithAgent() {
       });
       setLastAction('containers');
 
-      // Fetch AI interpretations for containers in background
-      fetch(`/api/metrics/container-interpretations?timeWindow=${timeWindow}`)
-        .then(res => res.json())
+      // Fetch AI interpretations for containers in background (always use 1h to avoid LangFlow timeouts)
+      mcpClient.getContainerInterpretations('1h')
         .then(interpretationsData => {
           if (interpretationsData.error || !interpretationsData.interpretation) {
             // Remove loading state on error
@@ -1194,9 +1179,8 @@ function DashboardWithAgent() {
   // Handler for System & Infrastructure (combines system metrics + uptime)
   const handleFetchSystemInfrastructure = useCallback(async () => {
     try {
-      // Fetch system metrics (FAST) - uptime is now included in overview
-      const metricsResponse = await fetch(`/api/metrics/overview/fast?timeWindow=${timeWindow}`);
-      const metricsData = await metricsResponse.json();
+      // Fetch system metrics (FAST) via MCP client - uptime is now included in overview
+      const metricsData = await mcpClient.getOverviewFast(timeWindow);
 
       const newComponents: A2UIComponent[] = [];
 
@@ -1262,9 +1246,8 @@ function DashboardWithAgent() {
       });
       setLastAction('system');
 
-      // Fetch AI interpretations in background (slower, but adds value)
-      fetch(`/api/metrics/interpretations?timeWindow=${timeWindow}`)
-        .then(res => res.json())
+      // Fetch AI interpretations in background (always use 1h to avoid LangFlow timeouts)
+      mcpClient.getInterpretations('1h')
         .then(interpretationsData => {
           if (interpretationsData.error || !interpretationsData.interpretations) return;
 
@@ -1326,14 +1309,11 @@ function DashboardWithAgent() {
   // Handler for Automations (n8n workflow metrics)
   const handleFetchAutomations = useCallback(async () => {
     try {
-      // Fetch both workflow metrics in parallel
-      const [gmailResponse, imageGenResponse] = await Promise.all([
-        fetch(`/api/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`),
-        fetch(`/api/metrics/n8n/image-generator?timeWindow=${timeWindow}`),
+      // Fetch both workflow metrics in parallel via MCP client
+      const [gmailData, imageGenData] = await Promise.all([
+        mcpClient.getGmailFilterMetrics(timeWindow),
+        mcpClient.getImageGeneratorMetrics(timeWindow),
       ]);
-
-      const gmailData = await gmailResponse.json();
-      const imageGenData = await imageGenResponse.json();
 
       const newComponents: A2UIComponent[] = [];
 
