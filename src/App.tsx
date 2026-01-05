@@ -1603,13 +1603,15 @@ function DashboardWithAgent() {
         props: {
           title: `Deployments (${deploymentsData.totalDeployments} total)`,
           columns: [
-            { key: 'id', label: '#' },
+            { key: 'tag', label: 'Tag' },
+            { key: 'name', label: 'Name' },
             { key: 'date', label: 'Date & Time' },
             { key: 'summary', label: 'Summary' },
             { key: 'commits', label: 'Commits' },
           ],
           rows: deployments.map((d) => ({
-            id: d.id,
+            tag: d.tag,
+            name: d.name,
             date: new Date(d.date).toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -1664,13 +1666,15 @@ function DashboardWithAgent() {
       props: {
         title: `Deployments (${deploymentsData.totalDeployments} total)`,
         columns: [
-          { key: 'id', label: '#' },
+          { key: 'tag', label: 'Tag' },
+          { key: 'name', label: 'Name' },
           { key: 'date', label: 'Date & Time' },
           { key: 'summary', label: 'Summary' },
           { key: 'commits', label: 'Commits' },
         ],
         rows: deployments.map((d) => ({
-          id: d.id,
+          tag: d.tag,
+          name: d.name,
           date: new Date(d.date).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',

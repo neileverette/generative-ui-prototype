@@ -4,24 +4,32 @@
   "deployments": [
     {
       "id": 1,
-      "date": "2026-01-04T18:00:00Z",
-      "summary": "Initial production release",
+      "tag": "v1.0.0",
+      "name": "Initial Deployment",
+      "date": "2026-01-02T01:30:33Z",
+      "summary": "Generative UI Dashboard with CopilotKit and Datadog integration",
       "commits": [
         {
-          "hash": "23f1927",
-          "message": "Add deployment docs and App.tsx updates"
+          "hash": "b333994",
+          "message": "Add generative UI dashboard with CopilotKit integration"
         },
         {
-          "hash": "6e98266",
-          "message": "Fix TypeScript build errors and improve type safety"
+          "hash": "080c640",
+          "message": "Add container metrics, uptime widget, and UI improvements"
+        },
+        {
+          "hash": "f23a287",
+          "message": "Add workflow metrics, containers list, and visual polish"
         }
       ],
       "notes": "First deployment of generative UI dashboard to EC2"
     },
     {
       "id": 2,
-      "date": "2026-01-05T12:00:00Z",
-      "summary": "Voice transcription and MCP integration",
+      "tag": "v1.1.0",
+      "name": "Voice Input Feature",
+      "date": "2026-01-05T18:39:00Z",
+      "summary": "Voice input with live transcription and MCP integration",
       "commits": [
         {
           "hash": "afbc64c",
@@ -36,7 +44,7 @@
           "message": "Add MCP (Model Context Protocol) integration for agent orchestration"
         }
       ],
-      "notes": "Added voice input and MCP features"
+      "notes": "Added voice input with Web Speech API, waveform animation, and CopilotKit chat integration"
     }
   ]
 }
