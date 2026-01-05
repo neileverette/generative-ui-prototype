@@ -238,8 +238,8 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   }
 
   // Group components by layout
-  // Featured components go at the top in a 2-column layout (table first, then card)
-  const featuredIds = ['containers-list-table', 'running-containers-count'];
+  // Featured components go at the top in a 2-column layout (card on left, table on right)
+  const featuredIds = ['running-containers-count', 'containers-list-table', 'deployment-count', 'deployments-table'];
   const featuredComponents = components
     .filter(c => featuredIds.includes(c.id))
     .sort((a, b) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
@@ -270,22 +270,51 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         </div>
       )}
 
-      {/* Featured components - 2-column layout at top, same height */}
+      {/* Featured components - layout depends on content */}
       {featuredComponents.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-          {featuredComponents.map((component, index) => (
-            <div
-              key={component.id || index}
-              className="animate-slide-up h-full"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {(() => {
-                const Component = COMPONENT_REGISTRY[component.component];
-                return Component ? <Component component={component} className="h-full" /> : null;
-              })()}
+        (() => {
+          // Check if this is a deployment view (metric card + table)
+          const isDeploymentView = featuredComponents.some(c => c.id === 'deployment-count');
+
+          if (isDeploymentView) {
+            // Deployment view: 1 column for card, 3 columns for table (1/4 + 3/4)
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch">
+                {featuredComponents.map((component, index) => {
+                  const Component = COMPONENT_REGISTRY[component.component];
+                  const isTable = component.component === 'data_table';
+                  return (
+                    <div
+                      key={component.id || index}
+                      className={`animate-slide-up h-full ${isTable ? 'lg:col-span-3' : ''}`}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      {Component ? <Component component={component} className="h-full" /> : null}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          // Default: 2-column layout
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+              {featuredComponents.map((component, index) => (
+                <div
+                  key={component.id || index}
+                  className="animate-slide-up h-full"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  {(() => {
+                    const Component = COMPONENT_REGISTRY[component.component];
+                    return Component ? <Component component={component} className="h-full" /> : null;
+                  })()}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()
       )}
 
       {/* Card groups - 2 column layout (automations, container groups) */}

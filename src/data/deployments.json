@@ -1,0 +1,42 @@
+{
+  "container": "generative-ui",
+  "totalDeployments": 2,
+  "deployments": [
+    {
+      "id": 1,
+      "date": "2026-01-04T18:00:00Z",
+      "summary": "Initial production release",
+      "commits": [
+        {
+          "hash": "23f1927",
+          "message": "Add deployment docs and App.tsx updates"
+        },
+        {
+          "hash": "6e98266",
+          "message": "Fix TypeScript build errors and improve type safety"
+        }
+      ],
+      "notes": "First deployment of generative UI dashboard to EC2"
+    },
+    {
+      "id": 2,
+      "date": "2026-01-05T12:00:00Z",
+      "summary": "Voice transcription and MCP integration",
+      "commits": [
+        {
+          "hash": "afbc64c",
+          "message": "Refine voice transcription styling"
+        },
+        {
+          "hash": "117fa6d",
+          "message": "Add voice input feature with live transcription"
+        },
+        {
+          "hash": "0e21d83",
+          "message": "Add MCP (Model Context Protocol) integration for agent orchestration"
+        }
+      ],
+      "notes": "Added voice input and MCP features"
+    }
+  ]
+}
