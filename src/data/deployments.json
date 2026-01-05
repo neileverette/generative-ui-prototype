@@ -1,6 +1,6 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 2,
+  "totalDeployments": 3,
   "deployments": [
     {
       "id": 1,
@@ -45,6 +45,24 @@
         }
       ],
       "notes": "Added voice input with Web Speech API, waveform animation, and CopilotKit chat integration"
+    },
+    {
+      "id": 3,
+      "tag": "v1.2.0",
+      "name": "Deployment Tracking Feature",
+      "date": "2026-01-05T21:15:00Z",
+      "summary": "Deployment tracking with visual history in dashboard",
+      "commits": [
+        {
+          "hash": "dbb91ab",
+          "message": "Add deployment tracking configuration"
+        },
+        {
+          "hash": "e0948a5",
+          "message": "Add deployments tracking feature"
+        }
+      ],
+      "notes": "Added deployment history panel showing version tags, dates, and commit summaries"
     }
   ]
 }
