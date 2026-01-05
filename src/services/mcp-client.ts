@@ -167,86 +167,73 @@ class MCPClient {
   }
 
   // ==========================================================================
-  // Fallback Methods (direct API calls - will be migrated to MCP in Sprint 3)
-  // These exist because the MCP server doesn't have these tools yet
+  // MCP-Powered Methods (Sprint 3 - migrated from fallbacks)
   // ==========================================================================
 
   /**
-   * Get fast overview metrics (direct call - no MCP tool yet)
-   * TODO: Add get_overview_fast tool to MCP server
+   * Get fast overview metrics via MCP
+   * Uses: datadog:get_overview_metrics
    */
   async getOverviewFast(timeWindow: string = '1h'): Promise<any> {
-    console.log('[MCP Client] getOverviewFast via direct API (fallback)');
-    const response = await fetch(`${this.directBaseUrl}/metrics/overview/fast?timeWindow=${timeWindow}`);
-    if (!response.ok) throw new Error(`Failed to fetch overview: ${response.statusText}`);
-    return response.json();
+    console.log('[MCP Client] getOverviewFast via MCP');
+    return this.callTool('datadog', 'get_overview_metrics', { timeWindow });
   }
 
   /**
-   * Get system uptime (direct call - no MCP tool yet)
-   * TODO: Add get_uptime tool to MCP server
+   * Get system uptime via MCP
+   * Uses: datadog:get_uptime
    */
   async getUptime(timeWindow: string = '1h'): Promise<any> {
-    console.log('[MCP Client] getUptime via direct API (fallback)');
-    const response = await fetch(`${this.directBaseUrl}/metrics/uptime?timeWindow=${timeWindow}`);
-    if (!response.ok) throw new Error(`Failed to fetch uptime: ${response.statusText}`);
-    return response.json();
+    console.log('[MCP Client] getUptime via MCP');
+    return this.callTool('datadog', 'get_uptime', { timeWindow });
   }
 
   /**
-   * Get running containers count (direct call - no MCP tool yet)
-   * TODO: Add get_running_containers tool to MCP server
+   * Get running containers count via MCP
+   * Uses: datadog:get_running_containers
    */
   async getRunningContainers(timeWindow: string = '1h'): Promise<any> {
-    console.log('[MCP Client] getRunningContainers via direct API (fallback)');
-    const response = await fetch(`${this.directBaseUrl}/metrics/running-containers?timeWindow=${timeWindow}`);
-    if (!response.ok) throw new Error(`Failed to fetch running containers: ${response.statusText}`);
-    return response.json();
+    console.log('[MCP Client] getRunningContainers via MCP');
+    return this.callTool('datadog', 'get_running_containers', { timeWindow });
   }
 
   /**
-   * Get containers list (direct call - no MCP tool yet)
-   * TODO: Add get_containers_list tool to MCP server
+   * Get containers list via MCP
+   * Uses: datadog:get_containers_list
    */
   async getContainersList(timeWindow: string = '1h'): Promise<any> {
-    console.log('[MCP Client] getContainersList via direct API (fallback)');
-    const response = await fetch(`${this.directBaseUrl}/metrics/containers-list?timeWindow=${timeWindow}`);
-    if (!response.ok) throw new Error(`Failed to fetch containers list: ${response.statusText}`);
-    return response.json();
+    console.log('[MCP Client] getContainersList via MCP');
+    return this.callTool('datadog', 'get_containers_list', { timeWindow });
   }
 
   /**
-   * Get specific container CPU (direct call - no MCP tool yet)
-   * TODO: Add get_container_cpu tool to MCP server
+   * Get specific container CPU via MCP
+   * Uses: datadog:get_container_cpu
    */
   async getContainerCPU(containerName: string, timeWindow: string = '1h'): Promise<any> {
-    console.log(`[MCP Client] getContainerCPU (${containerName}) via direct API (fallback)`);
-    const response = await fetch(
-      `${this.directBaseUrl}/metrics/container/${encodeURIComponent(containerName)}?timeWindow=${timeWindow}`
-    );
-    if (!response.ok) throw new Error(`Failed to fetch container CPU: ${response.statusText}`);
-    return response.json();
+    console.log(`[MCP Client] getContainerCPU (${containerName}) via MCP`);
+    return this.callTool('datadog', 'get_container_cpu', { containerName, timeWindow });
   }
 
   /**
-   * Get specific container memory (direct call - no MCP tool yet)
-   * TODO: Add get_container_memory tool to MCP server
+   * Get specific container memory via MCP
+   * Uses: datadog:get_container_memory
    */
   async getContainerMemory(containerName: string, timeWindow: string = '1h'): Promise<any> {
-    console.log(`[MCP Client] getContainerMemory (${containerName}) via direct API (fallback)`);
-    const response = await fetch(
-      `${this.directBaseUrl}/metrics/container/${encodeURIComponent(containerName)}/memory?timeWindow=${timeWindow}`
-    );
-    if (!response.ok) throw new Error(`Failed to fetch container memory: ${response.statusText}`);
-    return response.json();
+    console.log(`[MCP Client] getContainerMemory (${containerName}) via MCP`);
+    return this.callTool('datadog', 'get_container_memory', { containerName, timeWindow });
   }
+
+  // ==========================================================================
+  // Remaining Fallback Methods (require LangFlow or different data format)
+  // ==========================================================================
 
   /**
    * Get n8n gmail filter metrics (direct call - MCP tool exists but returns different format)
    * Uses direct API for full workflow metrics with trends
    */
   async getGmailFilterMetrics(timeWindow: string = '1d'): Promise<any> {
-    console.log('[MCP Client] getGmailFilterMetrics via direct API (fallback - richer data)');
+    console.log('[MCP Client] getGmailFilterMetrics via direct API (richer data format)');
     const response = await fetch(`${this.directBaseUrl}/metrics/n8n/gmail-filter?timeWindow=${timeWindow}`);
     if (!response.ok) throw new Error(`Failed to fetch gmail filter metrics: ${response.statusText}`);
     return response.json();

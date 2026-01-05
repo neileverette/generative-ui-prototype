@@ -137,6 +137,100 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['workflow'],
         },
       },
+      {
+        name: 'get_uptime',
+        description: 'Get system uptime in human-readable format',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_running_containers',
+        description: 'Get the count of running Docker containers',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_containers_list',
+        description: 'Get a list of all running containers with their CPU and memory usage',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_container_cpu',
+        description: 'Get CPU usage for a specific container',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            containerName: {
+              type: 'string',
+              description: 'Name of the container',
+            },
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+          required: ['containerName'],
+        },
+      },
+      {
+        name: 'get_container_memory',
+        description: 'Get memory usage for a specific container',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            containerName: {
+              type: 'string',
+              description: 'Name of the container',
+            },
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+          required: ['containerName'],
+        },
+      },
+      {
+        name: 'get_overview_metrics',
+        description: 'Get a comprehensive overview of system metrics including CPU, memory, load, disk, network, and uptime with status indicators',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            timeWindow: {
+              type: 'string',
+              description: 'Time window for metrics (e.g., "1h", "1d", "7d")',
+              default: '1h',
+            },
+          },
+        },
+      },
     ],
   };
 });
@@ -307,6 +401,324 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 totalExecutions: totalCount,
               },
               status: failedCount > 0 ? 'warning' : 'healthy',
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_uptime') {
+      const timeWindow = (args?.timeWindow as string) || '1h';
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      const query = 'avg:system.uptime{*}';
+      const data = await queryDatadog(query, from, now);
+
+      let uptimeSeconds: number | null = null;
+      let displayValue = 'N/A';
+
+      if (data?.series?.[0]?.pointlist?.length > 0) {
+        const points = data.series[0].pointlist;
+        uptimeSeconds = points[points.length - 1][1];
+
+        if (uptimeSeconds !== null) {
+          const days = Math.floor(uptimeSeconds / 86400);
+          const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+          const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+
+          if (days > 0) {
+            displayValue = `${days}d ${hours}h`;
+          } else if (hours > 0) {
+            displayValue = `${hours}h ${minutes}m`;
+          } else {
+            displayValue = `${minutes}m`;
+          }
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              metric: 'uptime',
+              displayName: 'System Uptime',
+              currentValue: displayValue,
+              rawSeconds: uptimeSeconds,
+              unit: '',
+              status: 'healthy',
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_running_containers') {
+      const timeWindow = (args?.timeWindow as string) || '1h';
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      const query = 'sum:docker.containers.running{*}';
+      const data = await queryDatadog(query, from, now);
+
+      let currentValue: number | null = null;
+
+      if (data?.series?.[0]?.pointlist?.length > 0) {
+        const points = data.series[0].pointlist;
+        currentValue = Math.round(points[points.length - 1][1]);
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              metric: 'running_containers',
+              displayName: 'Running Containers',
+              currentValue,
+              unit: '',
+              status: currentValue !== null ? 'healthy' : 'unknown',
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_containers_list') {
+      const timeWindow = (args?.timeWindow as string) || '1h';
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      const [memoryData, cpuData] = await Promise.all([
+        queryDatadog('avg:docker.mem.rss{*} by {container_name}', from, now),
+        queryDatadog('avg:docker.cpu.usage{*} by {container_name}', from, now),
+      ]);
+
+      const containerMap = new Map<string, { memory: number | null; cpu: number | null }>();
+
+      // Process memory data
+      if (memoryData?.series) {
+        for (const series of memoryData.series) {
+          const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1] || 'unknown';
+          const points = series.pointlist || [];
+          if (points.length > 0) {
+            const lastValue = points[points.length - 1][1];
+            const mibValue = lastValue !== null ? lastValue / (1024 * 1024) : null;
+            containerMap.set(containerName, { memory: mibValue, cpu: null });
+          }
+        }
+      }
+
+      // Process CPU data
+      if (cpuData?.series) {
+        for (const series of cpuData.series) {
+          const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1] || 'unknown';
+          const points = series.pointlist || [];
+          if (points.length > 0) {
+            const lastValue = points[points.length - 1][1];
+            const existing = containerMap.get(containerName) || { memory: null, cpu: null };
+            existing.cpu = lastValue;
+            containerMap.set(containerName, existing);
+          }
+        }
+      }
+
+      const containers = Array.from(containerMap.entries())
+        .map(([name, metrics]) => ({
+          name,
+          memory: metrics.memory !== null ? parseFloat(metrics.memory.toFixed(1)) : null,
+          cpu: metrics.cpu !== null ? parseFloat(metrics.cpu.toFixed(2)) : null,
+        }))
+        .filter(c => c.memory !== null || c.cpu !== null)
+        .sort((a, b) => (b.memory || 0) - (a.memory || 0));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              containers,
+              count: containers.length,
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_container_cpu') {
+      const containerName = args?.containerName as string;
+      const timeWindow = (args?.timeWindow as string) || '1h';
+
+      if (!containerName) {
+        throw new Error('containerName parameter is required');
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      const query = `avg:docker.cpu.usage{container_name:${containerName}}`;
+      const data = await queryDatadog(query, from, now);
+
+      let currentValue: number | null = null;
+      let status = 'unknown';
+
+      if (data?.series?.[0]?.pointlist?.length > 0) {
+        const points = data.series[0].pointlist;
+        currentValue = parseFloat(points[points.length - 1][1].toFixed(2));
+
+        if (currentValue >= 90) {
+          status = 'critical';
+        } else if (currentValue >= 70) {
+          status = 'warning';
+        } else {
+          status = 'healthy';
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              containerName,
+              metric: 'cpu_usage',
+              displayName: `${containerName} CPU Usage`,
+              currentValue,
+              unit: '%',
+              status,
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_container_memory') {
+      const containerName = args?.containerName as string;
+      const timeWindow = (args?.timeWindow as string) || '1h';
+
+      if (!containerName) {
+        throw new Error('containerName parameter is required');
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      const query = `avg:docker.mem.rss{container_name:${containerName}}`;
+      const data = await queryDatadog(query, from, now);
+
+      let currentValue: number | null = null;
+      let status = 'unknown';
+
+      if (data?.series?.[0]?.pointlist?.length > 0) {
+        const points = data.series[0].pointlist;
+        const rawValue = points[points.length - 1][1];
+        currentValue = parseFloat((rawValue / (1024 * 1024)).toFixed(1)); // Convert to MiB
+        status = 'healthy';
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              containerName,
+              metric: 'memory_usage',
+              displayName: `${containerName} Memory Usage`,
+              currentValue,
+              unit: 'MiB',
+              status,
+              queriedAt: new Date().toISOString(),
+              source: 'mcp-datadog-server',
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    if (name === 'get_overview_metrics') {
+      const timeWindow = (args?.timeWindow as string) || '1h';
+      const now = Math.floor(Date.now() / 1000);
+      const from = now - parseTimeWindow(timeWindow);
+
+      // Define overview metrics with their queries, thresholds, and units
+      const overviewMetrics = [
+        { id: 'system_uptime', displayName: 'System Uptime', query: 'avg:system.uptime{*}', unit: 'seconds' },
+        { id: 'cpu_total', displayName: 'CPU Usage', query: 'avg:system.cpu.user{*} + avg:system.cpu.system{*}', unit: '%', warning: 70, critical: 90 },
+        { id: 'cpu_idle', displayName: 'CPU Idle', query: 'avg:system.cpu.idle{*}', unit: '%' },
+        { id: 'memory_used_percent', displayName: 'Memory Usage', query: '100 * (avg:system.mem.total{*} - avg:system.mem.usable{*}) / avg:system.mem.total{*}', unit: '%', warning: 80, critical: 95 },
+        { id: 'load_1min', displayName: 'Load Average (1m)', query: 'avg:system.load.1{*}', unit: '', warning: 2, critical: 4 },
+        { id: 'disk_used_percent', displayName: 'Disk Usage', query: 'avg:system.disk.in_use{*} * 100', unit: '%', warning: 80, critical: 95 },
+        { id: 'io_wait', displayName: 'IO Wait', query: 'avg:system.cpu.iowait{*}', unit: '%', warning: 10, critical: 25 },
+        { id: 'network_bytes_sent', displayName: 'Network Out', query: 'avg:system.net.bytes_sent{*}', unit: 'bytes' },
+        { id: 'network_bytes_recv', displayName: 'Network In', query: 'avg:system.net.bytes_rcvd{*}', unit: 'bytes' },
+        { id: 'swap_used_percent', displayName: 'Swap Usage', query: 'avg:system.swap.pct_free{*}', unit: '%', warning: 50, critical: 80 },
+      ];
+
+      // Query all metrics in parallel
+      const responses = await Promise.all(
+        overviewMetrics.map(metric => queryDatadog(metric.query, from, now))
+      );
+
+      const results = [];
+
+      for (let i = 0; i < overviewMetrics.length; i++) {
+        const metric = overviewMetrics[i];
+        const data = responses[i];
+
+        let value: number | null = null;
+
+        if (data?.series?.[0]?.pointlist?.length > 0) {
+          const points = data.series[0].pointlist;
+          value = points[points.length - 1][1];
+          if (value !== null) {
+            value = parseFloat(value.toFixed(2));
+          }
+        }
+
+        // Determine status based on thresholds
+        let status = 'healthy';
+        if (value !== null) {
+          const m = metric as any;
+          if (m.critical !== undefined && value >= m.critical) {
+            status = 'critical';
+          } else if (m.warning !== undefined && value >= m.warning) {
+            status = 'warning';
+          }
+        } else {
+          status = 'unknown';
+        }
+
+        results.push({
+          metric: metric.id,
+          displayName: metric.displayName,
+          currentValue: value,
+          unit: metric.unit,
+          status,
+          thresholds: {
+            warning: (metric as any).warning,
+            critical: (metric as any).critical,
+          },
+          source: 'mcp-datadog-server',
+        });
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              metrics: results,
               queriedAt: new Date().toISOString(),
               source: 'mcp-datadog-server',
             }, null, 2),
