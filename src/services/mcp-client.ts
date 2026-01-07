@@ -286,6 +286,40 @@ class MCPClient {
     if (!response.ok) throw new Error(`Failed to query agent: ${response.statusText}`);
     return response.json();
   }
+
+  // ==========================================================================
+  // AWS Cost Explorer Methods
+  // ==========================================================================
+
+  /**
+   * Get AWS costs for current billing month
+   */
+  async getAWSCosts(): Promise<any> {
+    console.log('[MCP Client] getAWSCosts via direct API');
+    const response = await fetch(`${this.directBaseUrl}/costs/aws`);
+    if (!response.ok) throw new Error(`Failed to fetch AWS costs: ${response.statusText}`);
+    return response.json();
+  }
+
+  /**
+   * Get AWS cost forecast for end of billing month
+   */
+  async getAWSForecast(): Promise<any> {
+    console.log('[MCP Client] getAWSForecast via direct API');
+    const response = await fetch(`${this.directBaseUrl}/costs/aws/forecast`);
+    if (!response.ok) throw new Error(`Failed to fetch AWS forecast: ${response.statusText}`);
+    return response.json();
+  }
+
+  /**
+   * Get combined costs overview (AWS current + forecast)
+   */
+  async getCostsOverview(): Promise<any> {
+    console.log('[MCP Client] getCostsOverview via direct API');
+    const response = await fetch(`${this.directBaseUrl}/costs/overview`);
+    if (!response.ok) throw new Error(`Failed to fetch costs overview: ${response.statusText}`);
+    return response.json();
+  }
 }
 
 // Export singleton instance

@@ -12,6 +12,7 @@
     "start:server": "tsx server/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cost-explorer": "^3.965.0",
     "@copilotkit/react-core": "^1.50.0",
     "@copilotkit/react-ui": "^1.50.0",
     "@copilotkit/runtime": "^1.50.0",

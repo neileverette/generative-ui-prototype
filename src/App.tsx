@@ -7,7 +7,7 @@ import { BlurBackground } from './components/BlurBackground';
 import { A2UIComponent, DashboardState, sortByPriority } from './types/a2ui';
 import { useCopilotAction, useCopilotReadable, useCopilotChat } from '@copilotkit/react-core';
 import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
-import { Server, Container, Workflow, Terminal, ArrowLeft, Rocket } from 'lucide-react';
+import { Server, Container, Workflow, Terminal, ArrowLeft, Rocket, DollarSign } from 'lucide-react';
 import deploymentsData from './data/deployments.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
 import { mcpClient } from './services/mcp-client';
@@ -1704,6 +1704,132 @@ function DashboardWithAgent() {
     });
   }, []);
 
+  // Handler for Costs
+  const handleFetchCosts = useCallback(async () => {
+    setCurrentView('loading');
+
+    try {
+      const data = await mcpClient.getCostsOverview();
+
+      const components: A2UIComponent[] = [];
+
+      // Check if AWS data is available
+      if (data.aws && !data.aws.error) {
+        // Main cost metric card - 2 columns wide
+        const costCard: A2UIComponent = {
+          id: 'aws-total-cost',
+          component: 'metric_card' as const,
+          source: 'aws-cost-explorer',
+          priority: 'high',
+          timestamp: new Date().toISOString(),
+          columnSpan: 2,
+          props: {
+            title: 'Current Month Cost',
+            value: `$${data.aws.totalCost.toFixed(2)}`,
+            unit: 'USD',
+            size: 'xl' as const,
+            status: 'healthy' as const,
+            description: `${data.aws.period.start} to ${data.aws.period.end}`,
+          },
+        };
+        components.push(costCard);
+
+        // Forecast card if available - 2 columns wide
+        if (data.forecast && data.forecast.forecastedCost > 0) {
+          const forecastCard: A2UIComponent = {
+            id: 'aws-forecast',
+            component: 'metric_card' as const,
+            source: 'aws-cost-explorer',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            columnSpan: 2,
+            props: {
+              title: 'Forecasted Month End',
+              value: `$${data.forecast.forecastedCost.toFixed(2)}`,
+              unit: 'USD',
+              size: 'xl' as const,
+              status: 'healthy' as const,
+              description: 'Estimated total for billing month',
+            },
+          };
+          components.push(forecastCard);
+        }
+
+        // Service breakdown table - 4 columns wide (full width)
+        if (data.aws.breakdown && data.aws.breakdown.length > 0) {
+          const breakdownTable: A2UIComponent = {
+            id: 'aws-cost-breakdown',
+            component: 'data_table' as const,
+            source: 'aws-cost-explorer',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            columnSpan: 4,
+            props: {
+              title: 'Cost Breakdown by Service',
+              columns: [
+                { key: 'name', label: 'Service' },
+                { key: 'cost', label: 'Cost (USD)' },
+                { key: 'percentage', label: '% of Total' },
+              ],
+              rows: data.aws.breakdown.map((item: { name: string; cost: number; percentage: number }) => ({
+                name: item.name,
+                cost: `$${item.cost.toFixed(2)}`,
+                percentage: `${item.percentage}%`,
+              })),
+            },
+          };
+          components.push(breakdownTable);
+        }
+      } else {
+        // Show error message if AWS not configured
+        const errorCard: A2UIComponent = {
+          id: 'aws-cost-error',
+          component: 'metric_card' as const,
+          source: 'error',
+          priority: 'high',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: 'AWS Costs',
+            value: 'Not Configured',
+            size: 'large' as const,
+            status: 'critical' as const,
+            description: data.aws?.error || 'AWS Cost Explorer not configured',
+          },
+        };
+        components.push(errorCard);
+      }
+
+      setDashboardState({
+        components,
+        lastUpdated: new Date().toISOString(),
+        agentMessage: data.aws && !data.aws.error
+          ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
+          : 'Unable to fetch AWS costs',
+      });
+      setCurrentView('home');
+    } catch (error) {
+      console.error('Error fetching costs:', error);
+      setDashboardState({
+        components: [{
+          id: 'cost-error',
+          component: 'metric_card' as const,
+          source: 'error',
+          priority: 'high',
+          timestamp: new Date().toISOString(),
+          props: {
+            title: 'Error',
+            value: 'Failed to load',
+            size: 'large' as const,
+            status: 'critical' as const,
+            description: error instanceof Error ? error.message : 'Unknown error',
+          },
+        }],
+        lastUpdated: new Date().toISOString(),
+      });
+      setCurrentView('home');
+    }
+  }, []);
+
   // Handler for going back to home
   const handleBackToHome = useCallback(() => {
     setCurrentView('home');
@@ -1749,6 +1875,13 @@ function DashboardWithAgent() {
       description: 'View deployment history and commits',
       icon: <Rocket className="w-6 h-6" />,
       onClick: handleFetchDeployments,
+    },
+    {
+      id: 'costs',
+      title: 'Costs',
+      description: 'AWS infrastructure costs',
+      icon: <DollarSign className="w-6 h-6" />,
+      onClick: handleFetchCosts,
     },
   ];
 

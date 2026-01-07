@@ -247,10 +247,15 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     .filter(c => featuredIds.includes(c.id))
     .sort((a, b) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
 
-  // Small components (metric_card, status_indicator, progress_bar) - excluding featured
+  // Cost components use columnSpan for custom grid layout
+  const costIds = ['aws-total-cost', 'aws-forecast', 'aws-cost-breakdown'];
+  const costComponents = components.filter(c => costIds.includes(c.id));
+
+  // Small components (metric_card, status_indicator, progress_bar) - excluding featured and cost
   const smallComponents = components.filter(c =>
     ['metric_card', 'status_indicator', 'progress_bar'].includes(c.component) &&
-    !featuredIds.includes(c.id)
+    !featuredIds.includes(c.id) &&
+    !costIds.includes(c.id)
   );
 
   // Card groups get their own 2-column layout (automations, container groups)
@@ -258,10 +263,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     c.component === 'card_group' && !featuredIds.includes(c.id)
   );
 
-  // Large components (data_table, alert_list) - excluding featured
+  // Large components (data_table, alert_list) - excluding featured and cost
   const largeComponents = components.filter(c =>
     ['data_table', 'alert_list'].includes(c.component) &&
-    !featuredIds.includes(c.id)
+    !featuredIds.includes(c.id) &&
+    !costIds.includes(c.id)
   );
 
   return (
@@ -270,6 +276,26 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       {agentMessage && (
         <div className="p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm">
           <p className="text-sm text-text-secondary">{agentMessage}</p>
+        </div>
+      )}
+
+      {/* Cost components - 4 column grid with custom spans */}
+      {costComponents.length > 0 && (
+        <div className="grid grid-cols-4 gap-4">
+          {costComponents.map((component, index) => {
+            const Component = COMPONENT_REGISTRY[component.component];
+            // Use columnSpan from component or default based on type
+            const span = component.columnSpan || (component.component === 'data_table' ? 4 : 2);
+            return (
+              <div
+                key={component.id || index}
+                className={`animate-slide-up h-full ${span === 4 ? 'col-span-4' : 'col-span-2'}`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                {Component ? <Component component={component} className="h-full" /> : null}
+              </div>
+            );
+          })}
         </div>
       )}
 

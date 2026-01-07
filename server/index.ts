@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import express from 'express';
+import { CostExplorerClient, GetCostAndUsageCommand, GetCostForecastCommand } from '@aws-sdk/client-cost-explorer';
 
 import {
   CopilotRuntime,
@@ -27,6 +28,12 @@ const DATADOG_SITE = process.env.DATADOG_SITE || 'us5.datadoghq.com';
 const LANGFLOW_URL = process.env.LANGFLOW_URL || 'https://langflow.neil-everette.com';
 const LANGFLOW_API_KEY = process.env.LANGFLOW_API_KEY;
 const LANGFLOW_FLOW_ID = process.env.LANGFLOW_FLOW_ID;
+
+// AWS Cost Explorer credentials
+const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+const AWS_EC2_INSTANCE_ID = 'i-040ac6026761030ac'; // Target EC2 instance for cost tracking
 
 if (!OPENAI_API_KEY) {
   console.error('Missing OPENAI_API_KEY environment variable');
@@ -60,6 +67,155 @@ function parseTimeWindow(timeWindow: string): number {
     case 'o': return value * 2592000; // month (30 days)
     default: return 3600; // default to 1 hour
   }
+}
+
+// =============================================================================
+// AWS COST EXPLORER INTEGRATION
+// =============================================================================
+
+// Initialize AWS Cost Explorer client (only if credentials are available)
+let costExplorerClient: CostExplorerClient | null = null;
+if (AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY) {
+  costExplorerClient = new CostExplorerClient({
+    region: AWS_REGION,
+    credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
+    },
+  });
+  console.log('[AWS Cost Explorer] Client initialized');
+} else {
+  console.log('[AWS Cost Explorer] Not configured - missing credentials');
+}
+
+// Helper to get current billing month date range
+function getBillingMonthRange(): { start: string; end: string } {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  // Start of current month (YYYY-MM-DD format)
+  const start = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
+  // Tomorrow (Cost Explorer end date is exclusive)
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const end = tomorrow.toISOString().split('T')[0];
+
+  return { start, end };
+}
+
+// Fetch AWS costs for the current billing month
+async function fetchAWSCosts(): Promise<{
+  totalCost: number;
+  currency: string;
+  breakdown: Array<{ name: string; cost: number; percentage: number }>;
+  period: { start: string; end: string };
+  queriedAt: string;
+  source: string;
+}> {
+  if (!costExplorerClient) {
+    throw new Error('AWS Cost Explorer not configured');
+  }
+
+  const { start, end } = getBillingMonthRange();
+
+  // Get cost and usage grouped by service
+  const command = new GetCostAndUsageCommand({
+    TimePeriod: { Start: start, End: end },
+    Granularity: 'MONTHLY',
+    Metrics: ['UnblendedCost'],
+    GroupBy: [{ Type: 'DIMENSION', Key: 'SERVICE' }],
+  });
+
+  const response = await costExplorerClient.send(command);
+
+  // Parse results
+  const breakdown: Array<{ name: string; cost: number; percentage: number }> = [];
+  let totalCost = 0;
+
+  if (response.ResultsByTime && response.ResultsByTime.length > 0) {
+    const groups = response.ResultsByTime[0].Groups || [];
+
+    for (const group of groups) {
+      const serviceName = group.Keys?.[0] || 'Unknown';
+      const cost = parseFloat(group.Metrics?.UnblendedCost?.Amount || '0');
+
+      if (cost > 0) {
+        breakdown.push({ name: serviceName, cost, percentage: 0 });
+        totalCost += cost;
+      }
+    }
+
+    // Calculate percentages
+    for (const item of breakdown) {
+      item.percentage = totalCost > 0 ? parseFloat(((item.cost / totalCost) * 100).toFixed(1)) : 0;
+    }
+
+    // Sort by cost descending
+    breakdown.sort((a, b) => b.cost - a.cost);
+  }
+
+  return {
+    totalCost: parseFloat(totalCost.toFixed(2)),
+    currency: 'USD',
+    breakdown,
+    period: { start, end },
+    queriedAt: new Date().toISOString(),
+    source: 'aws-cost-explorer',
+  };
+}
+
+// Fetch AWS cost forecast for end of billing month
+async function fetchAWSForecast(): Promise<{
+  forecastedCost: number;
+  currency: string;
+  period: { start: string; end: string };
+  queriedAt: string;
+}> {
+  if (!costExplorerClient) {
+    throw new Error('AWS Cost Explorer not configured');
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  // Tomorrow as start (forecast starts from tomorrow)
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const start = tomorrow.toISOString().split('T')[0];
+
+  // End of current month
+  const lastDay = new Date(year, month + 1, 0);
+  const end = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+
+  // Only get forecast if we're not at end of month
+  if (tomorrow >= lastDay) {
+    return {
+      forecastedCost: 0,
+      currency: 'USD',
+      period: { start, end },
+      queriedAt: new Date().toISOString(),
+    };
+  }
+
+  const command = new GetCostForecastCommand({
+    TimePeriod: { Start: start, End: end },
+    Metric: 'UNBLENDED_COST',
+    Granularity: 'MONTHLY',
+  });
+
+  const response = await costExplorerClient.send(command);
+
+  const forecastedCost = parseFloat(response.Total?.Amount || '0');
+
+  return {
+    forecastedCost: parseFloat(forecastedCost.toFixed(2)),
+    currency: 'USD',
+    period: { start, end },
+    queriedAt: new Date().toISOString(),
+  };
 }
 
 // Datadog API helper
@@ -1462,6 +1618,96 @@ app.get('/api/metrics/uptime', async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// =============================================================================
+// AWS COST ENDPOINTS
+// =============================================================================
+
+// AWS costs for current billing month
+app.get('/api/costs/aws', async (_req, res) => {
+  try {
+    if (!costExplorerClient) {
+      return res.status(503).json({
+        error: 'AWS Cost Explorer not configured',
+        message: 'Missing AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY environment variables',
+      });
+    }
+
+    const costs = await fetchAWSCosts();
+    res.json(costs);
+  } catch (error) {
+    console.error('[AWS Costs] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'aws-cost-explorer',
+    });
+  }
+});
+
+// AWS cost forecast for end of billing month
+app.get('/api/costs/aws/forecast', async (_req, res) => {
+  try {
+    if (!costExplorerClient) {
+      return res.status(503).json({
+        error: 'AWS Cost Explorer not configured',
+        message: 'Missing AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY environment variables',
+      });
+    }
+
+    const forecast = await fetchAWSForecast();
+    res.json(forecast);
+  } catch (error) {
+    console.error('[AWS Forecast] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'aws-cost-explorer',
+    });
+  }
+});
+
+// Combined costs overview (AWS + forecast)
+app.get('/api/costs/overview', async (_req, res) => {
+  try {
+    const result: {
+      aws: any;
+      forecast: any;
+      totalCurrentCost: number;
+      currency: string;
+      queriedAt: string;
+    } = {
+      aws: null,
+      forecast: null,
+      totalCurrentCost: 0,
+      currency: 'USD',
+      queriedAt: new Date().toISOString(),
+    };
+
+    // Fetch AWS costs if configured
+    if (costExplorerClient) {
+      try {
+        const [awsCosts, awsForecast] = await Promise.all([
+          fetchAWSCosts(),
+          fetchAWSForecast().catch(() => null), // Forecast can fail, don't block
+        ]);
+        result.aws = awsCosts;
+        result.forecast = awsForecast;
+        result.totalCurrentCost = awsCosts.totalCost;
+      } catch (error) {
+        result.aws = { error: error instanceof Error ? error.message : 'Failed to fetch AWS costs' };
+      }
+    } else {
+      result.aws = { error: 'AWS Cost Explorer not configured' };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('[Costs Overview] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'costs-overview',
+    });
   }
 });
 
