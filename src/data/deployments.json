@@ -1,7 +1,21 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 4,
+  "totalDeployments": 5,
   "deployments": [
+    {
+      "id": 5,
+      "tag": "v1.2.2",
+      "name": "Langflow Agent Fix",
+      "date": "2026-01-07T17:45:00Z",
+      "summary": "Fix Langflow agent Datadog API connectivity",
+      "commits": [
+        {
+          "hash": "c367b84",
+          "message": "Fix skeleton loaders not clearing on interpretations error"
+        }
+      ],
+      "notes": "Updated Langflow Agent Instructions with Datadog API URL configuration to restore metric interpretations"
+    },
     {
       "id": 4,
       "tag": "v1.2.1",
