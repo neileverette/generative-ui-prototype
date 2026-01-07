@@ -1,4 +1,4 @@
-name: Deploy to AWS ECS
+name: Build and Deploy to EC2
 
 on:
   push:
@@ -8,8 +8,6 @@ on:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-  ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-  ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
 
 jobs:
   deploy:
@@ -42,9 +40,39 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Update ECS service
+      - name: Deploy to EC2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
         run: |
-          aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $ECS_SERVICE \
-            --force-new-deployment
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << 'ENDSSH'
+            # Login to ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 070322435379.dkr.ecr.us-east-1.amazonaws.com
+
+            # Pull latest image
+            docker pull 070322435379.dkr.ecr.us-east-1.amazonaws.com/generative-ui:latest
+
+            # Stop and remove old container (ignore errors if not exists)
+            docker stop generative-ui 2>/dev/null || true
+            docker rm generative-ui 2>/dev/null || true
+
+            # Also stop old datadog-dashboard container if it exists
+            docker stop datadog-dashboard 2>/dev/null || true
+            docker rm datadog-dashboard 2>/dev/null || true
+
+            # Run new container
+            docker run -d \
+              --name generative-ui \
+              --restart unless-stopped \
+              -p 4000:4000 \
+              --env-file /home/ec2-user/.env \
+              070322435379.dkr.ecr.us-east-1.amazonaws.com/generative-ui:latest
+
+            # Cleanup old images
+            docker image prune -f
+          ENDSSH
+          rm private_key.pem
