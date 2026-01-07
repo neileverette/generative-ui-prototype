@@ -1249,7 +1249,18 @@ function DashboardWithAgent() {
       // Fetch AI interpretations in background (always use 1h to avoid LangFlow timeouts)
       mcpClient.getInterpretations('1h')
         .then(interpretationsData => {
-          if (interpretationsData.error || !interpretationsData.interpretations) return;
+          if (interpretationsData.error || !interpretationsData.interpretations) {
+            // Clear loading state even on error/empty response
+            setDashboardState(prev => ({
+              ...prev,
+              components: prev.components.map(comp =>
+                comp.component === 'metric_card'
+                  ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                  : comp
+              ),
+            }));
+            return;
+          }
 
           // Update components with interpretations and remove loading state
           setDashboardState(prev => {
