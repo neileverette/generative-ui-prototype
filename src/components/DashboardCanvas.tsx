@@ -61,6 +61,8 @@ interface DashboardCanvasProps {
   commands?: CommandAction[];
   onCommandClick?: (query: string) => void;
   voiceInput?: VoiceInputProps;
+  statusSummary?: string | null;
+  statusSummaryLoading?: boolean;
 }
 
 // Component registry - maps A2UI component types to React components
@@ -110,7 +112,7 @@ const DEFAULT_COMMANDS: CommandAction[] = [
   { id: 'last-deployment', label: 'When was my last deployment?' },
 ];
 
-export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput }: DashboardCanvasProps) {
+export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput, statusSummary, statusSummaryLoading }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
 
   // Determine if voice is active (listening or transcribing)
@@ -176,16 +178,24 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         <h2 className="text-4xl font-normal text-text-primary mb-3">
           Command Central
         </h2>
-        <p className="text-text-secondary max-w-md mb-8 text-lg">
-          Choose an option below or use the chat
+
+        {/* Status Summary - Loading with shimmer or actual summary */}
+        <p className="text-text-secondary max-w-2xl mb-8 text-lg">
+          {statusSummaryLoading ? (
+            <span className="inline-block animate-pulse bg-gradient-to-r from-text-secondary via-text-muted to-text-secondary bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
+              Gathering insights and summary...
+            </span>
+          ) : (
+            statusSummary || 'Choose an option below or use the chat'
+          )}
         </p>
 
         {/* Voice Content Area - switches between cards and voice overlay */}
-        <div className="relative w-full max-w-5xl min-h-[200px] flex flex-col items-center justify-center">
-          {/* Shortcut Cards - Fade out during voice input */}
+        <div className="relative w-full max-w-4xl min-h-[200px] flex flex-col items-center justify-center">
+          {/* Shortcut Cards - 2 rows x 3 columns, Fade out during voice input */}
           {shortcuts && shortcuts.length > 0 && (
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 w-full transition-all duration-300 ${
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full transition-all duration-300 ${
                 isVoiceActive ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'
               }`}
             >

@@ -39,6 +39,8 @@ function DashboardWithAgent() {
   const [chatWidth, setChatWidth] = useState(400);
   const [timeWindow, setTimeWindow] = useState('4h');
   const [lastAction, setLastAction] = useState<'system' | 'containers' | 'automations' | null>(null);
+  const [statusSummary, setStatusSummary] = useState<string | null>(null);
+  const [statusSummaryLoading, setStatusSummaryLoading] = useState(true);
   const isResizing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -84,6 +86,76 @@ function DashboardWithAgent() {
       handleFetchAutomations();
     }
   }, [timeWindow]); // Only trigger on timeWindow changes, not on lastAction
+
+  // Fetch status summary on mount
+  useEffect(() => {
+    const fetchStatusSummary = async () => {
+      setStatusSummaryLoading(true);
+      try {
+        // Fetch data from all sources in parallel
+        const [containersData, systemData, costsData] = await Promise.all([
+          mcpClient.getRunningContainers(timeWindow).catch(() => ({ error: true })),
+          mcpClient.getOverviewFast(timeWindow).catch(() => ({ error: true })),
+          mcpClient.getCostsOverview().catch(() => ({ error: true })),
+        ]);
+
+        // Build natural sentence parts
+        const summaryParts: string[] = [];
+
+        // System health assessment
+        let systemHealthy = true;
+        if (!systemData.error && systemData.metrics) {
+          const cpu = systemData.metrics.find((m: { name: string; value: number }) => m.name === 'cpu');
+          const memory = systemData.metrics.find((m: { name: string; value: number }) => m.name === 'memory');
+          if (cpu && typeof cpu.value === 'number' && cpu.value > 80) systemHealthy = false;
+          if (memory && typeof memory.value === 'number' && memory.value > 85) systemHealthy = false;
+        }
+
+        // Containers
+        let containerCount = 0;
+        if (!containersData.error && containersData.currentValue !== undefined) {
+          containerCount = containersData.currentValue;
+        }
+
+        // Costs
+        let costInfo = '';
+        if (!costsData.error && costsData.aws && !costsData.aws.error) {
+          const cost = costsData.aws.totalCost;
+          const forecast = costsData.aws.forecast?.amount;
+          if (forecast) {
+            costInfo = `$${cost.toFixed(2)} spent so far this month with a forecast of $${forecast.toFixed(2)}`;
+          } else {
+            costInfo = `$${cost.toFixed(2)} spent so far this month`;
+          }
+        }
+
+        // Build natural sentence
+        const healthStatus = systemHealthy ? 'System health is good' : 'System health needs attention';
+
+        if (containerCount > 0) {
+          const containerWord = containerCount === 1 ? 'container' : 'containers';
+          summaryParts.push(`${containerCount} ${containerWord} running smoothly`);
+        }
+
+        if (costInfo) {
+          summaryParts.push(costInfo);
+        }
+
+        if (summaryParts.length === 0) {
+          setStatusSummary(`${healthStatus}, but unable to fetch detailed metrics.`);
+        } else {
+          const details = summaryParts.join(', ');
+          setStatusSummary(`${healthStatus}, with ${details}.`);
+        }
+      } catch (error) {
+        setStatusSummary(`Unable to fetch system status: ${error}`);
+      } finally {
+        setStatusSummaryLoading(false);
+      }
+    };
+
+    fetchStatusSummary();
+  }, []); // Run once on mount
 
   // Make dashboard state readable by the agent
   useCopilotReadable({
@@ -969,15 +1041,14 @@ function DashboardWithAgent() {
   // Action to get a quick status summary across all systems
   useCopilotAction({
     name: 'getQuickStatusSummary',
-    description: 'Get a quick one-sentence summary of the entire infrastructure status including containers, system health, workflows, and costs. Use this when the user asks for a quick status, overview, or wants to know how everything is running. Return ONLY the summary sentence, do not add any other commentary.',
+    description: 'Get a quick one-sentence summary of the entire infrastructure status including containers, system health, and costs. Use this when the user asks for a quick status, overview, or wants to know how everything is running. Return ONLY the summary sentence, do not add any other commentary.',
     parameters: [],
     handler: async () => {
       try {
         // Fetch data from all sources in parallel
-        const [containersData, systemData, workflowsData, costsData] = await Promise.all([
+        const [containersData, systemData, costsData] = await Promise.all([
           mcpClient.getRunningContainers(timeWindow).catch(() => ({ error: true })),
           mcpClient.getOverviewFast(timeWindow).catch(() => ({ error: true })),
-          mcpClient.getN8nWorkflows(timeWindow).catch(() => ({ error: true, workflows: [] })),
           mcpClient.getCostsOverview().catch(() => ({ error: true })),
         ]);
 
@@ -999,12 +1070,6 @@ function DashboardWithAgent() {
           containerCount = containersData.currentValue;
         }
 
-        // Workflows
-        let activeWorkflows = 0;
-        if (!workflowsData.error && workflowsData.workflows) {
-          activeWorkflows = workflowsData.workflows.filter((w: { active: boolean }) => w.active).length;
-        }
-
         // Costs
         let costInfo = '';
         if (!costsData.error && costsData.aws && !costsData.aws.error) {
@@ -1023,11 +1088,6 @@ function DashboardWithAgent() {
         if (containerCount > 0) {
           const containerWord = containerCount === 1 ? 'container' : 'containers';
           summaryParts.push(`${containerCount} ${containerWord} running smoothly`);
-        }
-
-        if (activeWorkflows > 0) {
-          const workflowWord = activeWorkflows === 1 ? 'automation' : 'automations';
-          summaryParts.push(`${activeWorkflows} ${workflowWord} operating without issues`);
         }
 
         if (costInfo) {
@@ -1920,7 +1980,9 @@ function DashboardWithAgent() {
     });
   }, []);
 
-  // Define shortcuts for the welcome screen
+  // Define shortcuts for the welcome screen (2 rows x 3 columns)
+  // Row 1: System & Infrastructure, Containers, Automations
+  // Row 2: Costs, Deployments, Commands
   const shortcuts = [
     {
       id: 'system-infrastructure',
@@ -1944,11 +2006,11 @@ function DashboardWithAgent() {
       onClick: handleFetchAutomations,
     },
     {
-      id: 'commands',
-      title: 'Commands',
-      description: 'System commands and actions',
-      icon: <Terminal className="w-6 h-6" />,
-      onClick: handleShowCommands,
+      id: 'costs',
+      title: 'Costs',
+      description: 'AWS infrastructure costs',
+      icon: <DollarSign className="w-6 h-6" />,
+      onClick: handleFetchCosts,
     },
     {
       id: 'deployments',
@@ -1958,11 +2020,11 @@ function DashboardWithAgent() {
       onClick: handleFetchDeployments,
     },
     {
-      id: 'costs',
-      title: 'Costs',
-      description: 'AWS infrastructure costs',
-      icon: <DollarSign className="w-6 h-6" />,
-      onClick: handleFetchCosts,
+      id: 'commands',
+      title: 'Commands',
+      description: 'System commands and actions',
+      icon: <Terminal className="w-6 h-6" />,
+      onClick: handleShowCommands,
     },
   ];
 
@@ -2024,6 +2086,8 @@ function DashboardWithAgent() {
             currentView={currentView}
             onBack={handleBackToHome}
             onCommandClick={handleCommandClick}
+            statusSummary={statusSummary}
+            statusSummaryLoading={statusSummaryLoading}
             voiceInput={{
               voiceState,
               transcript,
