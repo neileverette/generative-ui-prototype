@@ -966,6 +966,87 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to get a quick status summary across all systems
+  useCopilotAction({
+    name: 'getQuickStatusSummary',
+    description: 'Get a quick one-sentence summary of the entire infrastructure status including containers, system health, workflows, and costs. Use this when the user asks for a quick status, overview, or wants to know how everything is running. Return ONLY the summary sentence, do not add any other commentary.',
+    parameters: [],
+    handler: async () => {
+      try {
+        // Fetch data from all sources in parallel
+        const [containersData, systemData, workflowsData, costsData] = await Promise.all([
+          mcpClient.getRunningContainers(timeWindow).catch(() => ({ error: true })),
+          mcpClient.getOverviewFast(timeWindow).catch(() => ({ error: true })),
+          mcpClient.getN8nWorkflows(timeWindow).catch(() => ({ error: true, workflows: [] })),
+          mcpClient.getCostsOverview().catch(() => ({ error: true })),
+        ]);
+
+        // Build natural sentence parts
+        const summaryParts: string[] = [];
+
+        // System health assessment
+        let systemHealthy = true;
+        if (!systemData.error && systemData.metrics) {
+          const cpu = systemData.metrics.find((m: { name: string; value: number }) => m.name === 'cpu');
+          const memory = systemData.metrics.find((m: { name: string; value: number }) => m.name === 'memory');
+          if (cpu && typeof cpu.value === 'number' && cpu.value > 80) systemHealthy = false;
+          if (memory && typeof memory.value === 'number' && memory.value > 85) systemHealthy = false;
+        }
+
+        // Containers
+        let containerCount = 0;
+        if (!containersData.error && containersData.currentValue !== undefined) {
+          containerCount = containersData.currentValue;
+        }
+
+        // Workflows
+        let activeWorkflows = 0;
+        if (!workflowsData.error && workflowsData.workflows) {
+          activeWorkflows = workflowsData.workflows.filter((w: { active: boolean }) => w.active).length;
+        }
+
+        // Costs
+        let costInfo = '';
+        if (!costsData.error && costsData.aws && !costsData.aws.error) {
+          const cost = costsData.aws.totalCost;
+          const forecast = costsData.aws.forecast?.amount;
+          if (forecast) {
+            costInfo = `$${cost.toFixed(2)} spent so far this month with a forecast of $${forecast.toFixed(2)}`;
+          } else {
+            costInfo = `$${cost.toFixed(2)} spent so far this month`;
+          }
+        }
+
+        // Build natural sentence
+        const healthStatus = systemHealthy ? 'System health is good' : 'System health needs attention';
+
+        if (containerCount > 0) {
+          const containerWord = containerCount === 1 ? 'container' : 'containers';
+          summaryParts.push(`${containerCount} ${containerWord} running smoothly`);
+        }
+
+        if (activeWorkflows > 0) {
+          const workflowWord = activeWorkflows === 1 ? 'automation' : 'automations';
+          summaryParts.push(`${activeWorkflows} ${workflowWord} operating without issues`);
+        }
+
+        if (costInfo) {
+          summaryParts.push(costInfo);
+        }
+
+        if (summaryParts.length === 0) {
+          return `${healthStatus}, but unable to fetch detailed metrics.`;
+        }
+
+        // Construct final sentence
+        const details = summaryParts.join(', ');
+        return `${healthStatus}, with ${details}.`;
+      } catch (error) {
+        return `Unable to fetch system status: ${error}`;
+      }
+    },
+  });
+
   // Shortcut handlers for the welcome screen
   const handleFetchContainersList = useCallback(async () => {
     try {
@@ -1971,12 +2052,12 @@ function DashboardWithAgent() {
                 placeholder: 'Ask about CPU, memory, containers...',
               }}
               suggestions={[
+                { title: 'Quick status', message: 'Give me a quick status summary' },
                 { title: 'System metrics', message: 'Show all system metrics' },
                 { title: 'Container status', message: 'Which containers are running?' },
                 { title: 'Workflow health', message: 'Are my n8n workflows healthy?' },
                 { title: 'Disk space', message: 'How much disk space is left?' },
                 { title: 'Memory usage', message: 'Show me memory usage' },
-                { title: 'CPU stats', message: 'What is the current CPU usage?' },
               ]}
               className="h-full"
             />
