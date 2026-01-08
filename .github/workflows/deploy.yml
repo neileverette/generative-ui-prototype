@@ -69,7 +69,7 @@ jobs:
               --name generative-ui \
               --restart unless-stopped \
               -p 4000:4000 \
-              --env-file /home/ec2-user/.env \
+              --env-file /home/ec2-user/apps/generative-ui-prototype/.env.local \
               070322435379.dkr.ecr.us-east-1.amazonaws.com/generative-ui:latest
 
             # Cleanup old images
