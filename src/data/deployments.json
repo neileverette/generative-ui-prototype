@@ -1,7 +1,22 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 9,
+  "totalDeployments": 10,
   "deployments": [
+    {
+      "id": 10,
+      "tag": "v1.2.7",
+      "name": "Deployments Trigger Column",
+      "date": "2026-01-13T20:09:12Z",
+      "summary": "Added GitHub Actions trigger tracking to deployments view",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "36068c2",
+          "message": "feat: add GitHub Actions trigger to deployments view"
+        }
+      ],
+      "notes": "Added Trigger column showing GitHub Actions vs Manual deployments with emoji indicators"
+    },
     {
       "id": 9,
       "tag": "v1.2.6",
