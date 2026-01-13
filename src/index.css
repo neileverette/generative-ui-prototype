@@ -177,24 +177,29 @@ div[class*="console-button"],
   opacity: 0.25;
 }
 
-/* Floating animation for blur circles */
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(30px, -20px);
-  }
-  50% {
-    transform: translate(-20px, 30px);
-  }
-  75% {
-    transform: translate(-30px, -10px);
-  }
+/* Circular orbit animations for blur circles */
+@keyframes orbit-cw {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(var(--orbit-x), calc(var(--orbit-y) * -1)); }
+  50% { transform: translate(calc(var(--orbit-x) * -1), 0); }
+  75% { transform: translate(0, var(--orbit-y)); }
+  100% { transform: translate(0, 0); }
 }
 
-.blur-circle-animate {
-  animation: float 20s ease-in-out infinite;
+@keyframes orbit-ccw {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(calc(var(--orbit-x) * -1), calc(var(--orbit-y) * -1)); }
+  50% { transform: translate(var(--orbit-x), 0); }
+  75% { transform: translate(0, var(--orbit-y)); }
+  100% { transform: translate(0, 0); }
+}
+
+.blur-circle-orbit-cw {
+  animation: orbit-cw var(--orbit-duration) ease-in-out infinite;
+}
+
+.blur-circle-orbit-ccw {
+  animation: orbit-ccw var(--orbit-duration) ease-in-out infinite;
 }
 
 /* CopilotKit user message styling - fix white text issue */
