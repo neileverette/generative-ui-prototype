@@ -188,11 +188,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
           ) : (
             (() => {
               const text = statusSummary || 'Choose an option below or use the chat';
-              // Highlight "good" and "running smoothly" in bold green
+              // Highlight "good" and "running smoothly" in bold purple
               const parts = text.split(/(good|running smoothly)/gi);
               return parts.map((part, i) =>
                 /^(good|running smoothly)$/i.test(part)
-                  ? <span key={i} className="font-bold text-green-600">{part}</span>
+                  ? <span key={i} className="font-bold text-accent-primary">{part}</span>
                   : part
               );
             })()
