@@ -1725,6 +1725,8 @@ function DashboardWithAgent() {
     handler: async () => {
       // Trigger the deployments view
       const deployments = deploymentsData.deployments;
+      const githubActionsCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
+      const manualCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
 
       const deploymentsTable: A2UIComponent = {
         id: 'deployments-table',
@@ -1737,13 +1739,15 @@ function DashboardWithAgent() {
           columns: [
             { key: 'tag', label: 'Tag' },
             { key: 'name', label: 'Name' },
+            { key: 'trigger', label: 'Trigger' },
             { key: 'date', label: 'Date & Time' },
             { key: 'summary', label: 'Summary' },
             { key: 'commits', label: 'Commits' },
           ],
-          rows: deployments.map((d) => ({
+          rows: deployments.map((d: { tag: string; name: string; trigger?: string; date: string; summary: string; commits: { hash: string; message: string }[] }) => ({
             tag: d.tag,
             name: d.name,
+            trigger: d.trigger === 'github_actions' ? '🚀 GitHub Actions' : '🔧 Manual',
             date: new Date(d.date).toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -1770,23 +1774,25 @@ function DashboardWithAgent() {
           unit: '',
           size: 'xl' as const,
           status: 'healthy' as const,
-          description: `${deploymentsData.container} container`,
+          description: `${githubActionsCount} via GitHub Actions, ${manualCount} manual`,
         },
       };
 
       setDashboardState({
         components: [deploymentCount, deploymentsTable],
         lastUpdated: new Date().toISOString(),
-        agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container}`,
+        agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container} (${githubActionsCount} automated, ${manualCount} manual)`,
       });
 
-      return `Showing ${deploymentsData.totalDeployments} deployments`;
+      return `Showing ${deploymentsData.totalDeployments} deployments (${githubActionsCount} via GitHub Actions)`;
     },
   });
 
   // Handler for Deployments
   const handleFetchDeployments = useCallback(() => {
     const deployments = deploymentsData.deployments;
+    const githubActionsCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
+    const manualCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
 
     // Create a data table component for deployments
     const deploymentsTable: A2UIComponent = {
@@ -1800,13 +1806,15 @@ function DashboardWithAgent() {
         columns: [
           { key: 'tag', label: 'Tag' },
           { key: 'name', label: 'Name' },
+          { key: 'trigger', label: 'Trigger' },
           { key: 'date', label: 'Date & Time' },
           { key: 'summary', label: 'Summary' },
           { key: 'commits', label: 'Commits' },
         ],
-        rows: deployments.map((d) => ({
+        rows: deployments.map((d: { tag: string; name: string; trigger?: string; date: string; summary: string; commits: { hash: string; message: string }[] }) => ({
           tag: d.tag,
           name: d.name,
+          trigger: d.trigger === 'github_actions' ? '🚀 GitHub Actions' : '🔧 Manual',
           date: new Date(d.date).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -1834,14 +1842,14 @@ function DashboardWithAgent() {
         unit: '',
         size: 'xl' as const,
         status: 'healthy' as const,
-        description: `${deploymentsData.container} container`,
+        description: `${githubActionsCount} via GitHub Actions, ${manualCount} manual`,
       },
     };
 
     setDashboardState({
       components: [deploymentCount, deploymentsTable],
       lastUpdated: new Date().toISOString(),
-      agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container}`,
+      agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container} (${githubActionsCount} automated, ${manualCount} manual)`,
     });
   }, []);
 

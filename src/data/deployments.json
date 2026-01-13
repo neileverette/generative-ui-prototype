@@ -1,13 +1,102 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 5,
+  "totalDeployments": 9,
   "deployments": [
+    {
+      "id": 9,
+      "tag": "v1.2.6",
+      "name": "Neil's Command Central",
+      "date": "2026-01-13T19:58:42Z",
+      "summary": "Personalized branding and enhanced animations",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "7dfa9e5",
+          "message": "style: add circular orbit animations with varied directions"
+        },
+        {
+          "hash": "195ffa9",
+          "message": "style: change success color from green to purple"
+        },
+        {
+          "hash": "bd93375",
+          "message": "style: variable blur, bolder headline, faster animations"
+        },
+        {
+          "hash": "e192702",
+          "message": "style: change status highlight from green to accent purple"
+        },
+        {
+          "hash": "2472a76",
+          "message": "style: speed up background animation 2x"
+        },
+        {
+          "hash": "057a21a",
+          "message": "feat: personalize landing page with Neil's branding"
+        }
+      ],
+      "notes": "Rebranded to Neil's Command Central with purple theming and circular orbit background animations"
+    },
+    {
+      "id": 8,
+      "tag": "v1.2.5",
+      "name": "Home Page Refresh",
+      "date": "2026-01-11T21:15:00Z",
+      "summary": "Revised home page layout with status summary",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "7092205",
+          "message": "Revise home page layout with 2x3 grid and status summary"
+        },
+        {
+          "hash": "1f3326f",
+          "message": "Add quick status summary action and update suggestions"
+        }
+      ],
+      "notes": "Updated home page to 2x3 grid layout with live status summary"
+    },
+    {
+      "id": 7,
+      "tag": "v1.2.4",
+      "name": "CI/CD Pipeline",
+      "date": "2026-01-08T00:13:41Z",
+      "summary": "Automated deployments via GitHub Actions",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "859319a",
+          "message": "Fix env file path and add CI/CD documentation"
+        },
+        {
+          "hash": "031b742",
+          "message": "Update CI/CD to deploy to EC2 instead of ECS"
+        }
+      ],
+      "notes": "Migrated from manual deployments to automated GitHub Actions CI/CD pipeline"
+    },
+    {
+      "id": 6,
+      "tag": "v1.2.3",
+      "name": "GitHub Actions Setup",
+      "date": "2026-01-07T23:51:08Z",
+      "summary": "Initial GitHub Actions workflow for EC2 deployment",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "e9fa2b1",
+          "message": "Add GitHub Actions CI/CD workflow for AWS ECS deployment"
+        }
+      ],
+      "notes": "First automated deployment via GitHub Actions on push to main"
+    },
     {
       "id": 5,
       "tag": "v1.2.2",
       "name": "Langflow Agent Fix",
       "date": "2026-01-07T17:45:00Z",
       "summary": "Fix Langflow agent Datadog API connectivity",
+      "trigger": "manual",
       "commits": [
         {
           "hash": "c367b84",
@@ -22,6 +111,7 @@
       "name": "Layout Responsiveness Fix",
       "date": "2026-01-06T04:30:00Z",
       "summary": "Fix home screen tiles and deployments grid layout",
+      "trigger": "manual",
       "commits": [
         {
           "hash": "52b64c6",
@@ -36,6 +126,7 @@
       "name": "Deployment Tracking Feature",
       "date": "2026-01-05T21:15:00Z",
       "summary": "Deployment tracking with visual history in dashboard",
+      "trigger": "manual",
       "commits": [
         {
           "hash": "dbb91ab",
@@ -54,6 +145,7 @@
       "name": "Voice Input Feature",
       "date": "2026-01-05T18:39:00Z",
       "summary": "Voice input with live transcription and MCP integration",
+      "trigger": "manual",
       "commits": [
         {
           "hash": "afbc64c",
@@ -76,6 +168,7 @@
       "name": "Initial Deployment",
       "date": "2026-01-02T01:30:33Z",
       "summary": "Generative UI Dashboard with CopilotKit and Datadog integration",
+      "trigger": "manual",
       "commits": [
         {
           "hash": "b333994",
