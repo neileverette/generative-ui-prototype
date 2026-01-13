@@ -175,7 +175,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       <div className="h-full flex flex-col items-center justify-center text-center">
         {/* Header - Always visible */}
         <VennDiagramIcon className="w-96 h-auto mb-8" gradient />
-        <h2 className="font-normal text-text-primary mb-3" style={{ fontSize: '1.5rem' }}>
+        <h2 className="font-semibold text-text-primary mb-3" style={{ fontSize: '1.5rem' }}>
           Neil's Command Central
         </h2>
 

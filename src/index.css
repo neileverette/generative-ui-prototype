@@ -163,7 +163,7 @@ div[class*="console-button"],
 .blur-circle {
   position: absolute;
   border-radius: 50%;
-  filter: blur(103.196px);
+  filter: blur(100px); /* default blur, can be overridden inline */
   pointer-events: none;
 }
 
