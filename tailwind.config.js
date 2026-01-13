@@ -17,7 +17,7 @@ export default {
         },
         accent: {
           primary: '#6366f1',    // Indigo
-          success: '#22c55e',    // Green
+          success: '#6366f1',    // Purple (matches primary)
           warning: '#f59e0b',    // Amber
           danger: '#ef4444',     // Red
           info: '#3b82f6',       // Blue
