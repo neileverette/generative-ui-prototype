@@ -2050,7 +2050,7 @@ function DashboardWithAgent() {
           </button>
           <CommandCenterIcon className="w-8 h-8 text-accent-primary" />
           <h1 className="text-lg font-sans font-normal">
-            <span className="gradient-text">Command Central</span>
+            <span className="gradient-text">Neil's Command Central</span>
           </h1>
         </div>
         <div className="flex items-center gap-4">

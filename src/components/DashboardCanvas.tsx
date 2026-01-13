@@ -175,18 +175,27 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       <div className="h-full flex flex-col items-center justify-center text-center">
         {/* Header - Always visible */}
         <VennDiagramIcon className="w-96 h-auto mb-8" gradient />
-        <h2 className="text-4xl font-normal text-text-primary mb-3">
-          Command Central
+        <h2 className="font-normal text-text-primary mb-3" style={{ fontSize: '1.5rem' }}>
+          Neil's Command Central
         </h2>
 
         {/* Status Summary - Loading with shimmer or actual summary */}
-        <p className="text-text-secondary max-w-2xl mb-8 text-lg">
+        <p className="text-text-secondary max-w-2xl mb-8" style={{ fontSize: '1.3rem' }}>
           {statusSummaryLoading ? (
             <span className="inline-block animate-pulse bg-gradient-to-r from-text-secondary via-text-muted to-text-secondary bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
               Gathering insights and summary...
             </span>
           ) : (
-            statusSummary || 'Choose an option below or use the chat'
+            (() => {
+              const text = statusSummary || 'Choose an option below or use the chat';
+              // Highlight "good" and "running smoothly" in bold green
+              const parts = text.split(/(good|running smoothly)/gi);
+              return parts.map((part, i) =>
+                /^(good|running smoothly)$/i.test(part)
+                  ? <span key={i} className="font-bold text-green-600">{part}</span>
+                  : part
+              );
+            })()
           )}
         </p>
 
