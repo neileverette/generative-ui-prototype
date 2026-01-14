@@ -1,7 +1,22 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 10,
+  "totalDeployments": 11,
   "deployments": [
+    {
+      "id": 11,
+      "tag": "v1.2.8",
+      "name": "Deployment Data Update",
+      "date": "2026-01-13T20:14:48Z",
+      "summary": "Added v1.2.7 deployment to tracking data",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "0f6a2bc",
+          "message": "data: add v1.2.7 deployment entry"
+        }
+      ],
+      "notes": "Meta update: tracking deployments within the deployment tracker"
+    },
     {
       "id": 10,
       "tag": "v1.2.7",
