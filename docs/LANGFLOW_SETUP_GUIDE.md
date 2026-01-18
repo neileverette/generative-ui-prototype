@@ -195,8 +195,8 @@ The API Request component should:
 
 3. **Headers**:
    ```
-   DD-API-KEY: bc5c60e368713579134c2b54d4b38531
-   DD-APPLICATION-KEY: 6c90288eaab10d528cab6e6d6f9e31364d6e7a65
+   DD-API-KEY: ${DATADOG_API_KEY}
+   DD-APPLICATION-KEY: ${DATADOG_APP_KEY}
    ```
 
 4. **Connect**:

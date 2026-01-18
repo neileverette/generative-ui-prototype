@@ -357,7 +357,7 @@ Add to `.env.local` in generative-ui-prototype:
 ```env
 # LangFlow Configuration
 LANGFLOW_URL=https://langflow.neil-everette.com
-LANGFLOW_API_KEY=sk-pGdtClfS_tE1Hop3TUHi163OxLwEFc2_-Hsbl9n9oi8
+LANGFLOW_API_KEY=<your-langflow-api-key>
 LANGFLOW_FLOW_ID=<your-flow-id-after-creating>
 
 # Datadog (for LangFlow agent - configure in LangFlow Global Variables)
