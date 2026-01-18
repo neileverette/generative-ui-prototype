@@ -5,6 +5,7 @@ import { DataTable } from './a2ui/DataTable';
 import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
+import { ECRSummaryCard } from './a2ui/ECRSummaryCard';
 import { VoiceOverlay } from './VoiceOverlay';
 import { VoiceButton } from './VoiceButton';
 import { VoiceState } from '../hooks/useVoiceDictation';
@@ -74,6 +75,7 @@ const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   alert_list: AlertList,
   status_indicator: StatusIndicator,
   progress_bar: ProgressBar,
+  ecr_summary: ECRSummaryCard,
 };
 
 function renderComponent(component: A2UIComponent, index: number) {
@@ -260,6 +262,9 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   }
 
   // Group components by layout
+  // ECR summary components render after featured (full width)
+  const ecrComponents = components.filter(c => c.component === 'ecr_summary');
+
   // Featured components go at the top in a 2-column layout (card on left, table on right)
   const featuredIds = ['running-containers-count', 'containers-list-table', 'deployment-count', 'deployments-table'];
   const featuredComponents = components
@@ -363,6 +368,24 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
             </div>
           );
         })()
+      )}
+
+      {/* ECR Summary components - full width after featured */}
+      {ecrComponents.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {ecrComponents.map((component, index) => (
+            <div
+              key={component.id || index}
+              className="animate-slide-up md:col-span-4"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              {(() => {
+                const Component = COMPONENT_REGISTRY[component.component];
+                return Component ? <Component component={component} className="h-full" /> : null;
+              })()}
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Card groups - 2 column layout (automations, container groups) */}

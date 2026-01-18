@@ -260,7 +260,8 @@ function DashboardWithAgent() {
         };
       });
       setCurrentView('home');
-      return `Added component: ${(component as A2UIComponent).props?.title || 'Unknown'}`;
+      const compProps = (component as A2UIComponent).props as { title?: string };
+      return `Added component: ${compProps?.title || (component as A2UIComponent).component || 'Unknown'}`;
     },
   });
 
@@ -1110,15 +1111,72 @@ function DashboardWithAgent() {
   // Shortcut handlers for the welcome screen
   const handleFetchContainersList = useCallback(async () => {
     try {
-      // Fetch containers list and running count in parallel via MCP client
-      const [containersData, countData] = await Promise.all([
+      // Fetch containers list, running count, and ECR summary in parallel via MCP client
+      const [containersData, countData, ecrData] = await Promise.all([
         mcpClient.getContainersList(timeWindow),
         mcpClient.getRunningContainers(timeWindow),
+        mcpClient.getECRSummary().catch(() => ({ error: true })),
       ]);
 
       if (containersData.error) return;
 
       const newComponents: A2UIComponent[] = [];
+
+      // Add ECR Summary card FIRST with high priority so it appears at the top
+      if (!ecrData.error && ecrData.repositoryCount !== undefined) {
+        // Generate observations based on ECR data
+        const observations: string[] = [];
+        const totalImages = ecrData.repositories.reduce(
+          (sum: number, repo: { totalImages: number }) => sum + repo.totalImages,
+          0
+        );
+        observations.push(`${totalImages} total images across ${ecrData.repositoryCount} repositories`);
+
+        // Check for repos with many images
+        const largeRepos = ecrData.repositories.filter(
+          (repo: { totalImages: number }) => repo.totalImages > 10
+        );
+        if (largeRepos.length > 0) {
+          observations.push(
+            `${largeRepos.length} ${largeRepos.length === 1 ? 'repository has' : 'repositories have'} more than 10 images`
+          );
+        }
+
+        // Check for recently pushed images
+        const recentPushes = ecrData.repositories.filter((repo: { recentImages: Array<{ pushed: string }> }) =>
+          repo.recentImages.some((img) => {
+            const pushDate = new Date(img.pushed);
+            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            return pushDate > dayAgo;
+          })
+        );
+        if (recentPushes.length > 0) {
+          observations.push(`${recentPushes.length} ${recentPushes.length === 1 ? 'repository' : 'repositories'} with images pushed in the last 24 hours`);
+        }
+
+        // Generate suggestion
+        let suggestion: string | undefined;
+        if (largeRepos.length > 0) {
+          suggestion = 'Consider setting up lifecycle policies to automatically clean up old, untagged images';
+        } else if (ecrData.repositoryCount > 0 && totalImages === 0) {
+          suggestion = 'No images found. Push your first container image to get started';
+        }
+
+        newComponents.push({
+          id: 'ecr-summary',
+          component: 'ecr_summary' as const,
+          source: 'aws-ecr',
+          priority: 'high',  // High priority to show at the top
+          timestamp: new Date().toISOString(),
+          columnSpan: 2,
+          props: {
+            repositoryCount: ecrData.repositoryCount,
+            repositories: ecrData.repositories,
+            observations,
+            suggestion,
+          },
+        });
+      }
 
       // Add running containers count card with loading state for insights
       if (!countData.error) {
@@ -1187,21 +1245,28 @@ function DashboardWithAgent() {
         });
       }
 
-      // Add container groups - each container gets a card with CPU and Memory
-      containersData.containers.forEach((container: { name: string; memory: number | null; cpu: number | null }) => {
+      // Add container groups - each container gets a card with CPU, Memory, and Restarts
+      containersData.containers.forEach((container: { name: string; memory: number | null; cpu: number | null; restarts: number | null }) => {
         const cpuStatus: 'healthy' | 'warning' | 'critical' | 'unknown' = container.cpu !== null
           ? (container.cpu >= 80 ? 'critical' : container.cpu >= 50 ? 'warning' : 'healthy')
           : 'unknown';
         const memStatus: 'healthy' | 'warning' | 'critical' | 'unknown' = container.memory !== null
           ? (container.memory >= 2048 ? 'critical' : container.memory >= 1024 ? 'warning' : 'healthy')
           : 'unknown';
+        const restartStatus: 'healthy' | 'warning' | 'critical' | 'unknown' = container.restarts !== null
+          ? (container.restarts >= 10 ? 'critical' : container.restarts >= 3 ? 'warning' : 'healthy')
+          : 'unknown';
 
         // Overall status is the worst of CPU or Memory
-        const overallStatus: 'healthy' | 'warning' | 'critical' = cpuStatus === 'critical' || memStatus === 'critical'
+        const overallStatus: 'healthy' | 'warning' | 'critical' = cpuStatus === 'critical' || memStatus === 'critical' || restartStatus === 'critical'
           ? 'critical'
-          : cpuStatus === 'warning' || memStatus === 'warning'
+          : cpuStatus === 'warning' || memStatus === 'warning' || restartStatus === 'warning'
             ? 'warning'
             : 'healthy';
+
+        const restartInsight = restartStatus !== 'healthy' && restartStatus !== 'unknown'
+          ? `Restarted ${container.restarts} times — check logs and health checks.`
+          : undefined;
 
         newComponents.push({
           id: `container-group-${container.name}`,
@@ -1212,6 +1277,7 @@ function DashboardWithAgent() {
           props: {
             title: container.name,
             status: overallStatus as 'healthy' | 'warning' | 'critical',
+            insight: restartInsight,
             metrics: [
               {
                 label: 'CPU',
@@ -1224,6 +1290,12 @@ function DashboardWithAgent() {
                 value: container.memory ?? 'N/A',
                 unit: container.memory !== null ? 'MiB' : '',
                 status: memStatus as 'healthy' | 'warning' | 'unknown',
+              },
+              {
+                label: 'Restarts',
+                value: container.restarts === null ? 'None' : container.restarts,
+                unit: '',
+                status: restartStatus as 'healthy' | 'warning' | 'critical' | 'unknown',
               },
             ],
           },
@@ -1243,11 +1315,13 @@ function DashboardWithAgent() {
             { key: 'name', label: 'Container' },
             { key: 'memory', label: 'Memory (MiB)' },
             { key: 'cpu', label: 'CPU %' },
+            { key: 'restarts', label: 'Restarts' },
           ],
-          rows: containersData.containers.map((c: { name: string; memory: number | null; cpu: number | null }) => ({
+          rows: containersData.containers.map((c: { name: string; memory: number | null; cpu: number | null; restarts: number | null }) => ({
             name: c.name,
             memory: c.memory ?? 'N/A',
             cpu: c.cpu !== null ? `${c.cpu}%` : 'N/A',
+            restarts: c.restarts === null ? 'None' : c.restarts,
           })),
         },
       });
