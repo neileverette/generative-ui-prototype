@@ -320,6 +320,21 @@ class MCPClient {
     if (!response.ok) throw new Error(`Failed to fetch costs overview: ${response.statusText}`);
     return response.json();
   }
+
+  // ==========================================================================
+  // AWS ECR Methods
+  // ==========================================================================
+
+  /**
+   * Get ECR repositories summary
+   * Uses direct API endpoint
+   */
+  async getECRSummary(): Promise<any> {
+    console.log('[MCP Client] getECRSummary via direct API');
+    const response = await fetch(`${this.directBaseUrl}/ecr/summary`);
+    if (!response.ok) throw new Error(`Failed to fetch ECR summary: ${response.statusText}`);
+    return response.json();
+  }
 }
 
 // Export singleton instance

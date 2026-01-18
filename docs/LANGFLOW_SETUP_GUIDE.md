@@ -195,8 +195,8 @@ The API Request component should:
 
 3. **Headers**:
    ```
-   DD-API-KEY: ***REMOVED***
-   DD-APPLICATION-KEY: ***REMOVED***
+   DD-API-KEY: bc5c60e368713579134c2b54d4b38531
+   DD-APPLICATION-KEY: 6c90288eaab10d528cab6e6d6f9e31364d6e7a65
    ```
 
 4. **Connect**:

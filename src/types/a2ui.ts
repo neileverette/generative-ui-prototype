@@ -15,7 +15,8 @@ export type ComponentType =
   | 'data_table'
   | 'alert_list'
   | 'status_indicator'
-  | 'progress_bar';
+  | 'progress_bar'
+  | 'ecr_summary';
 
 // Status indicators for metrics
 export type MetricStatus = 'healthy' | 'warning' | 'critical' | 'unknown';
@@ -135,6 +136,31 @@ export interface ProgressBarComponent extends A2UIComponentBase {
   };
 }
 
+// ECR Summary - displays ECR repository overview
+export interface ECRImage {
+  tags: string[];
+  pushed: string;
+  size: string;
+}
+
+export interface ECRRepository {
+  name: string;
+  uri: string;
+  created: string;
+  totalImages: number;
+  recentImages: ECRImage[];
+}
+
+export interface ECRSummaryComponent extends A2UIComponentBase {
+  component: 'ecr_summary';
+  props: {
+    repositoryCount: number;
+    repositories: ECRRepository[];
+    observations: string[];
+    suggestion?: string;
+  };
+}
+
 // Union type for all components
 export type A2UIComponent =
   | MetricCardComponent
@@ -142,7 +168,8 @@ export type A2UIComponent =
   | DataTableComponent
   | AlertListComponent
   | StatusIndicatorComponent
-  | ProgressBarComponent;
+  | ProgressBarComponent
+  | ECRSummaryComponent;
 
 // Dashboard state
 export interface DashboardState {

@@ -496,12 +496,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const now = Math.floor(Date.now() / 1000);
       const from = now - parseTimeWindow(timeWindow);
 
-      const [memoryData, cpuData] = await Promise.all([
+      const [memoryData, cpuData, restartData] = await Promise.all([
         queryDatadog('avg:docker.mem.rss{*} by {container_name}', from, now),
         queryDatadog('avg:docker.cpu.usage{*} by {container_name}', from, now),
+        queryDatadog('sum:docker.containers.restarts{*} by {container_name}', from, now),
       ]);
 
-      const containerMap = new Map<string, { memory: number | null; cpu: number | null }>();
+      const containerMap = new Map<string, { memory: number | null; cpu: number | null; restarts: number | null }>();
 
       // Process memory data
       if (memoryData?.series) {
@@ -511,7 +512,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (points.length > 0) {
             const lastValue = points[points.length - 1][1];
             const mibValue = lastValue !== null ? lastValue / (1024 * 1024) : null;
-            containerMap.set(containerName, { memory: mibValue, cpu: null });
+            const existing = containerMap.get(containerName) || { memory: null, cpu: null, restarts: null };
+            existing.memory = mibValue;
+            containerMap.set(containerName, existing);
           }
         }
       }
@@ -523,8 +526,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const points = series.pointlist || [];
           if (points.length > 0) {
             const lastValue = points[points.length - 1][1];
-            const existing = containerMap.get(containerName) || { memory: null, cpu: null };
+            const existing = containerMap.get(containerName) || { memory: null, cpu: null, restarts: null };
             existing.cpu = lastValue;
+            containerMap.set(containerName, existing);
+          }
+        }
+      }
+
+      // Process restart data
+      if (restartData?.series) {
+        for (const series of restartData.series) {
+          const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1] || 'unknown';
+          const points = series.pointlist || [];
+          if (points.length > 0) {
+            const lastValue = points[points.length - 1][1];
+            const existing = containerMap.get(containerName) || { memory: null, cpu: null, restarts: null };
+            existing.restarts = lastValue !== null ? Math.round(lastValue) : null;
             containerMap.set(containerName, existing);
           }
         }
@@ -535,8 +552,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           name,
           memory: metrics.memory !== null ? parseFloat(metrics.memory.toFixed(1)) : null,
           cpu: metrics.cpu !== null ? parseFloat(metrics.cpu.toFixed(2)) : null,
+          restarts: metrics.restarts !== null ? metrics.restarts : null,
         }))
-        .filter(c => c.memory !== null || c.cpu !== null)
+        .filter(c => c.memory !== null || c.cpu !== null || c.restarts !== null)
         .sort((a, b) => (b.memory || 0) - (a.memory || 0));
 
       return {

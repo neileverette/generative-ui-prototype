@@ -44,7 +44,7 @@ If URL mode doesn't accept dynamic input:
 2. In cURL mode, you might be able to reference the Python Interpreter's output
 3. The cURL command would be:
    ```
-   curl "{url_input}" -H "DD-API-KEY: ***REMOVED***" -H "DD-APPLICATION-KEY: ***REMOVED***"
+   curl "{url_input}" -H "DD-API-KEY: bc5c60e368713579134c2b54d4b38531" -H "DD-APPLICATION-KEY: 6c90288eaab10d528cab6e6d6f9e31364d6e7a65"
    ```
 
 #### Step 4: Verify the Connection
@@ -59,8 +59,8 @@ After making the connection:
 The API Request still needs these headers (regardless of URL or cURL mode):
 
 **In URL Mode:**
-- Header 1: `DD-API-KEY: ***REMOVED***`
-- Header 2: `DD-APPLICATION-KEY: ***REMOVED***`
+- Header 1: `DD-API-KEY: bc5c60e368713579134c2b54d4b38531`
+- Header 2: `DD-APPLICATION-KEY: 6c90288eaab10d528cab6e6d6f9e31364d6e7a65`
 
 **In cURL Mode:**
 Include as `-H` flags in the cURL command

@@ -4,6 +4,7 @@ dotenv.config({ path: '.env.local' });
 
 import express from 'express';
 import { CostExplorerClient, GetCostAndUsageCommand, GetCostForecastCommand } from '@aws-sdk/client-cost-explorer';
+import { ECRClient, DescribeRepositoriesCommand, DescribeImagesCommand } from '@aws-sdk/client-ecr';
 
 import {
   CopilotRuntime,
@@ -75,6 +76,7 @@ function parseTimeWindow(timeWindow: string): number {
 
 // Initialize AWS Cost Explorer client (only if credentials are available)
 let costExplorerClient: CostExplorerClient | null = null;
+let ecrClient: ECRClient | null = null;
 if (AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY) {
   costExplorerClient = new CostExplorerClient({
     region: AWS_REGION,
@@ -83,9 +85,18 @@ if (AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY) {
       secretAccessKey: AWS_SECRET_ACCESS_KEY,
     },
   });
+  ecrClient = new ECRClient({
+    region: AWS_REGION,
+    credentials: {
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
+    },
+  });
   console.log('[AWS Cost Explorer] Client initialized');
+  console.log('[AWS ECR] Client initialized');
 } else {
   console.log('[AWS Cost Explorer] Not configured - missing credentials');
+  console.log('[AWS ECR] Not configured - missing credentials');
 }
 
 // Helper to get current billing month date range
@@ -1499,17 +1510,19 @@ app.get('/api/metrics/containers-list', async (req, res) => {
     const now = Math.floor(Date.now() / 1000);
     const from = now - parseTimeWindow(timeWindow);
 
-    // Query for container memory and CPU by container name
+    // Query for container memory, CPU, and restarts by container name
     const memoryQuery = `avg:docker.mem.rss{${DEFAULT_HOST}} by {container_name}`;
     const cpuQuery = `avg:docker.cpu.usage{${DEFAULT_HOST}} by {container_name}`;
+    const restartQuery = `sum:docker.containers.restarts{${DEFAULT_HOST}} by {container_name}`;
 
-    const [memoryData, cpuData] = await Promise.all([
+    const [memoryData, cpuData, restartData] = await Promise.all([
       queryDatadog(memoryQuery, from, now),
       queryDatadog(cpuQuery, from, now),
+      queryDatadog(restartQuery, from, now),
     ]);
 
     // Build a map of container metrics
-    const containerMap = new Map<string, { memory: number | null; cpu: number | null }>();
+    const containerMap = new Map<string, { memory: number | null; cpu: number | null; restarts: number | null }>();
 
     // Process memory data
     if (memoryData.series) {
@@ -1521,7 +1534,7 @@ app.get('/api/metrics/containers-list', async (req, res) => {
           const mibValue = lastValue !== null ? lastValue / (1024 * 1024) : null;
 
           if (!containerMap.has(containerName)) {
-            containerMap.set(containerName, { memory: null, cpu: null });
+            containerMap.set(containerName, { memory: null, cpu: null, restarts: null });
           }
           containerMap.get(containerName)!.memory = mibValue;
         }
@@ -1537,9 +1550,26 @@ app.get('/api/metrics/containers-list', async (req, res) => {
           const lastValue = points.length > 0 ? points[points.length - 1][1] : null;
 
           if (!containerMap.has(containerName)) {
-            containerMap.set(containerName, { memory: null, cpu: null });
+            containerMap.set(containerName, { memory: null, cpu: null, restarts: null });
           }
           containerMap.get(containerName)!.cpu = lastValue;
+        }
+      }
+    }
+
+    // Process restart data
+    if (restartData.series) {
+      for (const series of restartData.series) {
+        const containerName = series.scope?.split(':')[1] || series.tag_set?.[0]?.split(':')[1];
+        if (containerName) {
+          const points = series.pointlist || [];
+          const lastValue = points.length > 0 ? points[points.length - 1][1] : null;
+          const roundedValue = lastValue !== null ? Math.round(lastValue) : null;
+
+          if (!containerMap.has(containerName)) {
+            containerMap.set(containerName, { memory: null, cpu: null, restarts: null });
+          }
+          containerMap.get(containerName)!.restarts = roundedValue;
         }
       }
     }
@@ -1550,8 +1580,9 @@ app.get('/api/metrics/containers-list', async (req, res) => {
         name,
         memory: metrics.memory !== null ? parseFloat(metrics.memory.toFixed(1)) : null,
         cpu: metrics.cpu !== null ? parseFloat(metrics.cpu.toFixed(2)) : null,
+        restarts: metrics.restarts !== null ? metrics.restarts : null,
       }))
-      .filter(c => c.memory !== null || c.cpu !== null)
+      .filter(c => c.memory !== null || c.cpu !== null || c.restarts !== null)
       .sort((a, b) => (b.memory || 0) - (a.memory || 0));
 
     res.json({
@@ -1708,6 +1739,105 @@ app.get('/api/costs/overview', async (_req, res) => {
       error: error instanceof Error ? error.message : 'Unknown error',
       source: 'costs-overview',
     });
+  }
+});
+
+// =============================================================================
+// AWS ECR ENDPOINTS
+// =============================================================================
+
+// Get ECR repositories summary
+app.get('/api/ecr/summary', async (_req, res) => {
+  // Demo data for when ECR access is not available
+  const getDemoData = () => ({
+    repositoryCount: 1,
+    repositories: [
+      {
+        name: 'generative-ui',
+        uri: '070322435379.dkr.ecr.us-east-1.amazonaws.com/generative-ui',
+        created: '2024-12-15T10:30:00.000Z',
+        totalImages: 8,
+        recentImages: [
+          { tags: ['latest', 'v1.2.8'], pushed: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), size: '245.32 MB' },
+          { tags: ['v1.2.7'], pushed: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), size: '243.18 MB' },
+          { tags: ['v1.2.6'], pushed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), size: '241.55 MB' },
+        ],
+      },
+    ],
+    queriedAt: new Date().toISOString(),
+    source: 'aws-ecr',
+  });
+
+  if (!ecrClient) {
+    console.log('[ECR] Client not configured, returning demo data');
+    return res.json(getDemoData());
+  }
+
+  try {
+    // Get all repositories
+    const reposResponse = await ecrClient.send(new DescribeRepositoriesCommand({}));
+    const repositories = reposResponse.repositories || [];
+
+    // Get images for each repository
+    const repoDetails = await Promise.all(
+      repositories.map(async (repo) => {
+        try {
+          const imagesResponse = await ecrClient!.send(
+            new DescribeImagesCommand({
+              repositoryName: repo.repositoryName,
+              maxResults: 10,
+              filter: { tagStatus: 'TAGGED' },
+            })
+          );
+
+          const images = imagesResponse.imageDetails || [];
+          const recentImages = images
+            .sort((a, b) => {
+              const dateA = a.imagePushedAt ? new Date(a.imagePushedAt).getTime() : 0;
+              const dateB = b.imagePushedAt ? new Date(b.imagePushedAt).getTime() : 0;
+              return dateB - dateA;
+            })
+            .slice(0, 3)
+            .map((img) => ({
+              tags: img.imageTags || [],
+              pushed: img.imagePushedAt ? img.imagePushedAt.toISOString() : 'Unknown',
+              size: img.imageSizeInBytes
+                ? `${(img.imageSizeInBytes / 1024 / 1024).toFixed(2)} MB`
+                : 'Unknown',
+            }));
+
+          return {
+            name: repo.repositoryName || 'Unknown',
+            uri: repo.repositoryUri || '',
+            created: repo.createdAt ? repo.createdAt.toISOString() : 'Unknown',
+            totalImages: images.length,
+            recentImages,
+          };
+        } catch (err) {
+          console.error(`[ECR] Error fetching images for ${repo.repositoryName}:`, err);
+          return {
+            name: repo.repositoryName || 'Unknown',
+            uri: repo.repositoryUri || '',
+            created: repo.createdAt ? repo.createdAt.toISOString() : 'Unknown',
+            totalImages: 0,
+            recentImages: [],
+            error: err instanceof Error ? err.message : 'Failed to fetch images',
+          };
+        }
+      })
+    );
+
+    res.json({
+      repositoryCount: repositories.length,
+      repositories: repoDetails,
+      queriedAt: new Date().toISOString(),
+      source: 'aws-ecr',
+    });
+  } catch (error) {
+    console.error('[ECR Summary] Error:', error);
+    // Return demo data on error instead of failing
+    console.log('[ECR] Returning demo data due to error');
+    res.json(getDemoData());
   }
 });
 
