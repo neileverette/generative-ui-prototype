@@ -1,9 +1,11 @@
 /**
  * A2UI - Agent to UI Specification
- * 
+ *
  * Declarative component definitions that agents emit.
  * The UI runtime interprets these and renders appropriate components.
  */
+
+import { ClaudeCodeUsage, ApiCreditsUsage, ApiTokenUsage } from './claude-usage';
 
 // Priority levels for component ordering
 export type Priority = 'critical' | 'high' | 'medium' | 'low';
@@ -16,7 +18,9 @@ export type ComponentType =
   | 'alert_list'
   | 'status_indicator'
   | 'progress_bar'
-  | 'ecr_summary';
+  | 'ecr_summary'
+  | 'claude_usage'
+  | 'anthropic_usage';
 
 // Status indicators for metrics
 export type MetricStatus = 'healthy' | 'warning' | 'critical' | 'unknown';
@@ -161,6 +165,24 @@ export interface ECRSummaryComponent extends A2UIComponentBase {
   };
 }
 
+// Claude Usage - displays Claude Code and API credits usage
+export interface ClaudeUsageComponent extends A2UIComponentBase {
+  component: 'claude_usage';
+  props: {
+    claudeCode: ClaudeCodeUsage | null;
+    apiCredits: ApiCreditsUsage | null;
+    showApiSection?: boolean;
+  };
+}
+
+// Anthropic Usage - displays Anthropic API token usage from Admin API
+export interface AnthropicUsageComponent extends A2UIComponentBase {
+  component: 'anthropic_usage';
+  props: {
+    tokenUsage?: ApiTokenUsage | null;
+  };
+}
+
 // Union type for all components
 export type A2UIComponent =
   | MetricCardComponent
@@ -169,7 +191,9 @@ export type A2UIComponent =
   | AlertListComponent
   | StatusIndicatorComponent
   | ProgressBarComponent
-  | ECRSummaryComponent;
+  | ECRSummaryComponent
+  | ClaudeUsageComponent
+  | AnthropicUsageComponent;
 
 // Dashboard state
 export interface DashboardState {

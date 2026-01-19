@@ -10,18 +10,18 @@ None — internal frontend/backend development using established patterns.
 
 ## Milestones
 
-- 🚧 **v1.0 Claude Usage Widget** - Phases 1-4 (in progress)
+- ✅ **v1.0 Claude Usage Widget** - Phases 1-4 (COMPLETE)
 
 ## Phases
 
-- [ ] **Phase 1: Core Widget (MVP)** - TypeScript interfaces, component shell, progress bar, skeleton states
-- [ ] **Phase 2: Local Data Integration** - ccusage backend, JSONL parsing, 5-hour window calculation
-- [ ] **Phase 3: API Credits Section** - Admin API integration, manual entry modal, burn rate calculation
-- [ ] **Phase 4: Polish & UX** - Refresh, auto-refresh, animations, settings modal
+- [x] **Phase 1: Core Widget (MVP)** - TypeScript interfaces, component shell, progress bar, skeleton states
+- [x] **Phase 2: Local Data Integration** - ccusage backend, JSONL parsing, 5-hour window calculation
+- [x] **Phase 3: API Credits Section** - Manual entry, burn rate calculation, runway projection
+- [x] **Phase 4: Polish & UX** - Refresh button, plan selector, animations
 
 ## Phase Details
 
-### 🚧 v1.0 Claude Usage Widget (In Progress)
+### ✅ v1.0 Claude Usage Widget (COMPLETE)
 
 **Milestone Goal:** Deliver a functional usage tracking widget that provides visibility into both Claude Code subscription usage and API credits.
 
@@ -29,11 +29,9 @@ None — internal frontend/backend development using established patterns.
 
 **Goal**: Create the widget component structure with TypeScript interfaces and static layout
 **Depends on**: Nothing (first phase)
-**Research**: Unlikely (established React/TypeScript patterns)
-**Plans**: TBD
 
 Plans:
-- [ ] 01-01: TBD (run /gsd:plan-phase 1 to break down)
+- [x] 01-01: Core Widget MVP (types, config, component, registry) - COMPLETE
 
 **Deliverables:**
 - `src/types/claude-usage.ts` - TypeScript interfaces for ClaudeCodeUsage, ApiCreditsUsage
@@ -47,64 +45,63 @@ Plans:
 
 **Goal**: Connect widget to real Claude Code usage data via backend
 **Depends on**: Phase 1
-**Research**: Likely (ccusage CLI output format, JSONL file structure)
-**Research topics**: ccusage --json output format, ~/.claude/projects JSONL schema, 5-hour window calculation
-**Plans**: TBD
 
 Plans:
-- [ ] 02-01: TBD (run /gsd:plan-phase 2 to break down)
+- [x] 02-01: Local JSONL parsing & backend endpoint - COMPLETE
 
 **Deliverables:**
-- Backend endpoint `/api/claude-usage/code` calling ccusage CLI
-- JSONL file parsing as fallback
-- 5-hour window calculation from timestamps
-- Transform ccusage data to widget format
-- Display real metrics in Claude Code section
+- `server/claude-usage.ts` - JSONL parsing, 5-hour window calculation
+- Backend endpoint `/api/claude-usage/code`
+- MCP client method `getClaudeCodeUsage()`
+- Widget connected to real data with auto-refresh
 
 #### Phase 3: API Credits Section
 
-**Goal**: Add API Credits tracking with Admin API and manual entry
+**Goal**: Add API Credits tracking with manual entry and burn rate calculation
 **Depends on**: Phase 2
-**Research**: Likely (Anthropic Admin API endpoints, authentication)
-**Research topics**: Anthropic Usage/Cost API endpoints, Admin API key format, rate limits
-**Plans**: TBD
 
 Plans:
-- [ ] 03-01: TBD (run /gsd:plan-phase 3 to break down)
+- [x] 03-01: API Credits storage, endpoints, inline entry - COMPLETE
 
 **Deliverables:**
-- Backend endpoint `/api/claude-usage/api-credits` for Admin API
-- Manual entry modal for credit balance
-- Burn rate calculation (daily/monthly)
+- `server/api-credits-storage.ts` - Storage utilities, burn rate calculation
+- Backend endpoints GET/POST `/api/claude-usage/api-credits`
+- MCP client methods `getApiCredits()`, `updateApiCredits()`
+- Inline balance entry form in widget
+- Burn rate calculation from history
 - Runway projection (days until depletion)
-- Config storage in local JSON file
-- Graceful fallback when no Admin API key
+- JSON file storage at `.config/api-credits.json`
 
 #### Phase 4: Polish & UX
 
-**Goal**: Add refresh, auto-refresh, animations, and configuration
+**Goal**: Add refresh, animations, and plan selection
 **Depends on**: Phase 3
-**Research**: Unlikely (internal React patterns)
-**Plans**: TBD
 
 Plans:
-- [ ] 04-01: TBD (run /gsd:plan-phase 4 to break down)
+- [x] 04-01: Refresh button, plan selector, animations - COMPLETE
 
 **Deliverables:**
-- Manual refresh button with loading state
+- Manual refresh button with spinning animation
+- Plan selector dropdown (Free, Pro, Max 5x, Max 20x)
+- Plan selection persisted in localStorage
 - Auto-refresh intervals (5min Claude Code, 1hr API Credits)
-- Warning/critical state animations (pulse on border)
-- Settings modal for plan selection and preferences
-- Responsive layout for mobile
+- Critical state pulse animation
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases executed in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Core Widget (MVP) | v1.0 | 0/? | Not started | - |
-| 2. Local Data Integration | v1.0 | 0/? | Not started | - |
-| 3. API Credits Section | v1.0 | 0/? | Not started | - |
-| 4. Polish & UX | v1.0 | 0/? | Not started | - |
+| 1. Core Widget (MVP) | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
+| 2. Local Data Integration | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
+| 3. API Credits Section | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
+| 4. Polish & UX | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
+
+## Future Enhancements
+
+- Admin API integration (requires org account)
+- Full settings modal
+- Responsive layout for mobile
+- More detailed model breakdown

@@ -6,6 +6,8 @@ import { AlertList } from './a2ui/AlertList';
 import { StatusIndicator } from './a2ui/StatusIndicator';
 import { ProgressBar } from './a2ui/ProgressBar';
 import { ECRSummaryCard } from './a2ui/ECRSummaryCard';
+import { ClaudeUsageCard } from './a2ui/ClaudeUsageCard';
+import { AnthropicUsageCard } from './a2ui/AnthropicUsageCard';
 import { VoiceOverlay } from './VoiceOverlay';
 import { VoiceButton } from './VoiceButton';
 import { VoiceState } from '../hooks/useVoiceDictation';
@@ -76,6 +78,8 @@ const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   status_indicator: StatusIndicator,
   progress_bar: ProgressBar,
   ecr_summary: ECRSummaryCard,
+  claude_usage: ClaudeUsageCard,
+  anthropic_usage: AnthropicUsageCard,
 };
 
 function renderComponent(component: A2UIComponent, index: number) {
@@ -294,6 +298,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     !costIds.includes(c.id)
   );
 
+  // Widget components (claude_usage, anthropic_usage, ecr_summary) - standalone full-width widgets
+  const widgetComponents = components.filter(c =>
+    ['claude_usage', 'anthropic_usage', 'ecr_summary'].includes(c.component)
+  );
+
   return (
     <div className="space-y-6">
       {/* Agent message */}
@@ -415,6 +424,15 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {largeComponents.map((component, index) =>
             renderComponent(component, featuredComponents.length + cardGroupComponents.length + smallComponents.length + index)
+          )}
+        </div>
+      )}
+
+      {/* Widget components (claude_usage, ecr_summary) - single column, max width */}
+      {widgetComponents.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {widgetComponents.map((component, index) =>
+            renderComponent(component, featuredComponents.length + cardGroupComponents.length + smallComponents.length + largeComponents.length + index)
           )}
         </div>
       )}

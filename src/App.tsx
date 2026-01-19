@@ -7,7 +7,7 @@ import { BlurBackground } from './components/BlurBackground';
 import { A2UIComponent, DashboardState, sortByPriority } from './types/a2ui';
 import { useCopilotAction, useCopilotReadable, useCopilotChat } from '@copilotkit/react-core';
 import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
-import { Server, Container, Workflow, Terminal, ArrowLeft, Rocket, DollarSign } from 'lucide-react';
+import { Server, Container, Workflow, ArrowLeft, Rocket, DollarSign, Activity } from 'lucide-react';
 import deploymentsData from './data/deployments.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
 import { mcpClient } from './services/mcp-client';
@@ -276,6 +276,48 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
       });
       return 'Dashboard cleared';
+    },
+  });
+
+  // Action to show Claude Usage widget
+  useCopilotAction({
+    name: 'showClaudeUsage',
+    description: 'Show Claude usage statistics including subscription usage (5-hour window, daily costs) and API credits (balance, burn rate, runway). Use this when the user asks about Claude usage, API credits, token usage, or wants to see their Claude subscription status.',
+    parameters: [],
+    handler: async () => {
+      const claudeUsageComponent: A2UIComponent = {
+        id: 'claude-usage-widget',
+        component: 'claude_usage' as const,
+        source: 'claude-api',
+        priority: 'high',
+        timestamp: new Date().toISOString(),
+        props: {
+          claudeCode: null,
+          apiCredits: null,
+        },
+      };
+      const anthropicUsageComponent: A2UIComponent = {
+        id: 'anthropic-usage-widget',
+        component: 'anthropic_usage' as const,
+        source: 'anthropic-admin-api',
+        priority: 'high',
+        timestamp: new Date().toISOString(),
+        props: {
+          tokenUsage: null,
+        },
+      };
+      setDashboardState((prev) => ({
+        ...prev,
+        components: [
+          claudeUsageComponent,
+          anthropicUsageComponent,
+          ...prev.components.filter(c => c.id !== 'claude-usage-widget' && c.id !== 'anthropic-usage-widget'),
+        ],
+        lastUpdated: new Date().toISOString(),
+        agentMessage: 'Showing your Claude usage statistics',
+      }));
+      setCurrentView('home');
+      return 'Displaying Claude usage widget with subscription and API credit information';
     },
   });
 
@@ -1786,10 +1828,6 @@ function DashboardWithAgent() {
     }
   }, [timeWindow]);
 
-  // Handler for navigating to commands screen
-  const handleShowCommands = useCallback(() => {
-    setCurrentView('commands');
-  }, []);
 
   // Action to show deployments dashboard
   useCopilotAction({
@@ -2062,9 +2100,40 @@ function DashboardWithAgent() {
     });
   }, []);
 
+  // Handler for showing Claude Usage widget
+  const handleShowClaudeUsage = useCallback(() => {
+    const claudeUsageComponent: A2UIComponent = {
+      id: 'claude-usage-widget',
+      component: 'claude_usage' as const,
+      source: 'claude-api',
+      priority: 'high',
+      timestamp: new Date().toISOString(),
+      props: {
+        claudeCode: null,
+        apiCredits: null,
+      },
+    };
+    const anthropicUsageComponent: A2UIComponent = {
+      id: 'anthropic-usage-widget',
+      component: 'anthropic_usage' as const,
+      source: 'anthropic-admin-api',
+      priority: 'high',
+      timestamp: new Date().toISOString(),
+      props: {
+        tokenUsage: null,
+      },
+    };
+    setDashboardState({
+      components: [claudeUsageComponent, anthropicUsageComponent],
+      lastUpdated: new Date().toISOString(),
+      agentMessage: 'Showing your Claude usage statistics',
+    });
+    setCurrentView('home');
+  }, []);
+
   // Define shortcuts for the welcome screen (2 rows x 3 columns)
   // Row 1: System & Infrastructure, Containers, Automations
-  // Row 2: Costs, Deployments, Commands
+  // Row 2: Costs, Deployments, Claude Usage
   const shortcuts = [
     {
       id: 'system-infrastructure',
@@ -2102,11 +2171,11 @@ function DashboardWithAgent() {
       onClick: handleFetchDeployments,
     },
     {
-      id: 'commands',
-      title: 'Commands',
-      description: 'System commands and actions',
-      icon: <Terminal className="w-6 h-6" />,
-      onClick: handleShowCommands,
+      id: 'claude-usage',
+      title: 'Claude Usage',
+      description: 'Track subscription usage and API credits',
+      icon: <Activity className="w-6 h-6" />,
+      onClick: handleShowClaudeUsage,
     },
   ];
 

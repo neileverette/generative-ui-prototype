@@ -21,6 +21,20 @@ import {
   getSystemOverviewMetrics,
 } from './metrics-config.js';
 
+// Import Claude usage tracking
+import { getClaudeCodeUsage } from './claude-usage.js';
+import {
+  getApiCreditsUsage,
+  updateBalance,
+  saveAdminApiKey,
+  getAdminApiKey,
+  hasAdminApiConfigured,
+} from './api-credits-storage.js';
+import {
+  getAnthropicTokenUsage,
+  validateAdminApiKey,
+} from './anthropic-admin-api.js';
+
 // Load environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const DATADOG_API_KEY = process.env.DATADOG_API_KEY;
@@ -1838,6 +1852,188 @@ app.get('/api/ecr/summary', async (_req, res) => {
     // Return demo data on error instead of failing
     console.log('[ECR] Returning demo data due to error');
     res.json(getDemoData());
+  }
+});
+
+// =============================================================================
+// CLAUDE USAGE ENDPOINTS
+// =============================================================================
+
+// Get Claude Code usage for current project
+app.get('/api/claude-usage/code', async (req, res) => {
+  try {
+    // Get current project path from query or use default
+    const projectPath = (req.query.projectPath as string) || process.cwd();
+    const plan = (req.query.plan as string) || 'pro';
+
+    // Validate plan
+    const validPlans = ['free', 'pro', 'max5', 'max20'];
+    if (!validPlans.includes(plan)) {
+      return res.status(400).json({
+        error: `Invalid plan. Must be one of: ${validPlans.join(', ')}`,
+      });
+    }
+
+    const usage = await getClaudeCodeUsage(
+      projectPath,
+      plan as 'free' | 'pro' | 'max5' | 'max20'
+    );
+
+    res.json({
+      ...usage,
+      queriedAt: new Date().toISOString(),
+      source: 'local-jsonl',
+    });
+  } catch (error) {
+    console.error('[Claude Usage] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'claude-usage',
+    });
+  }
+});
+
+// Get API credits usage (manual entry data)
+app.get('/api/claude-usage/api-credits', async (_req, res) => {
+  try {
+    const credits = getApiCreditsUsage();
+
+    if (!credits) {
+      return res.json({
+        configured: false,
+        message: 'No API credits data configured. Use POST to set initial balance.',
+      });
+    }
+
+    res.json({
+      ...credits,
+      configured: true,
+      queriedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[API Credits] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'api-credits',
+    });
+  }
+});
+
+// Update API credits balance (manual entry)
+app.post('/api/claude-usage/api-credits', async (req, res) => {
+  try {
+    const { balance } = req.body;
+
+    if (typeof balance !== 'number' || balance < 0) {
+      return res.status(400).json({
+        error: 'Invalid balance. Must be a non-negative number.',
+      });
+    }
+
+    const storage = updateBalance(balance, 'manual');
+    const credits = getApiCreditsUsage();
+
+    res.json({
+      success: true,
+      message: 'Balance updated successfully',
+      data: credits,
+      updatedAt: storage.lastUpdated,
+    });
+  } catch (error) {
+    console.error('[API Credits] Error updating balance:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'api-credits',
+    });
+  }
+});
+
+// Get API token usage from Anthropic Admin API
+app.get('/api/claude-usage/api-tokens', async (_req, res) => {
+  try {
+    // Check for Admin API key in environment or storage
+    const apiKey = process.env.ANTHROPIC_ADMIN_API_KEY || getAdminApiKey();
+
+    if (!apiKey) {
+      return res.status(400).json({
+        error: 'Admin API key not configured',
+        message: 'Set ANTHROPIC_ADMIN_API_KEY environment variable or configure via POST /api/claude-usage/admin-api-key',
+        hasAdminApi: false,
+      });
+    }
+
+    const tokenUsage = await getAnthropicTokenUsage(apiKey);
+
+    res.json({
+      ...tokenUsage,
+      hasAdminApi: true,
+      queriedAt: new Date().toISOString(),
+      source: 'anthropic-admin-api',
+    });
+  } catch (error) {
+    console.error('[Admin API] Error fetching token usage:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'anthropic-admin-api',
+    });
+  }
+});
+
+// Configure Admin API key
+app.post('/api/claude-usage/admin-api-key', async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+
+    if (!apiKey || typeof apiKey !== 'string') {
+      return res.status(400).json({
+        error: 'Invalid API key. Must be a non-empty string.',
+      });
+    }
+
+    // Validate the key by making a test request
+    const isValid = await validateAdminApiKey(apiKey);
+
+    if (!isValid) {
+      return res.status(400).json({
+        error: 'Invalid Admin API key. The key could not be validated.',
+        message: 'Ensure you are using an Admin API key (starts with sk-ant-admin...)',
+      });
+    }
+
+    // Save the key
+    saveAdminApiKey(apiKey);
+
+    res.json({
+      success: true,
+      message: 'Admin API key configured successfully',
+      hasAdminApi: true,
+    });
+  } catch (error) {
+    console.error('[Admin API] Error configuring key:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'admin-api-config',
+    });
+  }
+});
+
+// Check Admin API configuration status
+app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
+  try {
+    const envKey = process.env.ANTHROPIC_ADMIN_API_KEY;
+    const storedKey = getAdminApiKey();
+    const hasKey = !!(envKey || storedKey);
+
+    res.json({
+      hasAdminApi: hasKey,
+      keySource: envKey ? 'environment' : storedKey ? 'storage' : 'none',
+    });
+  } catch (error) {
+    console.error('[Admin API] Error checking status:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'admin-api-status',
+    });
   }
 });
 

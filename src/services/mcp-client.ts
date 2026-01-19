@@ -335,6 +335,131 @@ class MCPClient {
     if (!response.ok) throw new Error(`Failed to fetch ECR summary: ${response.statusText}`);
     return response.json();
   }
+
+  // ==========================================================================
+  // Claude Usage Methods
+  // ==========================================================================
+
+  /**
+   * Get Claude Code usage data from local JSONL files
+   * Uses direct API endpoint (no MCP tool yet)
+   */
+  async getClaudeCodeUsage(
+    projectPath?: string,
+    plan: 'free' | 'pro' | 'max5' | 'max20' = 'pro'
+  ): Promise<any> {
+    console.log('[MCP Client] getClaudeCodeUsage via direct API');
+
+    const params = new URLSearchParams();
+    if (projectPath) params.append('projectPath', projectPath);
+    params.append('plan', plan);
+
+    const url = `${this.directBaseUrl}/claude-usage/code${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to fetch Claude usage: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get API Credits usage data (manual entry or Admin API)
+   * Uses direct API endpoint
+   */
+  async getApiCredits(): Promise<any> {
+    console.log('[MCP Client] getApiCredits via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/api-credits`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to fetch API credits: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Update API Credits balance (manual entry)
+   * Uses direct API endpoint
+   */
+  async updateApiCredits(balance: number): Promise<any> {
+    console.log('[MCP Client] updateApiCredits via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/api-credits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ balance }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to update API credits: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get API Token usage from Anthropic Admin API
+   * Returns daily and monthly token counts with model breakdown
+   */
+  async getApiTokens(): Promise<any> {
+    console.log('[MCP Client] getApiTokens via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/api-tokens`);
+
+    if (!response.ok) {
+      // Return a default response indicating Admin API is not configured
+      if (response.status === 400) {
+        return { hasAdminApi: false };
+      }
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to fetch API tokens: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Configure Admin API key for token tracking
+   * Uses direct API endpoint
+   */
+  async configureAdminApiKey(apiKey: string): Promise<any> {
+    console.log('[MCP Client] configureAdminApiKey via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/admin-api-key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to configure Admin API key: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Check Admin API configuration status
+   */
+  async getAdminApiStatus(): Promise<any> {
+    console.log('[MCP Client] getAdminApiStatus via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/admin-api-status`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to get Admin API status: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 // Export singleton instance
