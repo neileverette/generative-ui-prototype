@@ -18,6 +18,20 @@ function SkeletonLoader() {
   );
 }
 
+// Shimmer overlay for stale cached content
+function StaleShimmerOverlay() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-lg">
+      <div
+        className="absolute inset-0 -translate-x-full animate-shimmer"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+        }}
+      />
+    </div>
+  );
+}
+
 const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon: typeof CheckCircle }> = {
   healthy: { 
     color: 'text-accent-success', 
@@ -43,6 +57,7 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
 
 // Size configuration for the value display
 const SIZE_CONFIG = {
+  compact: { value: 'text-3xl', unit: 'text-base' },
   default: { value: 'text-4xl', unit: 'text-lg' },
   large: { value: 'text-5xl', unit: 'text-xl' },
   xl: { value: 'text-7xl', unit: 'text-2xl' },
@@ -50,7 +65,7 @@ const SIZE_CONFIG = {
 
 export function MetricCard({ component, className }: MetricCardProps) {
   const { props, priority } = component;
-  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading, size = 'default', metadata } = props;
+  const { title, value, unit, change, status, description, interpretation, actionableInsights, insightsLoading, insightsStale, size = 'default', metadata } = props;
 
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
@@ -116,24 +131,26 @@ export function MetricCard({ component, className }: MetricCardProps) {
 
       {/* Content area */}
       <div className="mt-2">
-        {/* Show skeleton while loading insights */}
+        {/* Show skeleton while loading insights (only if no cached content) */}
         {insightsLoading && !interpretation && <SkeletonLoader />}
 
-        {/* Interpretation */}
+        {/* Interpretation - with shimmer overlay when stale */}
         {interpretation && (
-          <div className="pt-3 border-t border-gray-100">
-            <p className="text-sm text-text-secondary leading-relaxed">{interpretation}</p>
+          <div className="pt-3 border-t border-gray-100 relative">
+            {insightsStale && <StaleShimmerOverlay />}
+            <p className={`text-sm text-text-secondary leading-relaxed ${insightsStale ? 'opacity-70' : ''}`}>{interpretation}</p>
           </div>
         )}
 
-        {/* Actionable Insight */}
+        {/* Actionable Insight - with shimmer overlay when stale */}
         {actionableInsights && actionableInsights.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <h4 className="text-sm font-bold text-text-primary mb-1">
+          <div className="mt-3 pt-3 border-t border-gray-100 relative">
+            {insightsStale && !interpretation && <StaleShimmerOverlay />}
+            <h4 className={`text-sm font-bold text-text-primary mb-1 ${insightsStale ? 'opacity-70' : ''}`}>
               Actionable
             </h4>
             {actionableInsights.map((insight, index) => (
-              <p key={index} className="text-sm text-text-secondary">
+              <p key={index} className={`text-sm text-text-secondary ${insightsStale ? 'opacity-70' : ''}`}>
                 {insight}
               </p>
             ))}

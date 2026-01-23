@@ -42,7 +42,7 @@ export interface MetricCardComponent extends A2UIComponentBase {
     title: string;
     value: number | string;
     unit?: string;
-    size?: 'default' | 'large' | 'xl';  // Size of the value display
+    size?: 'compact' | 'default' | 'large' | 'xl';  // Size of the value display
     change?: {
       value: number;
       direction: 'up' | 'down' | 'flat';
@@ -53,6 +53,7 @@ export interface MetricCardComponent extends A2UIComponentBase {
     interpretation?: string;  // AI-generated explanation of the metric
     actionableInsights?: string[];  // AI-generated recommendations
     insightsLoading?: boolean;  // Show skeleton loader while fetching insights
+    insightsStale?: boolean;  // Show shimmer overlay to indicate cached data is being refreshed
     metadata?: string;  // Additional small text metadata (e.g., "4 executions in last 24h")
     thresholds?: {
       warning?: number;
@@ -69,6 +70,8 @@ export interface CardGroupComponent extends A2UIComponentBase {
     subtitle?: string;  // Optional subtitle text (smaller, normal weight, displayed after title)
     icon?: string;  // Optional icon name
     insight?: string;  // Optional prominent insight text (displayed before description)
+    insightsLoading?: boolean;  // Show skeleton loader while fetching insights
+    insightsStale?: boolean;  // Show shimmer overlay to indicate cached data is being refreshed
     description?: string;  // Optional insight/description text
     metrics: Array<{
       label: string;

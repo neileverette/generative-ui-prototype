@@ -1,107 +1,73 @@
-# Roadmap: Claude Usage Tracking Widget
+# Roadmap: Console Landing Page Redesign
 
 ## Overview
 
-Build a dashboard widget that displays Claude usage metrics in two sections: Claude Code subscription usage from local data, and API Credits from the Anthropic Admin API. The widget progresses from static MVP to full integration with real-time data, manual entry, and polish.
+Complete the landing page redesign by fixing TypeScript errors, testing functionality, applying visual polish to match the mockup, and verifying all integrations work correctly.
 
 ## Domain Expertise
 
-None — internal frontend/backend development using established patterns.
-
-## Milestones
-
-- ✅ **v1.0 Claude Usage Widget** - Phases 1-4 (COMPLETE)
+None — standard React/TypeScript patterns
 
 ## Phases
 
-- [x] **Phase 1: Core Widget (MVP)** - TypeScript interfaces, component shell, progress bar, skeleton states
-- [x] **Phase 2: Local Data Integration** - ccusage backend, JSONL parsing, 5-hour window calculation
-- [x] **Phase 3: API Credits Section** - Manual entry, burn rate calculation, runway projection
-- [x] **Phase 4: Polish & UX** - Refresh button, plan selector, animations
+- [x] **Phase 1: Fix & Verify** - Fix TypeScript errors and verify page renders
+- [x] **Phase 2: Visual Polish** - Match mockup design (spacing, colors, typography)
+- [x] **Phase 3: Integration & Ship** - Verify data flows and navigation, final testing
 
 ## Phase Details
 
-### ✅ v1.0 Claude Usage Widget (COMPLETE)
-
-**Milestone Goal:** Deliver a functional usage tracking widget that provides visibility into both Claude Code subscription usage and API credits.
-
-#### Phase 1: Core Widget (MVP)
-
-**Goal**: Create the widget component structure with TypeScript interfaces and static layout
+### Phase 1: Fix & Verify
+**Goal**: Resolve TypeScript build errors and confirm landing page renders
 **Depends on**: Nothing (first phase)
+**Research**: Unlikely (established patterns)
+**Plans**: 1 plan
 
 Plans:
-- [x] 01-01: Core Widget MVP (types, config, component, registry) - COMPLETE
+- [x] 01-01: Fix NavigationCard TypeScript errors and verify render
 
-**Deliverables:**
-- `src/types/claude-usage.ts` - TypeScript interfaces for ClaudeCodeUsage, ApiCreditsUsage
-- `src/config/claude-usage.config.ts` - Configuration constants (plan limits, thresholds, pricing)
-- `src/components/a2ui/ClaudeUsageCard.tsx` - Main widget component with static layout
-- Progress bar with status colors (normal/warning/critical)
-- Skeleton loading states
-- A2UI component registration
-
-#### Phase 2: Local Data Integration
-
-**Goal**: Connect widget to real Claude Code usage data via backend
+### Phase 2: Visual Polish
+**Goal**: Update styling to match mockup design
 **Depends on**: Phase 1
+**Research**: Unlikely (CSS/Tailwind work)
+**Plans**: 1 plan
 
 Plans:
-- [x] 02-01: Local JSONL parsing & backend endpoint - COMPLETE
+- [x] 02-01: Apply spacing, colors, and typography from mockup
 
-**Deliverables:**
-- `server/claude-usage.ts` - JSONL parsing, 5-hour window calculation
-- Backend endpoint `/api/claude-usage/code`
-- MCP client method `getClaudeCodeUsage()`
-- Widget connected to real data with auto-refresh
-
-#### Phase 3: API Credits Section
-
-**Goal**: Add API Credits tracking with manual entry and burn rate calculation
+### Phase 3: Integration & Ship
+**Goal**: Verify data flows from APIs, test navigation between views
 **Depends on**: Phase 2
+**Research**: Unlikely (existing API patterns)
+**Plans**: 1 plan
 
 Plans:
-- [x] 03-01: API Credits storage, endpoints, inline entry - COMPLETE
-
-**Deliverables:**
-- `server/api-credits-storage.ts` - Storage utilities, burn rate calculation
-- Backend endpoints GET/POST `/api/claude-usage/api-credits`
-- MCP client methods `getApiCredits()`, `updateApiCredits()`
-- Inline balance entry form in widget
-- Burn rate calculation from history
-- Runway projection (days until depletion)
-- JSON file storage at `.config/api-credits.json`
-
-#### Phase 4: Polish & UX
-
-**Goal**: Add refresh, animations, and plan selection
-**Depends on**: Phase 3
-
-Plans:
-- [x] 04-01: Refresh button, plan selector, animations - COMPLETE
-
-**Deliverables:**
-- Manual refresh button with spinning animation
-- Plan selector dropdown (Free, Pro, Max 5x, Max 20x)
-- Plan selection persisted in localStorage
-- Auto-refresh intervals (5min Claude Code, 1hr API Credits)
-- Critical state pulse animation
+- [x] 03-01: Test API data flows and view navigation
 
 ## Progress
 
-**Execution Order:**
-Phases executed in numeric order: 1 → 2 → 3 → 4
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Fix & Verify | 1/1 | ✅ Complete | 2025-01-23 |
+| 2. Visual Polish | 1/1 | ✅ Complete | 2025-01-23 |
+| 3. Integration & Ship | 1/1 | ✅ Complete | 2025-01-23 |
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Core Widget (MVP) | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
-| 2. Local Data Integration | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
-| 3. API Credits Section | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
-| 4. Polish & UX | v1.0 | 1/1 | **COMPLETE** | 2026-01-18 |
+## Summary
 
-## Future Enhancements
+**Project Status: COMPLETE**
 
-- Admin API integration (requires org account)
-- Full settings modal
-- Responsive layout for mobile
-- More detailed model breakdown
+All phases finished successfully:
+- Build passes with no TypeScript errors
+- UI updated to match mockup design
+- APIs verified working (MCP tool calls, AWS costs, system metrics)
+
+### Working APIs
+- `POST /api/mcp/call` - MCP tool calls (datadog metrics)
+- `GET /api/costs/overview` - AWS costs
+- System metrics, containers, uptime all functional
+
+### Dev Server
+```bash
+npm run dev
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:4000
+```

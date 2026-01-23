@@ -1,72 +1,60 @@
-# Claude Usage Tracking Widget
+# Console Landing Page Redesign
 
 ## What This Is
 
-A dashboard widget for the generative-ui-prototype that displays Claude-related usage metrics. It tracks Claude Code subscription usage from local data and API Credits usage from the Anthropic Admin API, providing at-a-glance visibility to prevent surprise limit hits.
+A redesigned landing page for the Console application that matches a new mockup design with improved layout, navigation cards, and summary components. The landing page serves as the default entry point for users.
 
 ## Core Value
 
-Provide real-time visibility into Claude usage to prevent surprise limit hits during development sessions.
+Users see an intuitive, well-organized landing page that provides quick navigation and status summaries at a glance.
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] TodaysUpdateCard.tsx - Summary banner component
+- [x] NavigationCard.tsx - Clickable navigation cards with status
+- [x] LandingPage.tsx - Main layout component
+- [x] DashboardCanvas.tsx - Updated to support 'landing' view
+- [x] App.tsx - Updated to use landing view by default
 
-### Active
+### Completed
 
-- [ ] Display 5-hour window usage with progress bar and reset timer
-- [ ] Show today/MTD estimated costs and session counts
-- [ ] Display model breakdown (Opus/Sonnet/Haiku usage)
-- [ ] Support warning (>70%) and critical (>90%) visual states
-- [ ] Integrate with ccusage CLI for local data
-- [ ] Parse JSONL files directly as fallback
-- [ ] Support API Credits section with Admin API integration
-- [ ] Manual balance entry for credit tracking
-- [ ] Calculate burn rate and runway projections
-- [ ] Register as A2UI component in the dashboard
+- [x] Fix TypeScript build errors (NavigationCard props mismatch)
+- [x] Test landing page renders correctly
+- [x] Visual polish to match mockup (spacing, colors, typography)
+- [x] Verify data flows from APIs
+- [x] Test navigation between views
 
 ### Out of Scope
 
-- Historical trend charts — future enhancement after MVP
-- Browser extension for Console scraping — too complex for initial version
-- Team usage comparison — requires org account setup
-- Webhook alerts — future enhancement
+- New API integrations — focus on wiring existing data
+- Mobile-first redesign — desktop priority for this iteration
 
 ## Context
 
-**Technical Environment:**
-- React + TypeScript + Tailwind CSS frontend
-- CopilotKit for AI interactions
-- Express backend with existing deployment tracking
-- A2UI component system for dashboard widgets
+This project is **COMPLETE**. The landing page redesign has been finished across all 3 phases.
 
-**Data Sources:**
-- Claude Code: Local JSONL files at `~/.claude/projects/**/*.jsonl`
-- Claude Code: ccusage CLI tool (`npm install -g ccusage`)
-- API Credits: Anthropic Admin API (org accounts only)
-- Manual entry for credit balance (not available via API)
-
-**Known Limitations:**
-- Claude Code limits are dynamic and not exposed via API
-- Credit balance requires manual entry or Console scraping
-- Admin API only available for organization accounts
+Key files:
+- `src/components/LandingPage.tsx`
+- `src/components/a2ui/TodaysUpdateCard.tsx`
+- `src/components/a2ui/NavigationCard.tsx`
+- `src/components/DashboardCanvas.tsx`
+- `src/App.tsx`
 
 ## Constraints
 
-- **Tech stack**: React + TypeScript + Tailwind (match existing codebase)
-- **Component system**: Must integrate as A2UI component type
-- **Backend**: Express.js for API endpoints
-- **Dependencies**: Use existing lucide-react for icons
+- **Tech stack**: React + TypeScript + Tailwind CSS
+- **Design**: Must match provided mockup design
+- **Timeline**: Quick iteration — ship fast
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Use ccusage CLI | Existing maintained tool for parsing Claude usage | — Pending |
-| Manual balance entry | Credit balance not available via API | — Pending |
-| Split widget sections | Claude Code (local) vs API Credits (external) have different data sources | — Pending |
+| Landing as default view | Provides better user entry experience | ✅ Complete |
+| Card-based navigation | Matches mockup, intuitive UX | ✅ Complete |
+| Gray placeholder icons | Consistent visual appearance | ✅ Complete |
 
 ---
-*Last updated: 2026-01-18 after project initialization*
+*Project completed: 2025-01-23*

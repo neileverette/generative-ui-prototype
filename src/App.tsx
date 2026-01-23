@@ -11,6 +11,7 @@ import { Server, Container, Workflow, ArrowLeft, Rocket, DollarSign, Activity } 
 import deploymentsData from './data/deployments.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
 import { mcpClient } from './services/mcp-client';
+import { getCachedInsight, setCachedInsight } from './utils/insights-cache';
 
 // Command Center icon
 const CommandCenterIcon = ({ className }: { className?: string }) => (
@@ -35,7 +36,7 @@ function DashboardWithAgent() {
     components: [],
     lastUpdated: new Date().toISOString(),
   });
-  const [currentView, setCurrentView] = useState<'home' | 'commands' | 'loading'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'commands' | 'loading' | 'landing'>('landing');
   const [chatWidth, setChatWidth] = useState(400);
   const [timeWindow, setTimeWindow] = useState('4h');
   const [lastAction, setLastAction] = useState<'system' | 'containers' | 'automations' | null>(null);
@@ -204,6 +205,38 @@ function DashboardWithAgent() {
       new TextMessage({
         role: MessageRole.User,
         content: query,
+      })
+    );
+  }, [appendMessage]);
+
+  // Handler for navigation from landing page
+  const handleNavigate = useCallback((destination: string) => {
+    if (destination === 'back') {
+      setCurrentView('landing');
+      return;
+    }
+    // Map destinations to chat queries
+    const destinationQueries: Record<string, string> = {
+      'costs': 'Show me AWS costs breakdown',
+      'system-metrics': 'Show all system metrics',
+      'automations': 'Show automation workflows status',
+      'applications': 'Show running containers',
+      'deployments': 'Show deployments',
+      'ai-usage': 'Show Claude usage',
+    };
+    const query = destinationQueries[destination];
+    if (query) {
+      handleCommandClick(query);
+    }
+  }, [handleCommandClick]);
+
+  // Handler for sending messages from landing page
+  const handleSendMessage = useCallback(async (message: string) => {
+    setCurrentView('loading');
+    await appendMessage(
+      new TextMessage({
+        role: MessageRole.User,
+        content: message,
       })
     );
   }, [appendMessage]);
@@ -1222,8 +1255,11 @@ function DashboardWithAgent() {
 
       // Add running containers count card with loading state for insights
       if (!countData.error) {
+        const containersComponentId = 'running-containers-count';
+        const cachedContainerInsight = getCachedInsight(containersComponentId);
+
         newComponents.push({
-          id: 'running-containers-count',
+          id: containersComponentId,
           component: 'metric_card' as const,
           source: 'datadog',
           priority: 'high',
@@ -1235,7 +1271,11 @@ function DashboardWithAgent() {
             size: 'xl' as const,  // Large featured number
             status: 'healthy' as const,
             description: `Docker containers currently running across your infrastructure.`,
-            insightsLoading: true,  // Show skeleton while loading insights
+            // If we have cached insights, show them immediately with stale indicator
+            interpretation: cachedContainerInsight?.interpretation,
+            actionableInsights: cachedContainerInsight?.actionableInsights,
+            insightsLoading: !cachedContainerInsight,  // Only show skeleton if no cached data
+            insightsStale: !!cachedContainerInsight,   // Show shimmer if using cached data
           },
         });
       }
@@ -1379,17 +1419,23 @@ function DashboardWithAgent() {
       mcpClient.getContainerInterpretations('1h')
         .then(interpretationsData => {
           if (interpretationsData.error || !interpretationsData.interpretation) {
-            // Remove loading state on error
+            // Remove loading/stale state on error (keep cached content visible)
             setDashboardState(prev => ({
               ...prev,
               components: prev.components.map(comp =>
                 comp.id === 'running-containers-count' && comp.component === 'metric_card'
-                  ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                  ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
                   : comp
               ),
             }));
             return;
           }
+
+          // Cache the fresh insight for future use
+          setCachedInsight('running-containers-count', {
+            interpretation: interpretationsData.interpretation,
+            actionableInsights: interpretationsData.insight ? [interpretationsData.insight] : undefined,
+          });
 
           // Update the running containers card with interpretation and insight
           setDashboardState(prev => {
@@ -1402,6 +1448,7 @@ function DashboardWithAgent() {
                     interpretation: interpretationsData.interpretation,
                     actionableInsights: interpretationsData.insight ? [interpretationsData.insight] : undefined,
                     insightsLoading: false,
+                    insightsStale: false,  // Fresh data, not stale
                   },
                 };
               }
@@ -1417,12 +1464,12 @@ function DashboardWithAgent() {
         })
         .catch(err => {
           console.error('Failed to fetch container interpretations:', err);
-          // Remove loading state on error
+          // Remove loading/stale state on error (keep cached content visible)
           setDashboardState(prev => ({
             ...prev,
             components: prev.components.map(comp =>
               comp.id === 'running-containers-count' && comp.component === 'metric_card'
-                ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
                 : comp
             ),
           }));
@@ -1476,8 +1523,11 @@ function DashboardWithAgent() {
               else status = 'healthy';
             }
 
+            const componentId = `system-metric-${metric.metric}`;
+            const cachedInsight = getCachedInsight(componentId);
+
             newComponents.push({
-              id: `system-metric-${metric.metric}`,
+              id: componentId,
               component: 'metric_card' as const,
               source: 'datadog',
               priority: status === 'critical' ? 'critical' : status === 'warning' ? 'high' : 'medium',
@@ -1489,7 +1539,11 @@ function DashboardWithAgent() {
                 status,
                 description: `Current ${metric.displayName.toLowerCase()}`,
                 change: metric.change,
-                insightsLoading: true,  // Show skeleton while loading insights
+                // If we have cached insights, show them immediately with stale indicator
+                interpretation: cachedInsight?.interpretation,
+                actionableInsights: cachedInsight?.actionableInsights,
+                insightsLoading: !cachedInsight,  // Only show skeleton if no cached data
+                insightsStale: !!cachedInsight,   // Show shimmer if using cached data
               },
             });
           });
@@ -1507,19 +1561,19 @@ function DashboardWithAgent() {
       mcpClient.getInterpretations('1h')
         .then(interpretationsData => {
           if (interpretationsData.error || !interpretationsData.interpretations) {
-            // Clear loading state even on error/empty response
+            // Clear loading/stale state even on error/empty response (keep cached content visible)
             setDashboardState(prev => ({
               ...prev,
               components: prev.components.map(comp =>
                 comp.component === 'metric_card'
-                  ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                  ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
                   : comp
               ),
             }));
             return;
           }
 
-          // Update components with interpretations and remove loading state
+          // Update components with interpretations and remove loading/stale state
           setDashboardState(prev => {
             const updatedComponents = prev.components.map(comp => {
               if (comp.component !== 'metric_card') return comp;
@@ -1529,6 +1583,12 @@ function DashboardWithAgent() {
               const interp = interpretationsData.interpretations[metricId];
 
               if (interp) {
+                // Cache the fresh insight for future use
+                setCachedInsight(comp.id, {
+                  interpretation: interp.interpretation,
+                  actionableInsights: interp.insight ? [interp.insight] : undefined,
+                });
+
                 return {
                   ...comp,
                   props: {
@@ -1536,15 +1596,17 @@ function DashboardWithAgent() {
                     interpretation: interp.interpretation,
                     actionableInsights: interp.insight ? [interp.insight] : undefined,
                     insightsLoading: false,  // Done loading
+                    insightsStale: false,    // Fresh data, not stale
                   },
                 };
               }
-              // Remove loading state even if no interpretation found
+              // Remove loading/stale state even if no interpretation found
               return {
                 ...comp,
                 props: {
                   ...comp.props,
                   insightsLoading: false,
+                  insightsStale: false,
                 },
               };
             });
@@ -1558,12 +1620,12 @@ function DashboardWithAgent() {
         })
         .catch(err => {
           console.error('Failed to fetch interpretations:', err);
-          // Remove loading state on error
+          // Remove loading/stale state on error (keep cached content visible)
           setDashboardState(prev => ({
             ...prev,
             components: prev.components.map(comp =>
               comp.component === 'metric_card'
-                ? { ...comp, props: { ...comp.props, insightsLoading: false } }
+                ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
                 : comp
             ),
           }));
@@ -2091,9 +2153,9 @@ function DashboardWithAgent() {
     }
   }, []);
 
-  // Handler for going back to home
+  // Handler for going back to landing page
   const handleBackToHome = useCallback(() => {
-    setCurrentView('home');
+    setCurrentView('landing');
     setDashboardState({
       components: [],
       lastUpdated: new Date().toISOString(),
@@ -2239,6 +2301,9 @@ function DashboardWithAgent() {
             onCommandClick={handleCommandClick}
             statusSummary={statusSummary}
             statusSummaryLoading={statusSummaryLoading}
+            onNavigate={handleNavigate}
+            onSendMessage={handleSendMessage}
+            timeWindow={timeWindow}
             voiceInput={{
               voiceState,
               transcript,
@@ -2252,30 +2317,61 @@ function DashboardWithAgent() {
         {/* Resizable Divider */}
         <div
           onMouseDown={handleMouseDown}
-          className="w-1 bg-surface-3/50 hover:bg-accent-primary cursor-col-resize transition-colors flex-shrink-0"
+          className="w-1 hover:bg-accent-primary cursor-col-resize transition-colors flex-shrink-0"
         />
 
-        {/* Chat Panel */}
+        {/* Chat Panel - Floating Card Style */}
         <div
-          className="flex flex-col bg-white/50 backdrop-blur-sm overflow-hidden flex-shrink-0"
+          className="flex flex-col flex-shrink-0 py-4 pr-4"
           style={{ width: chatWidth }}
         >
-          <div className="flex-1 overflow-hidden">
-            <CopilotChat
-              labels={{
-                initial: 'Ask me about your system metrics, or say "show me a dashboard" to get started.',
-                placeholder: 'Ask about CPU, memory, containers...',
-              }}
-              suggestions={[
-                { title: 'Quick status', message: 'Give me a quick status summary' },
-                { title: 'System metrics', message: 'Show all system metrics' },
-                { title: 'Container status', message: 'Which containers are running?' },
-                { title: 'Workflow health', message: 'Are my n8n workflows healthy?' },
-                { title: 'Disk space', message: 'How much disk space is left?' },
-                { title: 'Memory usage', message: 'Show me memory usage' },
-              ]}
-              className="h-full"
-            />
+          <div className="flex-1 overflow-hidden bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm flex flex-col">
+            {/* Header Section */}
+            <div className="p-5 flex-shrink-0">
+              <h2 className="text-lg font-semibold text-text-primary mb-2">
+                Conseltent AI
+              </h2>
+              <p className="text-xl font-medium text-text-primary mb-2">
+                Welcome to console.
+              </p>
+              <p className="text-sm text-text-secondary mb-5">
+                Console is an Agent-Driven UI. You give me a command, and I retrieve.
+              </p>
+
+              {/* Quick Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Quick status', message: 'Give me a quick status summary' },
+                  { label: 'System metrics', message: 'Show all system metrics' },
+                  { label: 'Container status', message: 'Which containers are running?' },
+                  { label: 'Disk space', message: 'How much disk space is left?' },
+                  { label: 'Deployments', message: 'Show deployments' },
+                  { label: 'Workflow health', message: 'Are my n8n workflows healthy?' },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => handleSendMessage(action.message)}
+                    className="px-3 py-1.5 text-sm bg-white/80 hover:bg-white border border-gray-200 hover:border-accent-primary/30 rounded-full transition-colors text-text-secondary hover:text-accent-primary"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-gray-200 mx-5 flex-shrink-0" />
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-hidden">
+              <CopilotChat
+                labels={{
+                  initial: "Let's get started. Ask or tell me something and I'll retrieve that data.",
+                  placeholder: 'Ask about CPU, costs, containers...',
+                }}
+                className="h-full"
+              />
+            </div>
           </div>
         </div>
       </div>

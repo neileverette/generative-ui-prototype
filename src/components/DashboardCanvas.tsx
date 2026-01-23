@@ -11,6 +11,7 @@ import { AnthropicUsageCard } from './a2ui/AnthropicUsageCard';
 import { VoiceOverlay } from './VoiceOverlay';
 import { VoiceButton } from './VoiceButton';
 import { VoiceState } from '../hooks/useVoiceDictation';
+import { LandingPage } from './LandingPage';
 
 // Main Icon with optional gradient
 const VennDiagramIcon = ({ className, gradient = false }: { className?: string; gradient?: boolean }) => (
@@ -59,13 +60,16 @@ interface VoiceInputProps {
 interface DashboardCanvasProps {
   state: DashboardState;
   shortcuts?: ShortcutAction[];
-  currentView?: 'home' | 'commands' | 'loading';
+  currentView?: 'home' | 'commands' | 'loading' | 'landing';
   onBack?: () => void;
   commands?: CommandAction[];
   onCommandClick?: (query: string) => void;
   voiceInput?: VoiceInputProps;
   statusSummary?: string | null;
   statusSummaryLoading?: boolean;
+  onNavigate?: (destination: string) => void;
+  onSendMessage?: (message: string) => void;
+  timeWindow?: string;
 }
 
 // Component registry - maps A2UI component types to React components
@@ -118,11 +122,22 @@ const DEFAULT_COMMANDS: CommandAction[] = [
   { id: 'last-deployment', label: 'When was my last deployment?' },
 ];
 
-export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput, statusSummary, statusSummaryLoading }: DashboardCanvasProps) {
+export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput, statusSummary, statusSummaryLoading, onNavigate, onSendMessage, timeWindow }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
 
   // Determine if voice is active (listening or transcribing)
   const isVoiceActive = voiceInput && voiceInput.voiceState !== 'idle';
+
+  // Landing page view - new mockup design
+  if (currentView === 'landing') {
+    return (
+      <LandingPage
+        onNavigate={onNavigate || (() => {})}
+        onSendMessage={onSendMessage || (() => {})}
+        timeWindow={timeWindow}
+      />
+    );
+  }
 
   // Loading screen view
   if (currentView === 'loading') {
