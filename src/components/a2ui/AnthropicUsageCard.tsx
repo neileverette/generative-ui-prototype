@@ -133,11 +133,9 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
     fetchData(true);
   };
 
-  // Initial fetch and refresh interval
+  // Fetch once on mount, manual refresh only
   useEffect(() => {
     fetchData();
-    const interval = setInterval(() => fetchData(), 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
   }, []);
 
   // Loading state
