@@ -3,14 +3,13 @@
 ## Current Focus
 
 **Milestone**: 3 - Chat Panel Visual Enhancements
-**Phase**: 7 - Instruction Message Cleanup (Next)
-**Plan**: None (ready to plan Phase 7)
-**Status**: Phase 6 Complete - Ready for Phase 7
+**Phase**: 8 - Input Box Polish (Next)
+**Plan**: None (ready to plan Phase 8)
+**Status**: Phase 7 Complete - Ready for Phase 8
 
 ## Quick Context
 
-Milestone 3 in progress. Phase 6 (Welcome Header Styling) completed. Three phases remaining:
-- Phase 7: Remove feedback buttons from instruction message
+Milestone 3 in progress. Phase 7 (Instruction Message Cleanup) completed. Two phases remaining:
 - Phase 8: Input box polish (8px radius, 16px bottom padding)
 - Phase 9: Send icon rotation (90 degrees clockwise)
 
@@ -27,7 +26,7 @@ Milestone 3 in progress. Phase 6 (Welcome Header Styling) completed. Three phase
 | Phase | Name | Status |
 |-------|------|--------|
 | 6 | Welcome Header Styling | Complete |
-| 7 | Instruction Message Cleanup | Not Started |
+| 7 | Instruction Message Cleanup | Complete |
 | 8 | Input Box Polish | Not Started |
 | 9 | Send Icon Rotation | Not Started |
 
@@ -35,23 +34,31 @@ Milestone 3 in progress. Phase 6 (Welcome Header Styling) completed. Three phase
 
 | Commit | Type | Description |
 |--------|------|-------------|
+| `be45eef` | style | Hide feedback controls on initial instruction message |
 | `0637cf3` | style | Improve welcome header visual hierarchy |
 | `db07a1b` | fix | Add missing CopilotKit actions for chat-to-widget flow |
-| `1eb6787` | fix | Add error handling and recovery to navigation handlers |
 
 ## Next Actions
 
-1. Run `/gsd:plan-phase` to create plan for Phase 7 (Instruction Message Cleanup)
-2. Execute plan to remove feedback buttons from instruction message
-3. Continue through phases 8-9
+1. Run `/gsd:plan-phase` to create plan for Phase 8 (Input Box Polish)
+2. Execute plan to add 8px corner radius and 16px bottom padding
+3. Continue through phase 9
 
 ## Key Files
 
 - `src/App.tsx` - CopilotKit integration, chat panel, welcome header (lines ~2546-2574)
+- `src/index.css` - CopilotKit CSS overrides (feedback controls, scrollbars, backgrounds)
 - `src/components/DashboardCanvas.tsx` - Renders widgets based on dashboardState
 - `src/components/LandingPage.tsx` - Landing page with navigation cards
 
 ## Session Log
+
+### 2025-01-24 - Phase 7 Complete
+- Executed plan 07-01 (Instruction Message Cleanup)
+- Added CSS rule to hide `.copilotKitMessageControls` on first message
+- Uses `:first-child` selector pattern in `.copilotKitMessagesContainer`
+- Build verified passing
+- Committed: `be45eef`
 
 ### 2025-01-24 - Phase 6 Complete
 - Executed plan 06-01 (Welcome Header Styling)
