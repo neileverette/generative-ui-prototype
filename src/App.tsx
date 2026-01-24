@@ -56,6 +56,17 @@ function DashboardWithAgent() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
+  // Loading timeout recovery - prevents UI from getting stuck in loading state
+  useEffect(() => {
+    if (currentView === 'loading') {
+      const timeout = setTimeout(() => {
+        console.warn('[LoadingTimeout] Loading state exceeded 30s, returning to landing page');
+        setCurrentView('landing');
+      }, 30000); // 30 second timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [currentView]);
+
   // Auto-refresh data when time window changes
   useEffect(() => {
     if (!lastAction || dashboardState.components.length === 0) return;
@@ -158,14 +169,20 @@ function DashboardWithAgent() {
   // Voice dictation hook - sends transcript to chat when complete
   const handleVoiceTranscriptComplete = useCallback(async (transcript: string) => {
     if (transcript.trim()) {
+      console.log('[handleVoiceTranscriptComplete] Processing transcript:', transcript);
       // Don't set loading here - let the CopilotAction handlers manage the view
       // The action handlers (renderDashboard, fetchSystemMetrics, etc.) will set currentView to 'home'
-      await appendMessage(
-        new TextMessage({
-          role: MessageRole.User,
-          content: transcript,
-        })
-      );
+      try {
+        await appendMessage(
+          new TextMessage({
+            role: MessageRole.User,
+            content: transcript,
+          })
+        );
+        console.log('[handleVoiceTranscriptComplete] Message sent successfully');
+      } catch (error) {
+        console.error('[handleVoiceTranscriptComplete] Error sending message:', error);
+      }
     }
   }, [appendMessage]);
 
@@ -182,17 +199,26 @@ function DashboardWithAgent() {
 
   // Handler for command clicks - sends query to chat
   const handleCommandClick = useCallback(async (query: string) => {
+    console.log('[handleCommandClick] Sending query:', query);
     setCurrentView('loading'); // Show loading state while waiting
-    await appendMessage(
-      new TextMessage({
-        role: MessageRole.User,
-        content: query,
-      })
-    );
+    try {
+      await appendMessage(
+        new TextMessage({
+          role: MessageRole.User,
+          content: query,
+        })
+      );
+      console.log('[handleCommandClick] Message sent successfully');
+    } catch (error) {
+      console.error('[handleCommandClick] Error sending message:', error);
+      // Recover from error by going back to landing page
+      setCurrentView('landing');
+    }
   }, [appendMessage]);
 
   // Handler for navigation from landing page
   const handleNavigate = useCallback((destination: string) => {
+    console.log('[handleNavigate] Navigating to:', destination);
     if (destination === 'back') {
       setCurrentView('landing');
       return;
@@ -209,18 +235,28 @@ function DashboardWithAgent() {
     const query = destinationQueries[destination];
     if (query) {
       handleCommandClick(query);
+    } else {
+      console.error('[handleNavigate] No query mapping for destination:', destination);
     }
   }, [handleCommandClick]);
 
   // Handler for sending messages from landing page
   const handleSendMessage = useCallback(async (message: string) => {
+    console.log('[handleSendMessage] Sending message:', message);
     setCurrentView('loading');
-    await appendMessage(
-      new TextMessage({
-        role: MessageRole.User,
-        content: message,
-      })
-    );
+    try {
+      await appendMessage(
+        new TextMessage({
+          role: MessageRole.User,
+          content: message,
+        })
+      );
+      console.log('[handleSendMessage] Message sent successfully');
+    } catch (error) {
+      console.error('[handleSendMessage] Error sending message:', error);
+      // Recover from error by going back to landing page
+      setCurrentView('landing');
+    }
   }, [appendMessage]);
 
   // Action to render components on the dashboard
