@@ -25,6 +25,14 @@ export function TodaysUpdateCard({
     ? formatRelativeTime(timestamp)
     : 'just now';
 
+  // Format current date
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   // Highlight numbers and key terms in the summary
   const formattedSummary = highlightSummary(summary);
 
@@ -32,15 +40,17 @@ export function TodaysUpdateCard({
     <div
       className={`
         bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm
-        p-6 ${className}
+        p-6 pr-[200px] ${className}
       `}
     >
       <div className="flex items-start gap-8">
         {/* Left side - Title and timestamp stacked */}
         <div className="flex-shrink-0 min-w-[140px]">
-          <h2 className="text-lg font-semibold text-text-primary">
+          <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <span className="material-symbols-outlined">today</span>
             Today's update
           </h2>
+          <div className="text-sm text-text-muted mt-1">{currentDate}</div>
           <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1">
             <Clock className="w-3 h-3" />
             <span>{displayTime}</span>
@@ -55,7 +65,7 @@ export function TodaysUpdateCard({
               <div className="h-5 bg-gray-200 rounded w-3/4"></div>
             </div>
           ) : (
-            <p className="text-lg text-text-primary leading-relaxed">
+            <p className="text-2xl text-text-primary leading-tight">
               {formattedSummary}
             </p>
           )}

@@ -2243,7 +2243,7 @@ function DashboardWithAgent() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <img src="/console.svg" alt="Console" className="h-6 -mt-0.5" />
+          <img src="/console.svg" alt="Console" className="h-6 mt-1" />
         </div>
         <div className="flex items-center gap-4">
           {/* Time Window Selector */}

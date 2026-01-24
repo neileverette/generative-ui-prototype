@@ -142,7 +142,7 @@ export function LandingPage({
   }, [timeWindow]);
 
   // Build the summary text
-  const summaryText = `"[${data.containerCount}] containers running, [${data.alertCount}] alerts firing, [${data.uptimePercent}]% uptime—your automations saved [${data.automationHours}] hours while costing you [$${data.monthlyCost.toFixed(0)}] this month."`;
+  const summaryText = `[${data.containerCount}] containers running, [${data.alertCount}] alerts firing, [${data.uptimePercent}]% uptime—your automations saved [${data.automationHours}] hours while costing you [$${data.monthlyCost.toFixed(0)}] this month.`;
 
   // Claude usage component
   const claudeUsageComponent: A2UIComponent = {
