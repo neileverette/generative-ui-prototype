@@ -4,6 +4,7 @@
 
 - [x] **Milestone 1: Landing Page Redesign** - Complete the landing page redesign (Phases 1-3)
 - [x] **Milestone 2: Bug Fixes - Navigation & Chat** - Fix shortcut card clicks and chat widget results (Phases 4-5)
+- [ ] **Milestone 3: Chat Panel Visual Enhancements** - Visual polish for the right-side chat panel (Phases 6-9)
 
 ---
 
@@ -150,3 +151,81 @@ All 6 common query types now work correctly:
 4. "Show me AWS costs" -> fetchCostsOverview
 5. "Show Claude usage" -> showClaudeUsage
 6. "Show automation workflows" -> fetchAutomations
+
+---
+
+## Milestone 3: Chat Panel Visual Enhancements
+
+### Overview
+
+Apply visual polish to the right-side chat panel to improve aesthetics and user experience. Includes header styling, message cleanup, and input box refinements.
+
+### Domain Expertise
+
+None — CSS/Tailwind styling work
+
+### Phases
+
+- [ ] **Phase 6: Welcome Header Styling** - Bold headline, larger subtitle, improved spacing
+- [ ] **Phase 7: Instruction Message Cleanup** - Remove feedback buttons from instructional text
+- [ ] **Phase 8: Input Box Polish** - Corner radius and bottom padding adjustments
+- [ ] **Phase 9: Send Icon Rotation** - Rotate send icon 90 degrees clockwise
+
+## Phase Details (Milestone 3)
+
+### Phase 6: Welcome Header Styling
+**Goal**: Improve the visual hierarchy of the chat panel header
+**Depends on**: Nothing (can start immediately)
+**Research**: Unlikely (CSS/Tailwind work)
+
+Requirements:
+- Make "Welcome to Console" headline bold
+- Make subtitle text underneath larger
+- Add more padding between header elements
+
+Plans:
+- [ ] 06-01: Apply header typography and spacing improvements
+
+### Phase 7: Instruction Message Cleanup
+**Goal**: Remove inappropriate feedback controls from instructional content
+**Depends on**: Phase 6
+**Research**: Unlikely (component modification)
+
+Requirements:
+- Remove thumbs up/thumbs down buttons from the initial instruction message
+- The instruction is informational, not a real chat message requiring feedback
+
+Plans:
+- [ ] 07-01: Remove feedback buttons from instruction message
+
+### Phase 8: Input Box Polish
+**Goal**: Refine the chat input box styling
+**Depends on**: Phase 7
+**Research**: Unlikely (CSS adjustments)
+
+Requirements:
+- Set input box corner radius to 8px
+- Add 16px padding below input box (not touching window bottom)
+
+Plans:
+- [ ] 08-01: Apply input box styling refinements
+
+### Phase 9: Send Icon Rotation
+**Goal**: Correct the send icon orientation
+**Depends on**: Phase 8
+**Research**: Unlikely (CSS transform)
+
+Requirements:
+- Rotate send icon 90 degrees clockwise
+
+Plans:
+- [ ] 09-01: Apply rotation transform to send icon
+
+## Progress (Milestone 3)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 6. Welcome Header Styling | 0/1 | Not Started | - |
+| 7. Instruction Message Cleanup | 0/1 | Not Started | - |
+| 8. Input Box Polish | 0/1 | Not Started | - |
+| 9. Send Icon Rotation | 0/1 | Not Started | - |
