@@ -2545,8 +2545,8 @@ function DashboardWithAgent() {
           <div className="flex-1 overflow-hidden bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm flex flex-col">
             {/* Header Section */}
             <div className="p-6 flex-shrink-0">
-              <p className="text-xl font-bold text-text-primary mb-4">
-                Welcome to console.
+              <p className="text-xl font-bold text-text-primary mb-4 font-orbitron tracking-wider">
+                CONSOLE/AI
               </p>
               <p className="text-base text-text-secondary mb-6">
                 Console is an Agent-Driven UI. You give me a command, and I retrieve.

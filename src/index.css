@@ -8,6 +8,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.font-orbitron {
+  font-family: 'Orbitron', 'Segoe UI', Roboto, sans-serif;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide {
   scrollbar-width: none;
@@ -73,6 +77,32 @@ body {
 [class*="chatInput"] {
   background: transparent !important;
   background-color: transparent !important;
+}
+
+/* Hide CopilotKit send arrow button in the chat input */
+[class*="copilotKitChat"] button[type="submit"],
+[class*="CopilotKitChat"] button[type="submit"],
+[class*="copilotkitChat"] button[type="submit"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide inline send arrow icon inside the input field */
+[class*="copilotKitChat"] [class*="input"] [class*="send"],
+[class*="copilotKitChat"] [class*="input"] [class*="Send"],
+[class*="copilotKitChat"] [class*="input"] [class*="arrow"],
+[class*="copilotKitChat"] [class*="input"] [class*="Arrow"],
+[class*="copilotKitChat"] [class*="Input"] [class*="send"],
+[class*="copilotKitChat"] [class*="Input"] [class*="Send"],
+[class*="copilotKitChat"] [class*="Input"] [class*="arrow"],
+[class*="copilotKitChat"] [class*="Input"] [class*="Arrow"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+[class*="copilotKitChat"] input,
+[class*="copilotKitChat"] textarea {
+  background-image: none !important;
 }
 
 /* Resize and style CopilotKit header icon */

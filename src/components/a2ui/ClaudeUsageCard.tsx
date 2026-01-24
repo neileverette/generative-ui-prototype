@@ -81,8 +81,7 @@ export function ClaudeUsageCard({
   return (
     <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
       {/* Header with refresh button */}
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="w-5 h-5 text-accent-primary" />
+      <div className="flex items-center justify-between mb-4">
         <span className="widget-title">Claude Code</span>
         <button
           onClick={() => fetchData(true)}

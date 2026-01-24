@@ -191,7 +191,6 @@ export function LandingPage({
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Brain className="w-5 h-5 text-accent-primary" />
                   <span className="widget-title">Memory</span>
                 </div>
                 <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
