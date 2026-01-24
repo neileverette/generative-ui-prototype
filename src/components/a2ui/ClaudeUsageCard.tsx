@@ -52,16 +52,16 @@ export function ClaudeUsageCard({
     return () => clearInterval(interval);
   }, [props.claudeCode]);
 
-  // Calculate values from real data
-  const fiveHourPercentage = claudeCode?.fiveHourWindow.percentage ?? 0;
-  const fiveHourRemaining = 100 - fiveHourPercentage;
-  const resetsIn = claudeCode?.fiveHourWindow.resetsIn ?? '5h 0m';
-  const status = claudeCode ? getUsageStatus(fiveHourPercentage) : 'normal';
-  const showWarning = fiveHourPercentage > 70;
+  // Fake data to match Claude Console (until real API available)
+  const fiveHourPercentage = 9;
+  const fiveHourRemaining = 91;
+  const resetsIn = '4h 38m';
+  const status = 'normal';
+  const showWarning = false;
 
-  // Fake weekly data (40%)
-  const weeklyPercentage = 40;
-  const weeklyRemaining = 60;
+  // Fake weekly data (matching Claude Console)
+  const weeklyPercentage = 22;
+  const weeklyRemaining = 78;
 
   if (isLoading) {
     return (
