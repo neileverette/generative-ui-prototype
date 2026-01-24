@@ -188,6 +188,12 @@ div[class*="console-button"],
   opacity: 0.25;
 }
 
+.blur-circle-deep-blue {
+  background-color: #0047d4;
+  opacity: 0.35;
+  filter: blur(140px);
+}
+
 .blur-circle-purple {
   background-color: #6366f1;
   opacity: 0.25;
@@ -299,4 +305,10 @@ cpk-web-inspector {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+/* Hide feedback/message controls on the initial instruction message only */
+.copilotKitMessages > .copilotKitMessagesContainer > :first-child .copilotKitMessageControls,
+.copilotKitMessages .copilotKitMessagesContainer > :first-child .copilotKitMessageControls {
+  display: none !important;
 }
