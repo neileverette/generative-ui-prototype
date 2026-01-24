@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar for light theme */
 ::-webkit-scrollbar {
   width: 8px;
@@ -254,4 +264,33 @@ cpk-web-inspector {
   top: auto !important;
   transform: none !important;
   margin: 0 !important;
+}
+
+/* Hide scrollbar in chat area */
+[class*="copilotKitChat"],
+[class*="CopilotKit"],
+[class*="copilotKit"],
+[class*="copilotKitChat"] *,
+[class*="CopilotKit"] *,
+[class*="copilotKit"] *,
+[class*="messages"],
+[class*="Messages"],
+[class*="chat"],
+[class*="Chat"] {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+[class*="copilotKitChat"] *::-webkit-scrollbar,
+[class*="CopilotKit"] *::-webkit-scrollbar,
+[class*="copilotKit"] *::-webkit-scrollbar,
+[class*="messages"]::-webkit-scrollbar,
+[class*="Messages"]::-webkit-scrollbar,
+[class*="chat"]::-webkit-scrollbar,
+[class*="Chat"]::-webkit-scrollbar,
+[class*="messages"] *::-webkit-scrollbar,
+[class*="Messages"] *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
