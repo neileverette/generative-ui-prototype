@@ -55,7 +55,7 @@ export function StatusIndicator({ component }: StatusIndicatorProps) {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-text-primary">{title}</h3>
+            <h3 className="widget-title">{title}</h3>
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${config.bgColor} ${config.color}`}>
               {config.label}
             </span>

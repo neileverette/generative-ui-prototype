@@ -48,7 +48,7 @@ export function ECRSummaryCard({ component, className }: ECRSummaryCardProps) {
           <Package className="w-5 h-5 text-accent-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-text-primary">ECR Summary</h3>
+          <h3 className="widget-title">ECR Summary</h3>
           <p className="text-sm text-text-muted">
             You have {repositoryCount} repositor{repositoryCount === 1 ? 'y' : 'ies'}: {repositories.map(r => r.name).join(', ')}
           </p>

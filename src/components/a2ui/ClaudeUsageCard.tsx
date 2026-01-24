@@ -238,7 +238,7 @@ function ClaudeCodeSection({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-accent-primary" />
-          <span className="font-semibold text-text-primary">Claude Code</span>
+          <span className="widget-title">Claude Code</span>
           {onRefresh && (
             <button
               onClick={onRefresh}
@@ -392,7 +392,7 @@ function ApiTokenSection({
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <CreditCard className="w-5 h-5 text-accent-success" />
-          <span className="font-semibold text-text-secondary">API Usage</span>
+          <span className="widget-title">API Usage</span>
         </div>
         <SkeletonLoader />
       </div>
@@ -405,7 +405,7 @@ function ApiTokenSection({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-accent-success" />
-          <span className="font-semibold text-text-primary">API Usage</span>
+          <span className="widget-title">API Usage</span>
           {onRefresh && (
             <button
               onClick={onRefresh}
@@ -508,7 +508,7 @@ function ApiCreditsSection({
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <CreditCard className="w-5 h-5 text-text-muted" />
-          <span className="font-semibold text-text-secondary">API Credits</span>
+          <span className="widget-title">API Credits</span>
         </div>
         <div className="text-center py-4 text-text-muted">
           <Info className="w-6 h-6 mx-auto mb-2 opacity-50" />
@@ -531,7 +531,7 @@ function ApiCreditsSection({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-accent-success" />
-          <span className="font-semibold text-text-primary">API Credits</span>
+          <span className="widget-title">API Credits</span>
         </div>
         {!data.hasAdminApi && (
           <span className="px-2 py-1 text-xs font-medium bg-surface-2 text-text-muted rounded-full">

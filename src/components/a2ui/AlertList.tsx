@@ -47,7 +47,7 @@ export function AlertList({ component }: AlertListProps) {
       <div className="flex items-center justify-between p-4 border-b border-surface-3">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-accent-primary" />
-          <h3 className="font-semibold text-text-primary">{title}</h3>
+          <h3 className="widget-title">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           {criticalCount > 0 && (

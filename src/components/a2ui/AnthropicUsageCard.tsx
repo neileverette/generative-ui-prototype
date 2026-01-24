@@ -147,7 +147,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-accent-success" />
-            <span className="font-semibold text-text-secondary">Anthropic API Usage</span>
+            <span className="widget-title">Anthropic API Usage</span>
           </div>
           <SkeletonLoader />
           <div className="grid grid-cols-2 gap-3 mt-4">
@@ -168,7 +168,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-5 h-5 text-text-muted" />
-            <span className="font-semibold text-text-secondary">Anthropic API Usage</span>
+            <span className="widget-title">Anthropic API Usage</span>
           </div>
           <div className="text-center py-6 text-text-muted">
             <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -191,7 +191,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-accent-success" />
-            <span className="font-semibold text-text-primary">Anthropic API Usage</span>
+            <span className="widget-title">Anthropic API Usage</span>
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}

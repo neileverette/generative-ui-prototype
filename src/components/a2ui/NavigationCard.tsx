@@ -59,7 +59,7 @@ export function NavigationCard({
       </div>
 
       {/* Title */}
-      <h3 className="font-semibold text-text-primary mb-1 group-hover:text-accent-primary transition-colors">
+      <h3 className="widget-title mb-1">
         {title}
       </h3>
 

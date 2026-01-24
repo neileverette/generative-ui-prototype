@@ -87,7 +87,7 @@ export function MetricCard({ component, className }: MetricCardProps) {
           <div className={`p-1.5 rounded-lg ${statusConfig.bgColor} flex-shrink-0`}>
             <StatusIcon className={`w-4 h-4 ${statusConfig.color}`} />
           </div>
-          <span className="text-sm font-medium text-text-secondary truncate">{title}</span>
+          <span className="widget-title truncate">{title}</span>
         </div>
         {priority === 'critical' && (
           <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-accent-danger/20 text-accent-danger rounded-full flex-shrink-0">

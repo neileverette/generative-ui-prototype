@@ -44,7 +44,7 @@ export function DataTable({ component, className }: DataTableProps) {
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-surface-3">
         <Table className="w-4 h-4 text-accent-primary" />
-        <h3 className="font-semibold text-text-primary">{title}</h3>
+        <h3 className="widget-title">{title}</h3>
         <span className="ml-auto text-xs text-text-muted">
           {rows.length} items
         </span>

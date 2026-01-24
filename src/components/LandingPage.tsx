@@ -176,8 +176,7 @@ export function LandingPage({
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <Activity className="w-5 h-5 text-accent-primary" />
-                  <span className="font-semibold text-text-primary">System uptime</span>
+                  <span className="widget-title">System Uptime</span>
                 </div>
                 <span className="text-4xl font-bold text-text-primary">{data.systemUptime}</span>
               </div>
@@ -193,7 +192,7 @@ export function LandingPage({
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Brain className="w-5 h-5 text-accent-primary" />
-                  <span className="font-semibold text-text-primary">Memory</span>
+                  <span className="widget-title">Memory</span>
                 </div>
                 <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
               </div>
@@ -221,7 +220,7 @@ export function LandingPage({
             onClick={() => onNavigate('costs')}
           />
           <NavigationCard
-            title="System metrics"
+            title="System Metrics"
             description="Uptime, CPU, memory, network and more"
             icon={Activity}
             status={data.systemMetrics}
@@ -256,7 +255,7 @@ export function LandingPage({
             onClick={() => onNavigate('deployments')}
           />
           <NavigationCard
-            title="AI usage"
+            title="AI Usage"
             description="Track limits, usage and API credits"
             icon={Brain}
             status={data.aiUsage}

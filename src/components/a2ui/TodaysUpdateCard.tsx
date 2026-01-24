@@ -43,13 +43,10 @@ export function TodaysUpdateCard({
         p-6 pr-[200px] ${className}
       `}
     >
-      <div className="flex items-start gap-8">
+      <div className="flex items-center gap-8">
         {/* Left side - Title and timestamp stacked */}
         <div className="flex-shrink-0 min-w-[140px]">
-          <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <span className="material-symbols-outlined">today</span>
-            Today's update
-          </h2>
+          <h2 className="widget-title">Today's Update</h2>
           <div className="text-sm text-text-muted mt-1">{currentDate}</div>
           <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1">
             <Clock className="w-3 h-3" />
@@ -65,7 +62,7 @@ export function TodaysUpdateCard({
               <div className="h-5 bg-gray-200 rounded w-3/4"></div>
             </div>
           ) : (
-            <p className="text-2xl text-text-primary leading-tight">
+            <p className="text-xl text-text-primary leading-tight">
               {formattedSummary}
             </p>
           )}

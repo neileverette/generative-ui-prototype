@@ -107,6 +107,14 @@ div[class*="console-button"],
   pointer-events: none !important;
 }
 
+/* Hide CopilotKit "Powered by" footer */
+.poweredBy,
+[class*="CopilotKit"] .poweredBy,
+[data-copilotkit] .poweredBy {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Pulse animation for critical status */
 @keyframes pulse-critical {
   0%, 100% {
@@ -156,6 +164,13 @@ div[class*="console-button"],
 /* Card hover effect */
 .card-hover {
   @apply transition-all duration-300;
+}
+
+.widget-title {
+  @apply font-semibold uppercase tracking-normal text-text-primary;
+  font-size: 15px;
+  line-height: 1.25rem;
+  margin-top: -4px;
 }
 
 .card-hover:hover {

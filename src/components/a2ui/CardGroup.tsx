@@ -59,7 +59,7 @@ export function CardGroup({ component, className }: CardGroupProps) {
           <Box className={`w-5 h-5 ${finalStatusConfig.color}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-text-primary truncate">
+          <h3 className="widget-title truncate">
             {title}
             {subtitle && <span className="ml-2 text-sm font-normal text-text-muted">{subtitle}</span>}
           </h3>

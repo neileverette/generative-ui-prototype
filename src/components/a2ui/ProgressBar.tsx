@@ -21,7 +21,7 @@ export function ProgressBar({ component }: ProgressBarProps) {
   return (
     <div className="bg-surface-2 rounded-xl p-5 border border-surface-3">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-text-secondary">{title}</h3>
+        <h3 className="widget-title">{title}</h3>
         <span className="text-lg font-bold text-text-primary">
           {value.toFixed(1)}{label ? ` ${label}` : '%'}
         </span>
