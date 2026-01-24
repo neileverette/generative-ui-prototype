@@ -2,20 +2,21 @@
 
 ## Current Focus
 
-**Milestone**: 3 - Chat Panel Visual Enhancements
-**Phase**: 9 - Send Icon Rotation
-**Plan**: 09-01 (Send Icon Rotation)
-**Status**: Complete
+**Milestone**: 4 - Claude Code Widget Enhancements
+**Phase**: 10 - Card Layout Foundation
+**Plan**: Not started
+**Status**: Ready to begin
 
 ## Quick Context
 
-Milestone 3 complete. Phase 9 complete - added CSS rule to rotate the send icon 90 degrees clockwise, transforming it from an upward-pointing arrow to a rightward-pointing "send" arrow.
+Milestone 4 created. Goal is to rebuild the ClaudeUsageCard component to match the new wireframe design (`~/Desktop/claude.png`). The new design is cleaner with:
+- "Claude" header
+- Plan info section (fake data)
+- 5-hour limit with percentage display (real JSONL data)
+- Weekly limit at 40% (fake data)
+- Warning banner when near limit
 
-All 4 phases of Milestone 3 (Chat Panel Visual Enhancements) are now complete:
-- Phase 6: Welcome Header Styling
-- Phase 7: Instruction Message Cleanup
-- Phase 8: Input Box Polish
-- Phase 9: Send Icon Rotation
+Key removals: model breakdown, token counts, API section.
 
 ## Milestone Progress
 
@@ -24,15 +25,18 @@ All 4 phases of Milestone 3 (Chat Panel Visual Enhancements) are now complete:
 | 1. Landing Page Redesign | Complete | 1-3 |
 | 2. Bug Fixes - Navigation & Chat | Complete | 4-5 |
 | 3. Chat Panel Visual Enhancements | Complete | 6-9 |
+| 4. Claude Code Widget Enhancements | In Progress | 10-15 |
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 6 | Welcome Header Styling | Complete |
-| 7 | Instruction Message Cleanup | Complete |
-| 8 | Input Box Polish | Complete |
-| 9 | Send Icon Rotation | Complete |
+| 10 | Card Layout Foundation | Pending |
+| 11 | Plan Info Section | Pending |
+| 12 | Five-Hour Limit Section | Pending |
+| 13 | Weekly Limit Section | Pending |
+| 14 | Warning Banner | Pending |
+| 15 | Remove Legacy Features | Pending |
 
 ## Recent Commits
 
@@ -45,52 +49,48 @@ All 4 phases of Milestone 3 (Chat Panel Visual Enhancements) are now complete:
 
 ## Next Actions
 
-1. Review Milestone 3 completion
-2. Define next milestone or project priorities
-3. Consider pushing changes to remote
+1. Begin Phase 10: Card Layout Foundation
+2. Run `/gsd:plan` to create plan 10-01
+3. Execute the plan to restructure card layout
 
 ## Key Files
 
-- `src/App.tsx` - CopilotKit integration, chat panel, welcome header (lines ~2546-2574)
-- `src/index.css` - CopilotKit CSS overrides (feedback controls, scrollbars, backgrounds, input box, send icon)
-- `src/components/DashboardCanvas.tsx` - Renders widgets based on dashboardState
-- `src/components/LandingPage.tsx` - Landing page with navigation cards
+- `src/components/a2ui/ClaudeUsageCard.tsx` - Main component to rebuild (927 lines currently)
+- `server/claude-usage.ts` - Server-side JSONL parsing (keep for 5-hour data)
+- `src/config/claude-usage.config.ts` - Configuration constants
+- `~/Desktop/claude.png` - Wireframe reference
+
+## Wireframe Requirements
+
+Based on `~/Desktop/claude.png`:
+
+**Layout (top to bottom):**
+1. Header: "Claude" (bold)
+2. Plan info:
+   - Plan: Claude Code Max (5x tier, based on $100/month)
+   - Cost: $100/m
+   - Next bill: [mo]/[day]
+3. Warning: "Approaching usage limit" (red, only when near limit)
+4. 5-hour limit section:
+   - "5-hour limit" left, "Resets in Xh Xm" right
+   - Progress bar (red when high)
+   - "X% used / Y% remain" below
+5. Weekly limit section:
+   - "Weekly limit" left, "Resets in X days" right
+   - Progress bar at 40% (gray)
+   - "40% used / 60% remain" below
+
+**Data Sources:**
+- 5-hour limit: REAL data from JSONL files
+- Everything else: FAKE/hardcoded data
 
 ## Session Log
 
-### 2025-01-24 - Phase 9 Complete (Milestone 3 Complete)
-- Executed plan 09-01 (Send Icon Rotation)
-- Added CSS rule for `.copilotKitInputControlButton[aria-label="Send"] svg` with `transform: rotate(90deg)`
-- Build verified passing
-- Committed: `a6e86a1`
-- Milestone 3 now fully complete
-
-### 2025-01-24 - Phase 8 Complete
-- Executed plan 08-01 (Input Box Polish)
-- Added CSS override for `.copilotKitInput` border-radius: 8px
-- Added CSS override for `.copilotKitInputContainer` padding-bottom: 16px
-- Build verified passing
-- Committed: `1d5e3cc`
-
-### 2025-01-24 - Phase 7 Complete
-- Executed plan 07-01 (Instruction Message Cleanup)
-- Added CSS rule to hide `.copilotKitMessageControls` on first message
-- Uses `:first-child` selector pattern in `.copilotKitMessagesContainer`
-- Build verified passing
-- Committed: `be45eef`
-
-### 2025-01-24 - Phase 6 Complete
-- Executed plan 06-01 (Welcome Header Styling)
-- Applied typography changes: `font-medium` -> `font-bold`, `text-sm` -> `text-base`
-- Applied spacing changes: `mb-2` -> `mb-4`, `mb-5` -> `mb-6`, `p-5` -> `p-6`
-- Build verified passing
-- Committed: `0637cf3`
-
-### 2025-01-24 - Milestone 3 Creation
-- Created Milestone 3: Chat Panel Visual Enhancements
-- Defined 4 phases (6-9) covering all 7 requirements
+### 2025-01-24 - Milestone 4 Creation
+- Created Milestone 4: Claude Code Widget Enhancements
+- Defined 6 phases (10-15) covering complete card rebuild
 - Created phase directories
-- Ready to begin Phase 6
+- Ready to begin Phase 10
 
 ---
 *Last updated: 2025-01-24*

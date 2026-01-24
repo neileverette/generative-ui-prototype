@@ -5,6 +5,7 @@
 - [x] **Milestone 1: Landing Page Redesign** - Complete the landing page redesign (Phases 1-3)
 - [x] **Milestone 2: Bug Fixes - Navigation & Chat** - Fix shortcut card clicks and chat widget results (Phases 4-5)
 - [x] **Milestone 3: Chat Panel Visual Enhancements** - Visual polish for the right-side chat panel (Phases 6-9)
+- [ ] **Milestone 4: Claude Code Widget Enhancements** - Rebuild ClaudeUsageCard to match wireframe design (Phases 10-15)
 
 ---
 
@@ -239,3 +240,146 @@ All visual enhancements applied to the chat panel:
 - Phase 7: Removed feedback controls from initial instruction message
 - Phase 8: Input box with 8px corner radius and 16px bottom padding
 - Phase 9: Send icon rotated 90 degrees clockwise (rightward arrow)
+
+---
+
+## Milestone 4: Claude Code Widget Enhancements
+
+### Overview
+
+Rebuild the ClaudeUsageCard component to match the new wireframe design. The new design is cleaner and more focused, showing plan information with two progress bars (5-hour limit and weekly limit) and a warning banner when approaching limits.
+
+### Domain Expertise
+
+None - React/TypeScript component refactoring with existing data patterns
+
+### Wireframe Reference
+
+See `~/Desktop/claude.png` for the target design.
+
+### Key Changes from Current Implementation
+
+1. **Remove**: Model breakdown, token counts display, API section
+2. **Add**: Plan info section (fake data), weekly limit section (fake data at 40%)
+3. **Modify**: 5-hour limit to show percentage-based display only (real data from JSONL)
+4. **Add**: Warning banner above progress bars when near limit
+5. **Keep**: 5-minute auto-refresh + manual refresh
+
+### Phases
+
+- [ ] **Phase 10: Card Layout Foundation** - Restructure card with new header and clean layout
+- [ ] **Phase 11: Plan Info Section** - Add plan name, cost, next bill date (fake data)
+- [ ] **Phase 12: Five-Hour Limit Section** - Refactor to percentage-based display with real JSONL data
+- [ ] **Phase 13: Weekly Limit Section** - Add weekly limit progress bar (fake data at 40%)
+- [ ] **Phase 14: Warning Banner** - Add conditional "Approaching usage limit" warning
+- [ ] **Phase 15: Remove Legacy Features** - Remove model breakdown, token counts, API section
+
+## Phase Details (Milestone 4)
+
+### Phase 10: Card Layout Foundation
+**Goal**: Restructure the card component with new header layout
+**Depends on**: Nothing (can start immediately)
+**Research**: Unlikely (component refactoring)
+
+Requirements:
+- Simplify card to single section (remove API section divider)
+- Header: "Claude" in bold
+- Clean, minimal container styling
+
+Plans:
+- [ ] 10-01: Restructure ClaudeUsageCard layout
+
+### Phase 11: Plan Info Section
+**Goal**: Add plan information display with fake data
+**Depends on**: Phase 10
+**Research**: Unlikely (static data display)
+
+Requirements:
+- Plan: "Claude Code Max (5x tier, based on $100/month)"
+- Cost: "$100/m"
+- Next bill: "[mo]/[day]" (placeholder format)
+- All data is hardcoded/fake for this phase
+
+Plans:
+- [ ] 11-01: Add plan info section with fake data
+
+### Phase 12: Five-Hour Limit Section
+**Goal**: Refactor 5-hour limit to show percentage-based display only
+**Depends on**: Phase 11
+**Research**: Unlikely (existing JSONL parsing works)
+
+Requirements:
+- "5-hour limit" label on left, "Resets in Xh Xm" on right
+- Progress bar showing usage
+- "X% used / Y% remain" below the bar
+- Use real data from JSONL files (existing logic)
+- 5-minute auto-refresh interval
+- Manual refresh button
+
+Plans:
+- [ ] 12-01: Refactor 5-hour limit to percentage display
+
+### Phase 13: Weekly Limit Section
+**Goal**: Add weekly limit progress bar with fake data
+**Depends on**: Phase 12
+**Research**: Unlikely (mirroring 5-hour section)
+
+Requirements:
+- "Weekly limit" label on left, "Resets in X days" on right
+- Progress bar at 40%
+- "40% used / 60% remain" below
+- All data is hardcoded/fake (show 40%)
+
+Plans:
+- [ ] 13-01: Add weekly limit section with fake data
+
+### Phase 14: Warning Banner
+**Goal**: Add conditional warning when approaching usage limit
+**Depends on**: Phase 13
+**Research**: Unlikely (conditional rendering)
+
+Requirements:
+- Text: "Approaching usage limit" in red
+- Position: Above the progress bars (below plan info)
+- Only show when either limit is above threshold (e.g., 80%)
+
+Plans:
+- [ ] 14-01: Add conditional warning banner
+
+### Phase 15: Remove Legacy Features
+**Goal**: Clean up removed features from codebase
+**Depends on**: Phase 14
+**Research**: Unlikely (code removal)
+
+Requirements:
+- Remove model breakdown display
+- Remove token counts display
+- Remove API section (ApiCreditsSection, ApiTokenSection)
+- Remove unused imports and helper functions
+- Ensure no TypeScript errors after cleanup
+
+Plans:
+- [ ] 15-01: Remove legacy features and clean up
+
+## Progress (Milestone 4)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 10. Card Layout Foundation | 0/1 | Pending | - |
+| 11. Plan Info Section | 0/1 | Pending | - |
+| 12. Five-Hour Limit Section | 0/1 | Pending | - |
+| 13. Weekly Limit Section | 0/1 | Pending | - |
+| 14. Warning Banner | 0/1 | Pending | - |
+| 15. Remove Legacy Features | 0/1 | Pending | - |
+
+## Summary (Milestone 4)
+
+**Milestone Status: IN PROGRESS**
+
+Target: Rebuild ClaudeUsageCard to match wireframe with:
+- Clean "Claude" header
+- Plan info (fake data)
+- 5-hour limit with real JSONL data (percentage-based)
+- Weekly limit at 40% (fake data)
+- Warning banner when near limit
+- Removed: model breakdown, token counts, API section
