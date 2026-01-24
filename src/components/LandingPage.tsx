@@ -74,7 +74,7 @@ const DEFAULT_DATA: DashboardData = {
 
 export function LandingPage({
   onNavigate,
-  onSendMessage,
+  onSendMessage: _onSendMessage,
   timeWindow = '4h',
   className = '',
 }: LandingPageProps) {
