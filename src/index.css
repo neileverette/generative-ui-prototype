@@ -322,3 +322,8 @@ cpk-web-inspector {
 .copilotKitInputContainer {
   padding-bottom: 16px !important;
 }
+
+/* Rotate send icon 90 degrees clockwise - transforms upward arrow to rightward arrow */
+.copilotKitInputControlButton[aria-label="Send"] svg {
+  transform: rotate(90deg);
+}
