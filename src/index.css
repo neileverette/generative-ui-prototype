@@ -312,3 +312,13 @@ cpk-web-inspector {
 .copilotKitMessages .copilotKitMessagesContainer > :first-child .copilotKitMessageControls {
   display: none !important;
 }
+
+/* Input box corner radius - 8px for subtle rounded corners */
+.copilotKitInput {
+  border-radius: 8px !important;
+}
+
+/* Input box bottom padding - 16px breathing room from window edge */
+.copilotKitInputContainer {
+  padding-bottom: 16px !important;
+}
