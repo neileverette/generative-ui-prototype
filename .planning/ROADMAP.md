@@ -2,8 +2,8 @@
 
 ## Milestones
 
-- [x] **Milestone 1: Landing Page Redesign** - Complete the landing page redesign (Phases 1-3) ✅
-- [ ] **Milestone 2: Bug Fixes - Navigation & Chat** - Fix shortcut card clicks and chat widget results (Phases 4-5)
+- [x] **Milestone 1: Landing Page Redesign** - Complete the landing page redesign (Phases 1-3)
+- [x] **Milestone 2: Bug Fixes - Navigation & Chat** - Fix shortcut card clicks and chat widget results (Phases 4-5)
 
 ---
 
@@ -56,9 +56,9 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fix & Verify | 1/1 | ✅ Complete | 2025-01-23 |
-| 2. Visual Polish | 1/1 | ✅ Complete | 2025-01-23 |
-| 3. Integration & Ship | 1/1 | ✅ Complete | 2025-01-23 |
+| 1. Fix & Verify | 1/1 | Complete | 2025-01-23 |
+| 2. Visual Polish | 1/1 | Complete | 2025-01-23 |
+| 3. Integration & Ship | 1/1 | Complete | 2025-01-23 |
 
 ## Summary
 
@@ -83,7 +83,7 @@ npm run dev
 
 ---
 
-## Milestone 2: Bug Fixes - Navigation & Chat
+## Milestone 2: Bug Fixes - Navigation & Chat (COMPLETE)
 
 ### Overview
 
@@ -96,7 +96,7 @@ None — standard React/TypeScript event handling and state management
 ### Phases
 
 - [x] **Phase 4: Fix Shortcut Card Clicks** - Resolve unresponsive interface when clicking navigation/shortcut cards
-- [ ] **Phase 5: Fix Chat Widget Results** - Display widget results when user input matches common phrases
+- [x] **Phase 5: Fix Chat Widget Results** - Display widget results when user input matches common phrases
 
 ## Phase Details (Milestone 2)
 
@@ -126,11 +126,27 @@ Key investigation areas:
 - Common phrase matching implementation
 
 Plans:
-- [ ] 05-01: Implement phrase matching and widget display for chat queries
+- [x] 05-01: Fix missing CopilotKit actions for chat-to-widget flow
 
 ## Progress (Milestone 2)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 4. Fix Shortcut Card Clicks | 1/1 | Complete | 2025-01-23 |
-| 5. Fix Chat Widget Results | 0/1 | Not Started | - |
+| 5. Fix Chat Widget Results | 1/1 | Complete | 2025-01-23 |
+
+## Summary (Milestone 2)
+
+**Milestone Status: COMPLETE**
+
+Both bugs fixed:
+- Phase 4: Added error handling and recovery to navigation handlers
+- Phase 5: Added missing CopilotKit actions for costs and automations, fixed view transition in showDeployments
+
+All 6 common query types now work correctly:
+1. "Show all system metrics" -> fetchSystemMetrics
+2. "Show running containers" -> fetchContainersList
+3. "Show deployments" -> showDeployments
+4. "Show me AWS costs" -> fetchCostsOverview
+5. "Show Claude usage" -> showClaudeUsage
+6. "Show automation workflows" -> fetchAutomations
