@@ -3,7 +3,7 @@ import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { getUsageStatus } from '../../config/claude-usage.config';
 import { mcpClient } from '../../services/mcp-client';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Zap } from 'lucide-react';
 
 interface ClaudeUsageCardComponentProps {
   component: ClaudeUsageComponent;
@@ -81,12 +81,13 @@ export function ClaudeUsageCard({
   return (
     <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-3xl font-bold text-gray-900">Claude</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="w-5 h-5 text-accent-primary" />
+        <span className="widget-title">Claude Code</span>
         <button
           onClick={() => fetchData(true)}
           disabled={isRefreshing}
-          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+          className="p-1 text-text-muted hover:text-accent-primary transition-colors disabled:opacity-50"
           title="Refresh"
         >
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
