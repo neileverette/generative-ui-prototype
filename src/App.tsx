@@ -1201,6 +1201,207 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to fetch AWS costs overview
+  useCopilotAction({
+    name: 'fetchCostsOverview',
+    description: 'Fetch AWS costs breakdown and display them on the dashboard. Use this when the user asks about AWS costs, cloud spending, infrastructure costs, or monthly billing.',
+    parameters: [],
+    handler: async () => {
+      try {
+        const data = await mcpClient.getCostsOverview();
+
+        const components: A2UIComponent[] = [];
+
+        // Check if AWS data is available
+        if (data.aws && !data.aws.error) {
+          // Main cost metric card - 2 columns wide
+          const costCard: A2UIComponent = {
+            id: 'aws-total-cost',
+            component: 'metric_card' as const,
+            source: 'aws-cost-explorer',
+            priority: 'high',
+            timestamp: new Date().toISOString(),
+            columnSpan: 2,
+            props: {
+              title: 'Current Month Cost',
+              value: `$${data.aws.totalCost.toFixed(2)}`,
+              unit: 'USD',
+              size: 'xl' as const,
+              status: 'healthy' as const,
+              description: `${data.aws.period.start} to ${data.aws.period.end}`,
+            },
+          };
+          components.push(costCard);
+
+          // Forecast card if available - 2 columns wide
+          if (data.forecast && data.forecast.forecastedCost > 0) {
+            const forecastCard: A2UIComponent = {
+              id: 'aws-forecast',
+              component: 'metric_card' as const,
+              source: 'aws-cost-explorer',
+              priority: 'medium',
+              timestamp: new Date().toISOString(),
+              columnSpan: 2,
+              props: {
+                title: 'Forecasted Month End',
+                value: `$${data.forecast.forecastedCost.toFixed(2)}`,
+                unit: 'USD',
+                size: 'xl' as const,
+                status: 'healthy' as const,
+                description: 'Estimated total for billing month',
+              },
+            };
+            components.push(forecastCard);
+          }
+
+          // Service breakdown table - 4 columns wide (full width)
+          if (data.aws.breakdown && data.aws.breakdown.length > 0) {
+            const breakdownTable: A2UIComponent = {
+              id: 'aws-cost-breakdown',
+              component: 'data_table' as const,
+              source: 'aws-cost-explorer',
+              priority: 'medium',
+              timestamp: new Date().toISOString(),
+              columnSpan: 4,
+              props: {
+                title: 'Cost Breakdown by Service',
+                columns: [
+                  { key: 'name', label: 'Service' },
+                  { key: 'cost', label: 'Cost (USD)' },
+                  { key: 'percentage', label: '% of Total' },
+                ],
+                rows: data.aws.breakdown.map((item: { name: string; cost: number; percentage: number }) => ({
+                  name: item.name,
+                  cost: `$${item.cost.toFixed(2)}`,
+                  percentage: `${item.percentage}%`,
+                })),
+              },
+            };
+            components.push(breakdownTable);
+          }
+        } else {
+          // Show error message if AWS not configured
+          const errorCard: A2UIComponent = {
+            id: 'aws-cost-error',
+            component: 'metric_card' as const,
+            source: 'error',
+            priority: 'high',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'AWS Costs',
+              value: 'Not Configured',
+              size: 'large' as const,
+              status: 'critical' as const,
+              description: data.aws?.error || 'AWS Cost Explorer not configured',
+            },
+          };
+          components.push(errorCard);
+        }
+
+        setDashboardState({
+          components,
+          lastUpdated: new Date().toISOString(),
+          agentMessage: data.aws && !data.aws.error
+            ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
+            : 'Unable to fetch AWS costs',
+        });
+        setCurrentView('home');
+
+        return data.aws && !data.aws.error
+          ? `Showing AWS costs: $${data.aws.totalCost.toFixed(2)} for current billing period`
+          : 'Unable to fetch AWS costs - check configuration';
+      } catch (error) {
+        return `Failed to fetch costs: ${error}`;
+      }
+    },
+  });
+
+  // Action to fetch automation workflows status
+  useCopilotAction({
+    name: 'fetchAutomations',
+    description: 'Fetch n8n automation workflow metrics and display them on the dashboard. Use this when the user asks about automations, workflows, n8n status, or wants to see automation health.',
+    parameters: [],
+    handler: async () => {
+      try {
+        // Fetch both workflow metrics in parallel via MCP client
+        const [gmailData, imageGenData] = await Promise.all([
+          mcpClient.getGmailFilterMetrics(timeWindow),
+          mcpClient.getImageGeneratorMetrics(timeWindow),
+        ]);
+
+        const newComponents: A2UIComponent[] = [];
+
+        // Helper to determine status from success rate
+        const getStatusFromRate = (rate: number): 'healthy' | 'warning' | 'critical' => {
+          if (rate >= 95) return 'healthy';
+          if (rate >= 80) return 'warning';
+          return 'critical';
+        };
+
+        // Add Gmail Filter as CardGroup
+        if (!gmailData.error) {
+          const rate = gmailData.metrics.successRate;
+          const allTime = gmailData.metrics.allTimeTotal || 0;
+
+          newComponents.push({
+            id: 'automation-gmail-filter',
+            component: 'card_group' as const,
+            source: 'datadog',
+            priority: gmailData.metrics.failed > 0 ? 'high' : 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Gmail Filter',
+              subtitle: '(filters bulk email as unread)',
+              status: getStatusFromRate(rate),
+              description: `${allTime} total executions with ${rate}% success rate`,
+              metrics: [
+                { label: 'Successful', value: gmailData.metrics.successful, status: 'healthy' as const },
+                { label: 'Failed', value: gmailData.metrics.failed, status: gmailData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
+                { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
+              ],
+            },
+          });
+        }
+
+        // Add Image Generator as CardGroup
+        if (!imageGenData.error) {
+          const rate = imageGenData.metrics.successRate;
+          const allTime = imageGenData.metrics.allTimeTotal || 0;
+
+          newComponents.push({
+            id: 'automation-image-generator',
+            component: 'card_group' as const,
+            source: 'datadog',
+            priority: imageGenData.metrics.failed > 0 ? 'high' : 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              title: 'Image Generator',
+              subtitle: '(generates custom illustrations)',
+              status: getStatusFromRate(rate),
+              description: `${allTime} total executions with ${rate}% success rate`,
+              metrics: [
+                { label: 'Successful', value: imageGenData.metrics.successful, status: 'healthy' as const },
+                { label: 'Failed', value: imageGenData.metrics.failed, status: imageGenData.metrics.failed > 0 ? 'warning' as const : 'healthy' as const },
+                { label: 'Success Rate', value: rate, unit: '%', status: getStatusFromRate(rate) },
+              ],
+            },
+          });
+        }
+
+        setDashboardState({
+          components: sortByPriority(newComponents),
+          lastUpdated: new Date().toISOString(),
+          agentMessage: `Showing ${newComponents.length} automation workflows`,
+        });
+        setCurrentView('home');
+
+        return `Showing ${newComponents.length} automation workflows`;
+      } catch (error) {
+        return `Failed to fetch automations: ${error}`;
+      }
+    },
+  });
+
   // Shortcut handlers for the welcome screen
   const handleFetchContainersList = useCallback(async () => {
     try {
@@ -1975,6 +2176,7 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container} (${githubActionsCount} automated, ${manualCount} manual)`,
       });
+      setCurrentView('home');
 
       return `Showing ${deploymentsData.totalDeployments} deployments (${githubActionsCount} via GitHub Actions)`;
     },
