@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
-import { getUsageStatus } from '../../config/claude-usage.config';
 import { mcpClient } from '../../services/mcp-client';
 import { RefreshCw, Zap } from 'lucide-react';
 
@@ -17,8 +16,8 @@ export function ClaudeUsageCard({
 }: ClaudeUsageCardComponentProps) {
   const { props } = component;
 
-  // State for Claude Code data
-  const [claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(props.claudeCode);
+  // State for Claude Code data (fetch kept for future use, using fake data for now)
+  const [_claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(props.claudeCode);
   const [isLoading, setIsLoading] = useState(!props.claudeCode);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -56,8 +55,9 @@ export function ClaudeUsageCard({
   const fiveHourPercentage = 9;
   const fiveHourRemaining = 91;
   const resetsIn = '4h 38m';
-  const status = 'normal';
   const showWarning = false;
+  // Determine bar color based on percentage
+  const barColor = fiveHourPercentage > 80 ? 'bg-red-500' : fiveHourPercentage > 60 ? 'bg-amber-500' : 'bg-blue-500';
 
   // Fake weekly data (matching Claude Console)
   const weeklyPercentage = 22;
@@ -82,7 +82,10 @@ export function ClaudeUsageCard({
     <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
       {/* Header with refresh button */}
       <div className="flex items-center justify-between mb-4">
-        <span className="widget-title">Claude Code</span>
+        <div className="flex items-center gap-2">
+          <Zap className="w-5 h-5 text-accent-primary" />
+          <span className="widget-title">Claude Code</span>
+        </div>
         <button
           onClick={() => fetchData(true)}
           disabled={isRefreshing}
@@ -123,9 +126,7 @@ export function ClaudeUsageCard({
         {/* Progress Bar */}
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${
-              status === 'critical' ? 'bg-red-500' : status === 'warning' ? 'bg-amber-500' : 'bg-red-500'
-            }`}
+            className={`h-full rounded-full transition-all duration-300 ${barColor}`}
             style={{ width: `${fiveHourPercentage}%` }}
           />
         </div>
