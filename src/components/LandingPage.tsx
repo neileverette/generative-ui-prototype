@@ -173,10 +173,15 @@ export function LandingPage({
         <div className="grid grid-cols-2 gap-4">
           {/* System Uptime Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
-            <h3 className="text-sm font-medium text-text-secondary mb-3">System uptime</h3>
-            <div className="flex items-baseline gap-4">
-              <span className="text-4xl font-bold text-text-primary">{data.systemUptime}</span>
-              <span className="text-sm text-green-600">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Activity className="w-5 h-5 text-accent-primary" />
+                  <span className="font-semibold text-text-primary">System uptime</span>
+                </div>
+                <span className="text-4xl font-bold text-text-primary">{data.systemUptime}</span>
+              </div>
+              <span className="text-sm text-green-600 text-right max-w-[180px]">
                 System uptime is stable with no reported issues.
               </span>
             </div>
@@ -184,10 +189,15 @@ export function LandingPage({
 
           {/* Memory Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
-            <h3 className="text-sm font-medium text-text-secondary mb-3">Memory</h3>
-            <div className="flex items-baseline gap-4">
-              <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
-              <span className="text-sm text-text-muted">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Brain className="w-5 h-5 text-accent-primary" />
+                  <span className="font-semibold text-text-primary">Memory</span>
+                </div>
+                <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
+              </div>
+              <span className="text-sm text-text-muted text-right max-w-[180px]">
                 Memory usage is currently unavailable for reporting.
               </span>
             </div>
