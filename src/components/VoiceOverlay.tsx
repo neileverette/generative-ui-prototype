@@ -62,13 +62,8 @@ export function VoiceOverlay({ voiceState, transcript }: VoiceOverlayProps) {
         <div
           ref={transcriptRef}
           className="w-full max-h-72 overflow-y-auto scrollbar-hide animate-fade-in"
-          style={{
-            // Fade mask for long content - starts at 5% so text has more visible area
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 90%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 90%, transparent 100%)',
-          }}
         >
-          <p className="text-4xl md:text-5xl font-light text-text-primary text-center leading-relaxed">
+          <p className="text-4xl md:text-5xl font-light text-white text-center leading-relaxed">
             {transcript}
           </p>
         </div>
