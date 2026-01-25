@@ -648,9 +648,6 @@ class MCPClient {
       const response = await fetchWithRetry(`${this.directBaseUrl}/claude/console-usage`);
 
       if (!response.ok) {
-        // Classify error by status code
-        const errorCategory = response.status === 404 ? FetchErrorCategory.NOT_FOUND : FetchErrorCategory.SERVER;
-
         // Record failure in circuit breaker
         consoleUsageCircuitBreaker.recordFailure();
 
@@ -720,6 +717,33 @@ class MCPClient {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }));
       throw new Error(error.error || `Failed to update API credits: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Trigger immediate scrape of Console usage data
+   * Forces scraper to run immediately instead of waiting for 5-minute interval
+   */
+  async triggerConsoleRefresh(): Promise<{
+    success: boolean;
+    message: string;
+    timestamp: string;
+  }> {
+    console.log('[MCP Client] triggerConsoleRefresh - forcing immediate scrape');
+
+    const response = await fetch(`${this.directBaseUrl}/claude/console-usage/trigger`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'dev-localhost-test-key-12345', // TODO: Get from env or config
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(error.message || `Failed to trigger refresh: ${response.statusText}`);
     }
 
     return response.json();

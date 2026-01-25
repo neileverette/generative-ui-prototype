@@ -2645,6 +2645,51 @@ app.post('/api/claude/console-usage', async (req, res) => {
   }
 });
 
+// Trigger immediate scrape (manual refresh)
+app.post('/api/claude/console-usage/trigger', async (req, res) => {
+  const requestId = `trigger-${Date.now()}`;
+  console.log(`[Console Trigger] Manual scrape triggered (${requestId})`);
+
+  // Optional: Require API key for trigger endpoint (security)
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.CLAUDE_SYNC_API_KEY;
+
+  if (expectedKey && apiKey !== expectedKey) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized - Invalid or missing API key',
+      requestId,
+    });
+  }
+
+  try {
+    // Run scraper immediately
+    const { scrape } = await import('./claude-scraper/scrape.js');
+    console.log(`[Console Trigger] Running scraper (${requestId})...`);
+
+    await scrape();
+
+    console.log(`[Console Trigger] Scrape completed successfully (${requestId})`);
+
+    res.json({
+      success: true,
+      message: 'Scrape triggered and completed successfully',
+      timestamp: new Date().toISOString(),
+      requestId,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[Console Trigger] Scrape failed (${requestId}):`, errorMessage);
+
+    res.status(500).json({
+      success: false,
+      message: `Scrape failed: ${errorMessage}`,
+      timestamp: new Date().toISOString(),
+      requestId,
+    });
+  }
+});
+
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));

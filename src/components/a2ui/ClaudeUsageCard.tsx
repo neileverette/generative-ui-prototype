@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { mcpClient } from '../../services/mcp-client';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface ClaudeUsageCardComponentProps {
   component: ClaudeUsageComponent;
@@ -23,7 +23,30 @@ export function ClaudeUsageCard({
   const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
   const [consoleUsage, setConsoleUsage] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setError(null);
+
+    try {
+      // Trigger immediate scrape
+      console.log('[ClaudeUsageCard] Triggering manual refresh...');
+      await mcpClient.triggerConsoleRefresh();
+
+      // Wait a moment for scrape to complete and sync to EC2
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Fetch fresh data
+      await fetchData();
+    } catch (err) {
+      console.error('[ClaudeUsageCard] Error triggering refresh:', err);
+      setError(err instanceof Error ? err.message : 'Failed to trigger refresh');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -92,6 +115,14 @@ export function ClaudeUsageCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="widget-title">Claude</span>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="p-1 text-text-muted hover:text-accent-primary transition-colors disabled:opacity-50"
+          title="Refresh Console usage data"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Plan Info - from config file */}

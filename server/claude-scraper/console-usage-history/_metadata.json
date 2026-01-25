@@ -1,8 +1,8 @@
 {
-  "versionCount": 0,
-  "oldestTimestamp": null,
-  "newestTimestamp": null,
+  "versionCount": 1,
+  "oldestTimestamp": "2026-01-25T16:32:31.963Z",
+  "newestTimestamp": "2026-01-25T16:32:31.963Z",
   "lastCleanup": null,
-  "totalVersionsCreated": 0,
+  "totalVersionsCreated": 1,
   "totalVersionsDeleted": 0
 }

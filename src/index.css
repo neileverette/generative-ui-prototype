@@ -46,6 +46,21 @@ body {
   @apply transition-colors duration-200;
 }
 
+/* HIDE ALL COPILOTKIT WINDOWS, POPUPS, AND OVERLAYS */
+[class*="copilotKitWindow"],
+[class*="CopilotKitWindow"],
+[class*="copilotKitPopup"],
+[class*="CopilotKitPopup"],
+[class*="copilotKitModal"],
+[class*="CopilotKitModal"],
+[class*="copilotKitOverlay"],
+[class*="CopilotKitOverlay"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Custom CopilotKit overrides - make chat transparent */
 .copilotkit-chat-container,
 [class*="copilotKitChat"],

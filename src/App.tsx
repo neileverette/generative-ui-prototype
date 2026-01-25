@@ -178,38 +178,8 @@ function DashboardWithAgent() {
   // Hook for programmatic chat messaging
   const { appendMessage } = useCopilotChat();
 
-  // Voice dictation hook - sends transcript to chat when complete
-  const handleVoiceTranscriptComplete = useCallback(async (transcript: string) => {
-    if (transcript.trim()) {
-      console.log('[handleVoiceTranscriptComplete] Processing transcript:', transcript);
-      // Don't set loading here - let the CopilotAction handlers manage the view
-      // The action handlers (renderDashboard, fetchSystemMetrics, etc.) will set currentView to 'home'
-      try {
-        await appendMessage(
-          new TextMessage({
-            role: MessageRole.User,
-            content: transcript,
-          })
-        );
-        console.log('[handleVoiceTranscriptComplete] Message sent successfully');
-      } catch (error) {
-        console.error('[handleVoiceTranscriptComplete] Error sending message:', error);
-      }
-    }
-  }, [appendMessage]);
-
-  const {
-    voiceState,
-    transcript,
-    startListening,
-    stopListening,
-    isSupported: isVoiceSupported,
-  } = useVoiceDictation({
-    onTranscriptComplete: handleVoiceTranscriptComplete,
-    onError: (error) => console.error('Voice error:', error),
-  });
-
   // Widget loader - handles utterance routing and dynamic widget loading
+  // NOTE: Defined early so processUtterance is available for handlers below
   const { processUtterance } = useWidgetLoader({
     onRouteMatch: (match: RouteMatch) => {
       console.log('[WidgetLoader] Route matched:', match);
@@ -241,12 +211,33 @@ function DashboardWithAgent() {
     },
     onLoadStart: () => {
       console.log('[WidgetLoader] Loading started');
-      setCurrentView('loading');
+      // Don't set loading here - let onRouteMatch handle view transitions
     },
     onLoadComplete: () => {
       console.log('[WidgetLoader] Loading completed');
     },
     autoLoadOverview: true, // Automatically load overview on mount
+  });
+
+  // Voice dictation hook - routes transcript through utterance router, then falls back to chat
+  const handleVoiceTranscriptComplete = useCallback((transcript: string) => {
+    if (transcript.trim()) {
+      console.log('[handleVoiceTranscriptComplete] Processing transcript:', transcript);
+      // Route through utterance router first - will load widgets if match found,
+      // or fall back to chat via onRouteNotFound callback
+      processUtterance(transcript);
+    }
+  }, [processUtterance]);
+
+  const {
+    voiceState,
+    transcript,
+    startListening,
+    stopListening,
+    isSupported: isVoiceSupported,
+  } = useVoiceDictation({
+    onTranscriptComplete: handleVoiceTranscriptComplete,
+    onError: (error) => console.error('Voice error:', error),
   });
 
   // Handler for command clicks - sends query to chat
@@ -283,24 +274,21 @@ function DashboardWithAgent() {
     processUtterance(utterance);
   }, [processUtterance]);
 
-  // Handler for sending messages from landing page
-  const handleSendMessage = useCallback(async (message: string) => {
-    console.log('[handleSendMessage] Sending message:', message);
-    setCurrentView('loading');
-    try {
-      await appendMessage(
-        new TextMessage({
-          role: MessageRole.User,
-          content: message,
-        })
-      );
-      console.log('[handleSendMessage] Message sent successfully');
-    } catch (error) {
-      console.error('[handleSendMessage] Error sending message:', error);
-      // Recover from error by going back to landing page
-      setCurrentView('landing');
-    }
-  }, [appendMessage]);
+  // Handler for sending messages from landing page or chat - routes through utterance router first
+  const handleSendMessage = useCallback((message: string) => {
+    console.log('[handleSendMessage] Processing message:', message);
+    // Route through utterance router first - will load widgets if match found,
+    // or fall back to chat via onRouteNotFound callback
+    processUtterance(message);
+  }, [processUtterance]);
+
+  // Helper function to check if widgets of a certain type are already loaded
+  // Used to prevent duplicate widget loading when routing already loaded them
+  const isWidgetTypeLoaded = useCallback((widgetPrefix: string): boolean => {
+    return dashboardState.components.some((component) =>
+      component.id.startsWith(widgetPrefix)
+    );
+  }, [dashboardState.components]);
 
   // Action to render components on the dashboard
   useCopilotAction({
@@ -379,6 +367,12 @@ function DashboardWithAgent() {
     description: 'Show Claude usage statistics including subscription usage (5-hour window, daily costs) and API credits (balance, burn rate, runway). Use this when the user asks about Claude usage, API credits, token usage, or wants to see their Claude subscription status.',
     parameters: [],
     handler: async () => {
+      // Check if Claude usage widgets are already loaded from routing
+      if (currentView === 'home' && (isWidgetTypeLoaded('claude-usage-widget') || isWidgetTypeLoaded('anthropic-usage-widget'))) {
+        console.log('[showClaudeUsage] Claude usage already loaded, skipping duplicate load');
+        return 'Claude usage is already displayed on the dashboard.';
+      }
+
       const claudeUsageComponent: A2UIComponent = {
         id: 'claude-usage-widget',
         component: 'claude_usage' as const,
@@ -439,6 +433,12 @@ function DashboardWithAgent() {
     description: 'Fetch real system metrics (CPU, memory, load, disk) from Datadog and display them on the dashboard. Use this when the user asks about system health, metrics, or wants to see infrastructure status.',
     parameters: [],
     handler: async () => {
+      // Check if system metrics are already loaded from routing
+      if (currentView === 'home' && isWidgetTypeLoaded('system-metric-')) {
+        console.log('[fetchSystemMetrics] System metrics already loaded, skipping duplicate load');
+        return 'System metrics are already displayed on the dashboard.';
+      }
+
       try {
         // Use MCP client (falls back to direct API if MCP tool not available)
         const data = await mcpClient.getOverviewFast(timeWindow);
@@ -1130,6 +1130,12 @@ function DashboardWithAgent() {
     description: 'Fetch a table showing all running Docker containers with their memory and CPU usage. Use this when the user asks to see all containers, list containers, or wants a containers table/overview.',
     parameters: [],
     handler: async () => {
+      // Check if containers are already loaded from routing
+      if (currentView === 'home' && (isWidgetTypeLoaded('containers-list-table') || isWidgetTypeLoaded('running-containers-count'))) {
+        console.log('[fetchContainersList] Containers already loaded, skipping duplicate load');
+        return 'Containers are already displayed on the dashboard.';
+      }
+
       try {
         const data = await mcpClient.getContainersList(timeWindow);
 
@@ -1250,6 +1256,12 @@ function DashboardWithAgent() {
     description: 'Fetch AWS costs breakdown and display them on the dashboard. Use this when the user asks about AWS costs, cloud spending, infrastructure costs, or monthly billing.',
     parameters: [],
     handler: async () => {
+      // Check if AWS costs are already loaded from routing
+      if (currentView === 'home' && isWidgetTypeLoaded('aws-')) {
+        console.log('[fetchCostsOverview] AWS costs already loaded, skipping duplicate load');
+        return 'AWS costs are already displayed on the dashboard.';
+      }
+
       try {
         const data = await mcpClient.getCostsOverview();
 
@@ -1365,6 +1377,12 @@ function DashboardWithAgent() {
     description: 'Fetch n8n automation workflow metrics and display them on the dashboard. Use this when the user asks about automations, workflows, n8n status, or wants to see automation health.',
     parameters: [],
     handler: async () => {
+      // Check if automation workflows are already loaded from routing
+      if (currentView === 'home' && isWidgetTypeLoaded('automation-')) {
+        console.log('[fetchAutomations] Automation workflows already loaded, skipping duplicate load');
+        return 'Automation workflows are already displayed on the dashboard.';
+      }
+
       try {
         // Fetch both workflow metrics in parallel via MCP client
         const [gmailData, imageGenData] = await Promise.all([
@@ -2159,6 +2177,12 @@ function DashboardWithAgent() {
     description: 'Show the deployments dashboard with deployment history. Use this when the user asks to see deployments, show deployments, or view deployment history.',
     parameters: [],
     handler: async () => {
+      // Check if deployments are already loaded from routing
+      if (currentView === 'home' && (isWidgetTypeLoaded('deployment-count') || isWidgetTypeLoaded('deployments-table'))) {
+        console.log('[showDeployments] Deployments already loaded, skipping duplicate load');
+        return 'Deployments are already displayed on the dashboard.';
+      }
+
       // Trigger the deployments view
       const deployments = deploymentsData.deployments;
       const githubActionsCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
