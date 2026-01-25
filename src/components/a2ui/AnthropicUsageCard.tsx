@@ -220,14 +220,14 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
       >
         <div className="p-4">
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-5 h-5 text-yellow-500" />
+            <Activity className="w-5 h-5 text-amber-500" />
             <span className="widget-title">Anthropic API Usage</span>
           </div>
           <div className="text-center py-6 text-text-muted">
-            <Info className="w-8 h-8 mx-auto mb-2 text-yellow-500 opacity-70" />
-            <p className="text-sm font-medium mb-1 text-yellow-600">API Rate Limit Exceeded</p>
+            <Clock className="w-8 h-8 mx-auto mb-2 text-amber-500 opacity-70" />
+            <p className="text-sm font-medium mb-1 text-amber-600">Temporarily unavailable</p>
             <p className="text-xs">
-              You've exceeded your API call rate. Please check back later.
+              You've exceeded your hourly API call limit. Try back soon.
             </p>
           </div>
         </div>
@@ -248,9 +248,9 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
           </div>
           <div className="text-center py-6 text-text-muted">
             <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium mb-1">{error || 'Admin API Not Configured'}</p>
+            <p className="text-sm font-medium mb-1">Usage data unavailable</p>
             <p className="text-xs">
-              Set ANTHROPIC_ADMIN_API_KEY environment variable to enable API usage tracking.
+              Check back soon or configure the Admin API to enable tracking.
             </p>
           </div>
         </div>
