@@ -1,5 +1,26 @@
 # Project Milestones: Console Landing Page
 
+## v9.0 Dynamic Widget Loading & Utterance Routing (In Progress)
+
+**Goal:** Build chat-driven widget loading system where utterances control UI state and widget composition
+
+**Phases planned:** 35-41 (7 phases)
+
+**Key objectives:**
+- Build utterance-to-widget routing engine with pattern matching
+- Define widget groups (overview, costs, metrics, etc.) and configuration
+- Auto-load "overview" group on initial page load (invisible utterance)
+- Dynamically load/unload widgets based on active utterance
+- Connect UI shortcuts to trigger widget groups
+- Integrate chat input with routing system
+- Comprehensive testing and edge case handling
+
+**Current status:** Milestone created, ready to plan Phase 35
+
+**Started:** 2026-01-25
+
+---
+
 ## v8.0 Scraper-to-EC2 Data Sync (In Progress)
 
 **Goal:** Decouple data collection from serving by syncing scraped data to EC2

@@ -10,6 +10,7 @@
 - [ ] **Milestone 6: Claude Scraper Service** - Improve reliability, error handling, and expand scraper capabilities (Phases 22-27)
 - [x] **Milestone 7: Voice UI Restoration** - Restore voice input button as persistent floating element (Phase 28)
 - [ ] **Milestone 8: Scraper-to-EC2 Data Sync** - Decouple data collection from serving by syncing to EC2 (Phases 29-34)
+- [ ] **Milestone 9: Dynamic Widget Loading & Utterance Routing** - Chat-driven widget loading system with groups and shortcuts (Phases 35-41)
 
 ---
 
@@ -789,3 +790,173 @@ Plans:
 | 32. EC2 GET Endpoint | 0/? | Not started | - |
 | 33. Widget Migration | 0/? | Not started | - |
 | 34. Error Handling & Fallbacks | 0/? | Not started | - |
+
+---
+
+## Milestone 9: Dynamic Widget Loading & Utterance Routing
+
+### Overview
+
+Build a sophisticated routing and loading system where chat utterances are the primary interface for controlling UI state and widget composition. Widgets are organized into groups that can be invoked by utterances or UI shortcuts, with automatic "overview" group loading on initial page load.
+
+### Domain Expertise
+
+None - React state management, routing patterns, event systems
+
+### Milestone Goal
+
+Transform the widget display from static to dynamic, where user utterances (chat input or shortcut clicks) determine which widgets appear on the page. Enable declarative widget grouping and intelligent loading/unloading based on context.
+
+### Phases
+
+- [ ] **Phase 35: Utterance-to-Widget Routing System** - Build core routing engine that maps utterances to widget groups
+- [ ] **Phase 36: Widget Group Configuration** - Define widget groups (overview, costs, metrics, etc.) and their member widgets
+- [ ] **Phase 37: Initial Load with Invisible Utterance** - Implement auto-invocation of "overview" group on page load
+- [ ] **Phase 38: Dynamic Widget Loader** - Load/unload widgets based on active utterance, clear previous widgets
+- [ ] **Phase 39: Shortcut Group UI Integration** - Connect UI shortcuts/buttons to trigger specific widget groups
+- [ ] **Phase 40: Chat-to-Routing Integration** - Wire chat input to routing system, replace existing chat-to-widget logic
+- [ ] **Phase 41: Testing & Edge Cases** - Handle multiple utterances, concurrent loads, error states
+
+## Phase Details (Milestone 9)
+
+### Phase 35: Utterance-to-Widget Routing System
+
+**Goal**: Build the core routing engine that maps utterances to widget groups
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (React state patterns and event systems)
+
+Requirements:
+- Create routing engine that accepts utterances (strings) and returns widget group IDs
+- Support pattern matching (exact match, keyword match, fuzzy match)
+- Route utterance → group ID → widget list resolution
+- Handle routing precedence (exact match trumps keyword match)
+- Expose API for registering routes and querying active widgets
+- TypeScript interfaces for routes, groups, and routing results
+
+Plans:
+- [ ] 35-01: TBD (run /gsd:plan-phase 35 to break down)
+
+### Phase 36: Widget Group Configuration
+
+**Goal**: Define widget groups and configure which widgets belong to each group
+**Depends on**: Phase 35
+**Research**: Unlikely (configuration patterns)
+
+Requirements:
+- Define group schema (group ID, name, description, widget list)
+- Create initial groups: "overview", "costs", "metrics", "deployments", "automation", "claude"
+- Map existing widgets to appropriate groups (some widgets may belong to multiple groups)
+- Configuration format: JSON or TypeScript const
+- Support group metadata (icon, color, display name)
+- Widget group registry that routing engine can query
+
+Plans:
+- [ ] 36-01: TBD (run /gsd:plan-phase 36 to break down)
+
+### Phase 37: Initial Load with Invisible Utterance
+
+**Goal**: Automatically invoke the "overview" group when the page first loads
+**Depends on**: Phase 36
+**Research**: Unlikely (React lifecycle hooks)
+
+Requirements:
+- Detect initial page load (empty state, first render)
+- Automatically invoke routing with "overview" utterance (invisible to user)
+- Load all widgets in the "overview" group
+- No visual indication of utterance (happens silently)
+- Ensure this only happens once per session, not on every re-render
+- Handle case where overview group is empty or undefined
+
+Plans:
+- [ ] 37-01: TBD (run /gsd:plan-phase 37 to break down)
+
+### Phase 38: Dynamic Widget Loader
+
+**Goal**: Load and unload widgets dynamically based on the active utterance
+**Depends on**: Phase 37
+**Research**: Unlikely (React component mounting/unmounting)
+
+Requirements:
+- Clear currently displayed widgets before loading new ones
+- Load widgets from the resolved group
+- Handle widget mounting/unmounting lifecycle
+- Preserve widget state during session (if widget is re-loaded, restore previous state)
+- Loading states and transitions (fade in/out, skeleton loaders)
+- Handle widgets that fail to load (error boundaries)
+- Support for widget priorities/ordering within a group
+
+Plans:
+- [ ] 38-01: TBD (run /gsd:plan-phase 38 to break down)
+
+### Phase 39: Shortcut Group UI Integration
+
+**Goal**: Connect UI shortcut buttons to trigger specific widget groups
+**Depends on**: Phase 38
+**Research**: Unlikely (event handling and state updates)
+
+Requirements:
+- Identify existing shortcut/button UI elements
+- Wire onClick handlers to invoke routing with group-specific utterances
+- Visual feedback when shortcut is active (highlight, underline, badge)
+- Shortcuts map to utterances: "Show costs" → costs group, "Show metrics" → metrics group
+- Support keyboard shortcuts (optional enhancement)
+- Shortcut groups should clear previous widgets and load new group
+
+Plans:
+- [ ] 39-01: TBD (run /gsd:plan-phase 39 to break down)
+
+### Phase 40: Chat-to-Routing Integration
+
+**Goal**: Wire chat input to the routing system, replacing existing chat-to-widget logic
+**Depends on**: Phase 39
+**Research**: Unlikely (refactoring existing CopilotKit integration)
+
+Requirements:
+- Intercept chat input before it reaches existing widget logic
+- Route chat message through utterance routing system
+- If routing match found, load corresponding widget group
+- If no routing match, fall back to existing chat behavior (conversational response)
+- Update chat UI to show which group was activated
+- Support multi-turn conversations (follow-up utterances refine or change groups)
+- Preserve chat history and context
+
+Plans:
+- [ ] 40-01: TBD (run /gsd:plan-phase 40 to break down)
+
+### Phase 41: Testing & Edge Cases
+
+**Goal**: Comprehensive testing and handling of edge cases
+**Depends on**: Phase 40
+**Research**: Unlikely (standard testing practices)
+
+Edge cases to handle:
+- Multiple rapid utterances (debounce or queue)
+- Concurrent widget loading requests
+- Utterance matches multiple groups (precedence rules)
+- Empty groups or missing widgets
+- Widget load failures (network, API errors)
+- Browser back/forward navigation
+- Refresh page while widgets are loading
+- Mobile viewport considerations
+
+Testing needed:
+- Unit tests for routing engine
+- Integration tests for group loading
+- E2E tests for chat and shortcut flows
+- Performance testing (load time, memory usage)
+- Accessibility testing (keyboard navigation, screen readers)
+
+Plans:
+- [ ] 41-01: TBD (run /gsd:plan-phase 41 to break down)
+
+## Progress (Milestone 9)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 35. Utterance-to-Widget Routing System | 0/? | Not started | - |
+| 36. Widget Group Configuration | 0/? | Not started | - |
+| 37. Initial Load with Invisible Utterance | 0/? | Not started | - |
+| 38. Dynamic Widget Loader | 0/? | Not started | - |
+| 39. Shortcut Group UI Integration | 0/? | Not started | - |
+| 40. Chat-to-Routing Integration | 0/? | Not started | - |
+| 41. Testing & Edge Cases | 0/? | Not started | - |

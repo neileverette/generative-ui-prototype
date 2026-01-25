@@ -2,27 +2,28 @@
 
 ## Current Focus
 
-**Milestone**: v8.0 Scraper-to-EC2 Data Sync
-**Phase**: 30 of 34 (Data Sync Client)
-**Plan**: Complete (1/1)
-**Status**: Ready for Phase 31 (EC2 Data Storage)
+**Milestone**: v9.0 Dynamic Widget Loading & Utterance Routing
+**Phase**: 35 of 41 (Utterance-to-Widget Routing System)
+**Plan**: Not started
+**Status**: Ready to plan Phase 35
 
 ## Quick Context
 
-Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (laptop) from data serving (EC2) to enable the widget to work from anywhere.
+Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a chat-driven widget loading system where utterances control UI state and widget composition.
 
-**Current Architecture:**
-- Scraper runs locally on laptop (authenticated Console session)
-- Writes data to local JSON file
-- Widget reads from local file via server endpoint
-- Problem: Widget only works on same machine as scraper
+**Core Concept:**
+- Chat input drives the display, order, and composition of widgets
+- Widgets organized into groups (overview, costs, metrics, etc.)
+- Utterances (chat or shortcuts) invoke widget groups
+- Initial page load auto-invokes "overview" group
 
-**v8.0 Goals:**
-- POST scraped data to EC2 endpoint after each successful scrape
-- EC2 stores and serves usage data
-- Widget fetches from EC2 instead of local file
-- Add retry logic, error handling, and health checks
-- Enable widget to work from anywhere, not just scraper machine
+**v9.0 Goals:**
+- Build utterance-to-widget routing engine with pattern matching
+- Define widget groups and configuration schema
+- Auto-load "overview" group on initial page load (invisible utterance)
+- Dynamically load/unload widgets based on active utterance
+- Connect UI shortcuts to trigger widget groups
+- Integrate with chat system to replace existing widget logic
 
 ## Milestone Progress
 
@@ -36,17 +37,19 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 | 6. Claude Scraper Service | In Progress | 22-27 | - |
 | 7. Voice UI Restoration | Complete | 28 | 2025-01-24 |
 | 8. Scraper-to-EC2 Data Sync | In Progress | 29-34 | - |
+| 9. Dynamic Widget Loading & Utterance Routing | In Progress | 35-41 | - |
 
-## Phase Status (Milestone 8)
+## Phase Status (Milestone 9)
 
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
-| 29 | EC2 API Endpoint | Complete | 2026-01-25 |
-| 30 | Data Sync Client | Complete | 2026-01-25 |
-| 31 | EC2 Data Storage | Not started | - |
-| 32 | EC2 GET Endpoint | Not started | - |
-| 33 | Widget Migration | Not started | - |
-| 34 | Error Handling & Fallbacks | Not started | - |
+| 35 | Utterance-to-Widget Routing System | Not started | - |
+| 36 | Widget Group Configuration | Not started | - |
+| 37 | Initial Load with Invisible Utterance | Not started | - |
+| 38 | Dynamic Widget Loader | Not started | - |
+| 39 | Shortcut Group UI Integration | Not started | - |
+| 40 | Chat-to-Routing Integration | Not started | - |
+| 41 | Testing & Edge Cases | Not started | - |
 
 ## Recent Commits
 
@@ -61,10 +64,10 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 
 ## Next Actions
 
-1. Plan Phase 31 (EC2 Data Storage) - Implement robust storage layer on EC2
-2. Add data retention policies and versioning to EC2 storage
-3. Handle concurrent writes from multiple scrapers
-4. Test end-to-end sync flow from scraper to EC2
+1. Plan Phase 35 (Utterance-to-Widget Routing System) - Build core routing engine
+2. Design pattern matching system for utterance → group resolution
+3. Create TypeScript interfaces for routes, groups, and routing results
+4. Define routing precedence rules (exact > keyword > fuzzy)
 
 ## Key Files
 
@@ -94,6 +97,27 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Milestone 9 Created
+- Created v9.0 Dynamic Widget Loading & Utterance Routing milestone
+- 7 phases defined (35-41)
+- Focus: Chat-driven widget loading with groups and utterances
+- Chat input/shortcuts invoke widget groups, page auto-loads "overview" on initial load
+- Phase directories created
+- ROADMAP.md and STATE.md updated
+- Ready to plan Phase 35 (Utterance-to-Widget Routing System)
+
+### 2026-01-25 - Phase 31 Planned
+- Created executable plan for Phase 31: EC2 Data Storage
+- Plan file: .planning/phases/31-ec2-data-storage/31-ec2-data-storage-PLAN.md
+- Storage layer design: Versioned filesystem storage with retention policies
+- Architecture: `console-usage-history/` directory with timestamped JSON files
+- Retention: Keep last 100 versions OR 7 days of data (whichever is larger)
+- Features: Atomic writes, auto-cleanup, metadata tracking, backward compatibility
+- Module to create: server/console-storage.ts with init/save/cleanup functions
+- Integration: Update POST endpoint to use versioned storage instead of single file
+- Testing plan: Version creation, cleanup, error handling, backward compatibility
+- Ready to execute Phase 31 (1/1 plan)
 
 ### 2026-01-25 - Phase 30 Complete
 - Implemented data sync client to POST usage data to EC2 after successful scrapes
