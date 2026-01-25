@@ -3,9 +3,9 @@
 ## Current Focus
 
 **Milestone**: v8.0 Scraper-to-EC2 Data Sync
-**Phase**: 32 of 34 (EC2 GET Endpoint)
-**Plan**: 1/1 plans complete
-**Status**: Phase 32 complete, ready for Phase 33 (Widget Migration)
+**Phase**: 33 of 34 (Widget Migration)
+**Plan**: 0/1 plans complete
+**Status**: Phase 33 planned, ready to execute
 
 ## Quick Context
 
@@ -64,10 +64,10 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 
 ## Next Actions
 
-1. Plan Phase 35 (Utterance-to-Widget Routing System) - Build core routing engine
-2. Design pattern matching system for utterance → group resolution
-3. Create TypeScript interfaces for routes, groups, and routing results
-4. Define routing precedence rules (exact > keyword > fuzzy)
+1. Execute Phase 33 Plan 01 (Widget Migration) - Update widget to fetch from EC2
+2. Test widget with EC2 synced data endpoint
+3. Verify old local scraper endpoints removed
+4. Confirm auto-refresh works with new endpoint
 
 ## Key Files
 
@@ -97,6 +97,18 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 33 Planned
+- Created executable plan for Phase 33: Widget Migration
+- Plan file: .planning/phases/33-widget-migration/33-01-PLAN.md
+- 3 tasks defined: Update MCP client, remove manual refresh, remove legacy endpoints
+- Architecture change: Widget fetches from `/api/claude/console-usage` (EC2 sync) instead of local scraper
+- Removes dependency on scraper location - widget works from any EC2 instance
+- Key decision: Remove manual refresh (scraper syncs every 5 min, widget polls every 5 min)
+- Removes legacy endpoints: GET/POST `/api/claude-usage/console` (local scraper only)
+- Keeps EC2 sync endpoints: GET/POST `/api/claude/console-usage`
+- Widget maintains staleness indicators and auto-refresh
+- Ready to execute Phase 33 (1/1 plan)
 
 ### 2026-01-25 - Phase 32 Complete
 - Implemented GET /api/claude/console-usage endpoint serving synced Console usage data
