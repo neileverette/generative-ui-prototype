@@ -44,7 +44,7 @@ export function VoiceOverlay({ voiceState, transcript }: VoiceOverlayProps) {
               style={{
                 animationDelay: `${delay}ms`,
                 height: [32, 64, 48, 80, 40, 64, 48][i],
-                background: 'linear-gradient(180deg, #d946ef 0%, #06b6d4 50%, #a78bfa 100%)',
+                background: 'linear-gradient(180deg, #a78bfa 0%, #06b6d4 50%, #d946ef 100%)',
               }}
             />
           ))}
