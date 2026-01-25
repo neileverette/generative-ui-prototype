@@ -2,24 +2,29 @@
 
 ## Current Focus
 
-**Milestone**: All milestones complete (v1.0 - v5.0)
-**Phase**: Ready for next milestone planning
-**Plan**: N/A
-**Status**: Shipped v5.0 on 2025-01-24
+**Milestone**: v6.0 Claude Scraper Service
+**Phase**: 22 of 27 (Session Management & Authentication)
+**Plan**: Not started
+**Status**: Ready to plan Phase 22
 
 ## Quick Context
 
-v5.0 Claude Data Hydration milestone complete. ClaudeUsageCard now displays 100% real Console usage data via AppleScript-based scraping solution.
+Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper foundation to add production-level reliability, monitoring, and expanded data capabilities.
 
-**What shipped:**
-- AppleScript scraper (visible + silent variants)
-- Auto-refresh every 5 minutes (silent, no user interruption)
-- Real Console data: current session (72%), weekly limits (27%, 4%)
-- Plan info from configuration file
-- Stale data warnings (>10 minutes)
-- Manual refresh trigger
+**Current scraper status:**
+- Playwright-based headless scraper
+- Extracts usage data from console.anthropic.com
+- Auto-refresh every 5 minutes
+- Basic error handling (stops after 3 consecutive failures)
+- Session management via persistent browser context
 
-**Core value achieved:** Real-time visibility into Claude usage without interrupting workflow.
+**v6.0 Goals:**
+- Improve session persistence and auth reliability
+- Add comprehensive error handling with retry logic
+- Extract additional metrics (billing, plan details, historical data)
+- Add monitoring, logging, and health checks
+- Implement intelligent rate limiting
+- Production hardening with tests and documentation
 
 ## Milestone Progress
 
@@ -30,17 +35,18 @@ v5.0 Claude Data Hydration milestone complete. ClaudeUsageCard now displays 100%
 | 3. Chat Panel Visual Enhancements | Complete | 6-9 | 2025-01-24 |
 | 4. Claude Code Widget Enhancements | Complete | 10-15 | 2025-01-24 |
 | 5. Claude Data Hydration | Complete | 16-21 | 2025-01-24 |
+| 6. Claude Scraper Service | In Progress | 22-27 | - |
 
-## Phase Status (Milestone 5)
+## Phase Status (Milestone 6)
 
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
-| 16 | API Research & Strategy | Complete | 2025-01-24 |
-| 17 | API Infrastructure Setup | Complete | 2025-01-24 |
-| 18 | Current Session Data Integration | Complete | 2025-01-24 |
-| 19 | Weekly Limits Integration | Complete | 2025-01-24 |
-| 20 | Plan & Billing Info Integration | Complete | 2025-01-24 |
-| 21 | Cleanup & Testing | Complete | 2025-01-24 |
+| 22 | Session Management & Authentication | Not started | - |
+| 23 | Error Handling & Retry Logic | Not started | - |
+| 24 | Data Extraction Enhancement | Not started | - |
+| 25 | Monitoring & Health Checks | Not started | - |
+| 26 | Rate Limiting & Throttling | Not started | - |
+| 27 | Testing & Documentation | Not started | - |
 
 ## Recent Commits
 
@@ -87,10 +93,18 @@ v5.0 Claude Data Hydration milestone complete. ClaudeUsageCard now displays 100%
 
 ## Session Log
 
+### 2025-01-24 - Milestone 6 Created
+- Created v6.0 Claude Scraper Service milestone
+- 6 phases defined (22-27)
+- Focus: Production reliability, monitoring, expanded data extraction
+- Phase directories created
+- ROADMAP.md and STATE.md updated
+- Ready to plan Phase 22 (Session Management & Authentication)
+
 ### 2025-01-24 - Milestone 5 Complete
 - v5.0 Claude Data Hydration shipped
 - All 6 phases (16-21) completed
-- Built AppleScript-based scraper with silent variant
+- Built Playwright-based scraper with headless operation
 - Integrated real Console data for session and weekly limits
 - Added auto-refresh (5 min) and manual refresh
 - Removed all fake data and magenta placeholders
@@ -100,4 +114,4 @@ v5.0 Claude Data Hydration milestone complete. ClaudeUsageCard now displays 100%
 - Tagged v5.0 in git
 
 ---
-*Last updated: 2025-01-24 after v5.0 milestone completion*
+*Last updated: 2025-01-24 after v6.0 milestone creation*
