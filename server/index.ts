@@ -2031,8 +2031,11 @@ app.get('/api/claude-usage/api-tokens', async (_req, res) => {
     });
   } catch (error) {
     console.error('[Admin API] Error fetching token usage:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    // Check if it's a rate limit error and return appropriate status
+    const isRateLimit = errorMsg.includes('429') || errorMsg.toLowerCase().includes('rate');
+    res.status(isRateLimit ? 429 : 500).json({
+      error: isRateLimit ? 'Rate limit exceeded - too many API requests' : errorMsg,
       source: 'anthropic-admin-api',
     });
   }

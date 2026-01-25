@@ -763,8 +763,17 @@ class MCPClient {
       if (response.status === 400) {
         return { hasAdminApi: false };
       }
+      // Handle rate limit errors (429 from Anthropic API proxied through our server as 500)
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded - too many API requests');
+      }
       const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(error.error || `Failed to fetch API tokens: ${response.statusText}`);
+      // Check if the error message indicates a rate limit
+      const errorMsg = error.error || `Failed to fetch API tokens: ${response.statusText}`;
+      if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('rate')) {
+        throw new Error('Rate limit exceeded - too many API requests');
+      }
+      throw new Error(errorMsg);
     }
 
     return response.json();
