@@ -32,31 +32,31 @@ export function VoiceOverlay({ voiceState, transcript }: VoiceOverlayProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto px-4">
-      {/* Listening State - Waiting for speech */}
-      {voiceState === 'listening' && !transcript && (
-        <div className="flex flex-col items-center animate-fade-in">
-          {/* Waveform Animation */}
-          <div className="flex items-center gap-1.5 mb-6">
-            {[0, 100, 200, 300, 400, 500, 600].map((delay, i) => (
-              <div
-                key={i}
-                className="w-1.5 rounded-full animate-wave"
-                style={{
-                  animationDelay: `${delay}ms`,
-                  height: [32, 64, 48, 80, 40, 64, 48][i],
-                  background: 'linear-gradient(180deg, #a5b4fc 0%, #c7d2fe 50%, #e0e7ff 100%)',
-                }}
-              />
-            ))}
-          </div>
+    <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 pt-12">
+      {/* Waveform Animation - Always visible when voice is active */}
+      <div className="flex flex-col items-center animate-fade-in mb-8" style={{ opacity: 0.6 }}>
+        {/* Waveform Animation */}
+        <div className="flex items-center gap-1.5 mb-6">
+          {[0, 100, 200, 300, 400, 500, 600].map((delay, i) => (
+            <div
+              key={i}
+              className="w-1.5 rounded-full animate-wave"
+              style={{
+                animationDelay: `${delay}ms`,
+                height: [32, 64, 48, 80, 40, 64, 48][i],
+                background: 'linear-gradient(180deg, #818cf8 0%, #a5b4fc 50%, #c7d2fe 100%)',
+              }}
+            />
+          ))}
+        </div>
 
-          {/* Helper Text */}
+        {/* Helper Text - Only show when listening without transcript */}
+        {voiceState === 'listening' && !transcript && (
           <p className="text-lg text-white/80 text-center max-w-md">
             Listening... Try giving a command like "what's my CPU usage"
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Transcribing State - Live text */}
       {(voiceState === 'transcribing' || transcript) && (
