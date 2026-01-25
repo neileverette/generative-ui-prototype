@@ -159,6 +159,38 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
     );
   }
 
+  // Check if error is rate limit related
+  const isRateLimitError = error && (
+    error.toLowerCase().includes('rate') ||
+    error.toLowerCase().includes('limit') ||
+    error.toLowerCase().includes('exceeded') ||
+    error.toLowerCase().includes('429') ||
+    error.toLowerCase().includes('too many')
+  );
+
+  // Error state (rate limit exceeded)
+  if (isRateLimitError) {
+    return (
+      <div
+        className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm overflow-hidden ${className || ''}`}
+      >
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-yellow-500" />
+            <span className="widget-title">Anthropic API Usage</span>
+          </div>
+          <div className="text-center py-6 text-text-muted">
+            <Info className="w-8 h-8 mx-auto mb-2 text-yellow-500 opacity-70" />
+            <p className="text-sm font-medium mb-1 text-yellow-600">API Rate Limit Exceeded</p>
+            <p className="text-xs">
+              You've exceeded your API call rate. Please check back later.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Error state (no Admin API configured)
   if (error || !data) {
     return (
