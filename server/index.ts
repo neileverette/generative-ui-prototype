@@ -34,6 +34,7 @@ import {
   getAnthropicTokenUsage,
   validateAdminApiKey,
 } from './anthropic-admin-api.js';
+import type { ConsoleUsageDataSync, SyncResponse } from './claude-console-sync-types.js';
 
 // Load environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -49,6 +50,9 @@ const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const AWS_EC2_INSTANCE_ID = 'i-040ac6026761030ac'; // Target EC2 instance for cost tracking
+
+// Claude Console sync API key (optional for local dev)
+const CLAUDE_SYNC_API_KEY = process.env.CLAUDE_SYNC_API_KEY;
 
 if (!OPENAI_API_KEY) {
   console.error('Missing OPENAI_API_KEY environment variable');
@@ -2044,6 +2048,7 @@ app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
 import fs from 'fs';
 
 const CONSOLE_USAGE_FILE = path.join(__dirname, 'claude-scraper/usage-data.json');
+const CONSOLE_USAGE_SYNCED_FILE = path.join(__dirname, 'claude-scraper/console-usage-synced.json');
 const CLAUDE_CONFIG_FILE = path.join(__dirname, 'claude-config.json');
 
 // Get Claude plan config
@@ -2151,6 +2156,156 @@ app.post('/api/claude-usage/console/refresh', async (_req, res) => {
   }
 });
 
+// POST endpoint for scraper-to-EC2 sync (receives usage data from laptop scraper)
+app.post('/api/claude/console-usage', async (req, res) => {
+  try {
+    // Authenticate request
+    const apiKey = req.headers['x-api-key'];
+
+    if (!apiKey || apiKey !== CLAUDE_SYNC_API_KEY) {
+      console.warn('[Console Sync] Unauthorized sync attempt');
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Invalid or missing API key',
+        timestamp: new Date().toISOString(),
+      } as SyncResponse);
+    }
+
+    const data = req.body as ConsoleUsageDataSync;
+
+    // Validate required structure
+    if (!data.lastUpdated) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data: missing lastUpdated field',
+        timestamp: new Date().toISOString(),
+      } as SyncResponse);
+    }
+
+    // Validate lastUpdated is valid ISO string
+    const lastUpdatedDate = new Date(data.lastUpdated);
+    if (isNaN(lastUpdatedDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data: lastUpdated must be valid ISO 8601 timestamp',
+        timestamp: new Date().toISOString(),
+      } as SyncResponse);
+    }
+
+    // Validate currentSession if present
+    if (data.currentSession) {
+      if (!data.currentSession.resetsIn || typeof data.currentSession.resetsIn !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: currentSession.resetsIn must be non-empty string',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+      if (typeof data.currentSession.percentageUsed !== 'number' ||
+          data.currentSession.percentageUsed < 0 ||
+          data.currentSession.percentageUsed > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: currentSession.percentageUsed must be 0-100',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+    }
+
+    // Validate weeklyLimits if present
+    if (data.weeklyLimits) {
+      const { allModels, sonnetOnly } = data.weeklyLimits;
+
+      if (!allModels || !sonnetOnly) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: weeklyLimits must include allModels and sonnetOnly',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+
+      // Validate allModels
+      if (!allModels.resetsIn || typeof allModels.resetsIn !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: weeklyLimits.allModels.resetsIn must be non-empty string',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+      if (typeof allModels.percentageUsed !== 'number' ||
+          allModels.percentageUsed < 0 ||
+          allModels.percentageUsed > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: weeklyLimits.allModels.percentageUsed must be 0-100',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+
+      // Validate sonnetOnly
+      if (!sonnetOnly.resetsIn || typeof sonnetOnly.resetsIn !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: weeklyLimits.sonnetOnly.resetsIn must be non-empty string',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+      if (typeof sonnetOnly.percentageUsed !== 'number' ||
+          sonnetOnly.percentageUsed < 0 ||
+          sonnetOnly.percentageUsed > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid data: weeklyLimits.sonnetOnly.percentageUsed must be 0-100',
+          timestamp: new Date().toISOString(),
+        } as SyncResponse);
+      }
+    }
+
+    // Require at least currentSession or weeklyLimits
+    if (!data.currentSession && !data.weeklyLimits) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data: must include at least currentSession or weeklyLimits',
+        timestamp: new Date().toISOString(),
+      } as SyncResponse);
+    }
+
+    // Save validated data to synced file
+    try {
+      fs.writeFileSync(CONSOLE_USAGE_SYNCED_FILE, JSON.stringify(data, null, 2));
+    } catch (writeError) {
+      console.error('[Console Sync] Filesystem error:', writeError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to save synced data',
+        timestamp: new Date().toISOString(),
+      } as SyncResponse);
+    }
+
+    // Calculate data freshness
+    const ageMinutes = Math.round((Date.now() - lastUpdatedDate.getTime()) / 1000 / 60);
+
+    console.log(
+      `[Console Sync] Data synced successfully (age: ${ageMinutes}min, ` +
+      `partial: ${data.isPartial || false}, ` +
+      `sections: ${data.currentSession ? 'session' : ''}${data.currentSession && data.weeklyLimits ? '+' : ''}${data.weeklyLimits ? 'limits' : ''})`
+    );
+
+    res.json({
+      success: true,
+      message: 'Usage data synced successfully',
+      timestamp: new Date().toISOString(),
+    } as SyncResponse);
+  } catch (error) {
+    console.error('[Console Sync] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Internal server error',
+      timestamp: new Date().toISOString(),
+    } as SyncResponse);
+  }
+});
+
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
@@ -2160,4 +2315,11 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`CopilotKit endpoint: http://localhost:${PORT}/api/copilotkit`);
+
+  // Log Console sync endpoint configuration
+  if (CLAUDE_SYNC_API_KEY) {
+    console.log(`[Console Sync] Endpoint configured: POST /api/claude/console-usage (authenticated)`);
+  } else {
+    console.log(`[Console Sync] Endpoint available but not secured (CLAUDE_SYNC_API_KEY not set)`);
+  }
 });
