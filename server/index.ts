@@ -501,9 +501,64 @@ app.post('/api/langflow/agent', async (req, res) => {
   }
 });
 
-// Health check
+// Health check - includes storage and data status
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  try {
+    // Check storage accessibility
+    const metadata = getStorageMetadata();
+    const storageAccessible = fs.existsSync(path.join(__dirname, 'claude-scraper/console-usage-history'));
+
+    // Check latest data availability and age
+    let latestDataAge: number | null = null;
+    let dataStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+
+    if (metadata.versionCount > 0 && metadata.newestTimestamp) {
+      const newestDate = new Date(metadata.newestTimestamp);
+      latestDataAge = Math.round((Date.now() - newestDate.getTime()) / 1000 / 60); // minutes
+
+      if (latestDataAge > 30) {
+        dataStatus = 'unhealthy';
+      } else if (latestDataAge > 10) {
+        dataStatus = 'degraded';
+      }
+    } else {
+      dataStatus = 'unhealthy';
+    }
+
+    // Overall health status
+    let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
+    if (!storageAccessible) {
+      overallStatus = 'unhealthy';
+    } else if (dataStatus === 'unhealthy') {
+      overallStatus = 'unhealthy';
+    } else if (dataStatus === 'degraded') {
+      overallStatus = 'degraded';
+    } else {
+      overallStatus = 'healthy';
+    }
+
+    const statusCode = overallStatus === 'unhealthy' ? 503 : 200;
+
+    res.status(statusCode).json({
+      status: overallStatus,
+      storage: {
+        accessible: storageAccessible,
+        versionCount: metadata.versionCount,
+      },
+      latestData: {
+        ageMinutes: latestDataAge,
+        status: dataStatus,
+        timestamp: metadata.newestTimestamp,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // =============================================================================
