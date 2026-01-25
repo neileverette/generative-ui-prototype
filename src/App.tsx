@@ -9,6 +9,7 @@ import { useCopilotAction, useCopilotReadable, useCopilotChat } from '@copilotki
 import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
 import { Server, Container, Workflow, ArrowLeft, Rocket, DollarSign, Activity } from 'lucide-react';
 import deploymentsData from './data/deployments.json';
+import routingConfig from './config/widget-routing.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
 import { VoiceButton } from './components/VoiceButton';
 import { VoiceOverlay } from './components/VoiceOverlay';
@@ -163,6 +164,12 @@ function DashboardWithAgent() {
   useCopilotReadable({
     description: 'Selected time window for Datadog metrics queries (5m, 15m, 30m, 1h, 4h, 1d, 2d, 1w, 1mo)',
     value: timeWindow,
+  });
+
+  // Make routing configuration readable by the agent
+  useCopilotReadable({
+    description: 'Widget routing configuration that maps user utterances to dashboard actions and widgets. Use this to understand which action to call based on user queries. Each route contains keywords, patterns, and question forms that indicate user intent.',
+    value: routingConfig,
   });
 
   // Hook for programmatic chat messaging

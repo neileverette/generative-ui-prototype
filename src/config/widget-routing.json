@@ -1,0 +1,569 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-24",
+  "routes": {
+    "overview": {
+      "id": "overview",
+      "displayName": "Overview / Home",
+      "action": null,
+      "view": "landing",
+      "priority": 100,
+      "description": "Return to main landing page dashboard with navigation cards",
+      "keywords": [
+        "home",
+        "overview",
+        "dashboard",
+        "back",
+        "clear",
+        "reset",
+        "start",
+        "main"
+      ],
+      "patterns": [
+        "go home",
+        "take me back",
+        "show overview",
+        "return to main",
+        "main dashboard",
+        "go to home"
+      ],
+      "semanticGroups": ["navigation", "home"],
+      "widgets": [],
+      "staticWidgets": [
+        "todays-update",
+        "system-uptime-static",
+        "memory-static",
+        "claude-usage-landing",
+        "anthropic-usage-landing",
+        "nav-costs",
+        "nav-system-metrics",
+        "nav-automations",
+        "nav-applications",
+        "nav-deployments",
+        "nav-ai-usage"
+      ],
+      "widgetCount": 11
+    },
+    "systemMetrics": {
+      "id": "systemMetrics",
+      "displayName": "System Metrics / Performance",
+      "action": "fetchSystemMetrics",
+      "view": "home",
+      "priority": 90,
+      "description": "Display all system performance metrics including CPU, memory, disk, load, network",
+      "keywords": [
+        "system",
+        "performance",
+        "metrics",
+        "infrastructure",
+        "health",
+        "server",
+        "cpu",
+        "memory",
+        "disk",
+        "load",
+        "network"
+      ],
+      "patterns": [
+        "system metrics",
+        "show all metrics",
+        "system health",
+        "server status",
+        "infrastructure health",
+        "how is my system",
+        "performance metrics",
+        "cpu and memory",
+        "server health check",
+        "system performance"
+      ],
+      "questionPatterns": [
+        "how is my system performing?",
+        "is my server healthy?",
+        "what are my system metrics?",
+        "how's the server doing?",
+        "system doing alright?"
+      ],
+      "semanticGroups": ["performance", "infrastructure", "monitoring", "health"],
+      "widgets": [
+        "system-metric-cpu_total",
+        "system-metric-cpu_idle",
+        "system-metric-memory",
+        "system-metric-load_average",
+        "system-metric-disk_usage",
+        "system-metric-io_wait",
+        "system-metric-network_bytes_sent",
+        "system-metric-network_bytes_recv",
+        "system-metric-swap_usage",
+        "system-metric-system_uptime"
+      ],
+      "widgetCount": 10,
+      "widgetType": "metric_card"
+    },
+    "containers": {
+      "id": "containers",
+      "displayName": "Containers / Applications",
+      "action": "fetchContainersList",
+      "view": "home",
+      "priority": 85,
+      "description": "Display running containers with metrics, ECR summary, and container list table",
+      "keywords": [
+        "container",
+        "containers",
+        "docker",
+        "app",
+        "apps",
+        "application",
+        "applications",
+        "running"
+      ],
+      "patterns": [
+        "show containers",
+        "list containers",
+        "running containers",
+        "container status",
+        "docker containers",
+        "running apps",
+        "application status",
+        "container metrics",
+        "what containers are running",
+        "show all containers"
+      ],
+      "questionPatterns": [
+        "what containers are running?",
+        "how many containers?",
+        "which apps are active?",
+        "show me all containers",
+        "what's running?"
+      ],
+      "technicalTerms": [
+        "docker ps",
+        "container list",
+        "ecr repositories",
+        "docker images"
+      ],
+      "semanticGroups": ["containers", "docker", "applications", "services"],
+      "widgets": [
+        "running-containers-count",
+        "ecr-summary",
+        "app-session-uptime",
+        "app-memory",
+        "containers-list-table"
+      ],
+      "widgetCount": 5,
+      "widgetTypes": ["metric_card", "ecr_summary", "data_table"],
+      "relatedActions": [
+        {
+          "action": "fetchContainerMetrics",
+          "description": "Get CPU for specific container",
+          "patterns": ["n8n cpu", "redis cpu", "container cpu"]
+        },
+        {
+          "action": "fetchContainerMemory",
+          "description": "Get memory for specific container",
+          "patterns": ["n8n memory", "redis memory", "container memory"]
+        }
+      ]
+    },
+    "automations": {
+      "id": "automations",
+      "displayName": "Automations / Workflows",
+      "action": "fetchAutomations",
+      "view": "home",
+      "priority": 85,
+      "description": "Display n8n workflow execution metrics including Gmail Filter and Image Generator",
+      "keywords": [
+        "automation",
+        "automations",
+        "workflow",
+        "workflows",
+        "n8n",
+        "langflow"
+      ],
+      "patterns": [
+        "show automations",
+        "automation status",
+        "workflow health",
+        "show workflows",
+        "workflow status",
+        "automation overview",
+        "workflow metrics",
+        "n8n status",
+        "automation health"
+      ],
+      "questionPatterns": [
+        "are my workflows running?",
+        "how are automations doing?",
+        "are workflows healthy?",
+        "any automation failures?",
+        "workflow execution status?",
+        "broken workflows?"
+      ],
+      "semanticGroups": ["automation", "workflows", "orchestration"],
+      "widgets": [
+        "automation-gmail-filter",
+        "automation-image-generator"
+      ],
+      "widgetCount": 2,
+      "widgetType": "card_group",
+      "relatedActions": [
+        {
+          "action": "fetchGmailFilterMetrics",
+          "description": "Gmail Filter workflow metrics",
+          "patterns": ["gmail filter", "gmail workflow", "email automation"]
+        },
+        {
+          "action": "fetchImageGeneratorMetrics",
+          "description": "Image Generator workflow metrics",
+          "patterns": ["image generator", "image workflow", "image automation"]
+        },
+        {
+          "action": "getAutomationCount",
+          "description": "Count of workflows",
+          "patterns": ["how many automations", "automation count"]
+        },
+        {
+          "action": "getTimeSavedByAutomations",
+          "description": "Calculate time savings",
+          "patterns": ["time saved", "time savings", "automation savings"]
+        },
+        {
+          "action": "checkBrokenAutomations",
+          "description": "Check for failures",
+          "patterns": ["broken automations", "failing workflows", "automation errors"]
+        }
+      ]
+    },
+    "costs": {
+      "id": "costs",
+      "displayName": "Costs / Spending",
+      "action": "fetchCostsOverview",
+      "view": "home",
+      "priority": 85,
+      "description": "Display AWS costs including current month, forecast, and breakdown by service",
+      "keywords": [
+        "cost",
+        "costs",
+        "spending",
+        "bill",
+        "billing",
+        "aws",
+        "cloud",
+        "expense",
+        "expenses"
+      ],
+      "patterns": [
+        "show costs",
+        "aws costs",
+        "cloud costs",
+        "cost breakdown",
+        "aws bill",
+        "monthly cost",
+        "infrastructure costs",
+        "spending breakdown",
+        "cloud spending"
+      ],
+      "questionPatterns": [
+        "how much am I spending?",
+        "what's my aws bill?",
+        "how much does this cost?",
+        "monthly spending?",
+        "what am I paying for?"
+      ],
+      "semanticGroups": ["costs", "billing", "finance", "spending"],
+      "widgets": [
+        "aws-total-cost",
+        "aws-forecast",
+        "aws-cost-breakdown"
+      ],
+      "widgetCount": 3,
+      "widgetTypes": ["metric_card", "data_table"]
+    },
+    "deployments": {
+      "id": "deployments",
+      "displayName": "Deployments",
+      "action": "showDeployments",
+      "view": "home",
+      "priority": 80,
+      "description": "Display deployment history with count and detailed table",
+      "keywords": [
+        "deployment",
+        "deployments",
+        "release",
+        "releases",
+        "deploy"
+      ],
+      "patterns": [
+        "show deployments",
+        "deployment history",
+        "recent deployments",
+        "deployment log",
+        "list deployments",
+        "deployment status",
+        "github deployments"
+      ],
+      "questionPatterns": [
+        "how many deployments?",
+        "when was last deployment?",
+        "show deployment history",
+        "recent releases?"
+      ],
+      "semanticGroups": ["deployments", "releases", "cicd"],
+      "widgets": [
+        "deployment-count",
+        "deployments-table"
+      ],
+      "widgetCount": 2,
+      "widgetTypes": ["metric_card", "data_table"]
+    },
+    "aiUsage": {
+      "id": "aiUsage",
+      "displayName": "AI Usage / Claude",
+      "action": "showClaudeUsage",
+      "view": "home",
+      "priority": 80,
+      "description": "Display Claude Code usage and Anthropic API token usage",
+      "keywords": [
+        "claude",
+        "ai",
+        "usage",
+        "token",
+        "tokens",
+        "api",
+        "credit",
+        "credits",
+        "anthropic"
+      ],
+      "patterns": [
+        "claude usage",
+        "ai usage",
+        "api usage",
+        "token usage",
+        "claude credits",
+        "api credits",
+        "anthropic usage",
+        "show claude stats",
+        "claude session usage",
+        "token breakdown"
+      ],
+      "questionPatterns": [
+        "how much claude have I used?",
+        "what's my token usage?",
+        "api credits remaining?",
+        "claude usage stats?",
+        "how many tokens used?"
+      ],
+      "technicalTerms": [
+        "5-hour window",
+        "weekly limits",
+        "burn rate",
+        "runway",
+        "model breakdown"
+      ],
+      "semanticGroups": ["ai", "usage", "billing", "claude"],
+      "widgets": [
+        "claude-usage-widget",
+        "anthropic-usage-widget"
+      ],
+      "widgetCount": 2,
+      "widgetTypes": ["claude_usage", "anthropic_usage"]
+    }
+  },
+  "specificActions": {
+    "fetchSystemUptime": {
+      "description": "Fetch system uptime metric only",
+      "keywords": ["uptime"],
+      "patterns": ["system uptime", "how long running", "server uptime"],
+      "widgetId": "system-uptime",
+      "widgetType": "metric_card"
+    },
+    "fetchRunningContainers": {
+      "description": "Fetch running container count only",
+      "keywords": ["running", "count"],
+      "patterns": ["how many containers", "container count", "number of containers"],
+      "widgetId": "running-containers",
+      "widgetType": "metric_card"
+    },
+    "fetchContainerMetrics": {
+      "description": "Fetch CPU for specific container",
+      "keywords": ["cpu", "container"],
+      "patterns": ["[container] cpu", "cpu usage for [container]"],
+      "parameters": {
+        "containerName": {
+          "type": "string",
+          "required": true,
+          "examples": ["n8n", "redis", "postgres", "langflow"]
+        }
+      },
+      "widgetIdPattern": "container-{name}-cpu",
+      "widgetType": "metric_card"
+    },
+    "fetchContainerMemory": {
+      "description": "Fetch memory for specific container",
+      "keywords": ["memory", "container"],
+      "patterns": ["[container] memory", "memory usage for [container]"],
+      "parameters": {
+        "containerName": {
+          "type": "string",
+          "required": true,
+          "examples": ["n8n", "redis", "postgres", "langflow"]
+        }
+      },
+      "widgetIdPattern": "container-{name}-memory",
+      "widgetType": "metric_card"
+    },
+    "getQuickStatusSummary": {
+      "description": "Get one-sentence infrastructure summary",
+      "keywords": ["quick", "status", "summary"],
+      "patterns": ["quick status", "everything okay", "overall status"],
+      "returns": "text",
+      "widgetType": "none"
+    },
+    "queryDatadogAgent": {
+      "description": "Natural language query to LangFlow Datadog agent",
+      "keywords": ["complex", "analysis"],
+      "patterns": ["analyze", "recommend", "investigate"],
+      "fallback": true,
+      "widgetType": "dynamic"
+    }
+  },
+  "widgetTypeDefinitions": {
+    "metric_card": {
+      "description": "Single metric display with value, status, trends, and insights",
+      "properties": ["title", "value", "unit", "status", "change", "interpretation"],
+      "sizes": ["compact", "default", "large", "xl"],
+      "statuses": ["healthy", "warning", "critical", "unknown"]
+    },
+    "card_group": {
+      "description": "Group of related metrics in 2-column layout",
+      "properties": ["title", "subtitle", "metrics", "status", "insight"],
+      "layout": "2-column grid"
+    },
+    "data_table": {
+      "description": "Tabular data with columns and rows",
+      "properties": ["title", "columns", "rows", "sortBy", "sortDirection"],
+      "features": ["sorting", "formatting", "status columns"]
+    },
+    "ecr_summary": {
+      "description": "AWS ECR repository overview",
+      "properties": ["repositoryCount", "repositories", "observations", "suggestion"],
+      "layout": "full-width"
+    },
+    "claude_usage": {
+      "description": "Claude Code and API credits usage",
+      "properties": ["claudeCode", "apiCredits", "showApiSection"],
+      "features": ["session tracking", "weekly limits", "model breakdown"]
+    },
+    "anthropic_usage": {
+      "description": "Anthropic API token usage from Admin API",
+      "properties": ["tokenUsage"],
+      "features": ["daily/monthly totals", "model breakdown"]
+    },
+    "status_indicator": {
+      "description": "Simple status display with icon and message",
+      "properties": ["title", "status", "message"],
+      "statuses": ["healthy", "warning", "critical", "unknown"]
+    },
+    "progress_bar": {
+      "description": "Progress or utilization visualization",
+      "properties": ["title", "value", "max", "label", "status"],
+      "features": ["scale markers", "status colors"]
+    },
+    "alert_list": {
+      "description": "List of active alerts/incidents",
+      "properties": ["title", "alerts"],
+      "features": ["severity sorting", "timestamps"]
+    }
+  },
+  "priorityLevels": {
+    "critical": {
+      "value": 0,
+      "description": "Must-see alerts and failures",
+      "color": "red"
+    },
+    "high": {
+      "value": 1,
+      "description": "Important metrics and featured widgets",
+      "color": "orange"
+    },
+    "medium": {
+      "value": 2,
+      "description": "Standard metrics",
+      "color": "blue"
+    },
+    "low": {
+      "value": 3,
+      "description": "Informational, nice-to-have",
+      "color": "gray"
+    }
+  },
+  "semanticGroups": {
+    "navigation": {
+      "routes": ["overview"],
+      "description": "Navigation and home actions"
+    },
+    "performance": {
+      "routes": ["systemMetrics"],
+      "description": "System performance and health monitoring"
+    },
+    "infrastructure": {
+      "routes": ["systemMetrics", "containers"],
+      "description": "Infrastructure components and services"
+    },
+    "containers": {
+      "routes": ["containers"],
+      "description": "Container management and monitoring"
+    },
+    "automation": {
+      "routes": ["automations"],
+      "description": "Workflow automation and orchestration"
+    },
+    "finance": {
+      "routes": ["costs"],
+      "description": "Cost tracking and billing"
+    },
+    "cicd": {
+      "routes": ["deployments"],
+      "description": "Continuous integration and deployment"
+    },
+    "ai": {
+      "routes": ["aiUsage"],
+      "description": "AI service usage and billing"
+    }
+  },
+  "questionPatterns": {
+    "howMuch": {
+      "description": "Cost or usage questions",
+      "routes": ["costs", "aiUsage"],
+      "examples": ["how much am I spending?", "how much claude have I used?"]
+    },
+    "howMany": {
+      "description": "Count questions",
+      "routes": ["containers", "deployments", "automations"],
+      "examples": ["how many containers?", "how many deployments?"]
+    },
+    "status": {
+      "description": "Health and status checks",
+      "routes": ["systemMetrics", "containers", "automations"],
+      "examples": ["is it healthy?", "are workflows running?", "system status?"]
+    },
+    "show": {
+      "description": "Display requests",
+      "routes": ["systemMetrics", "containers", "automations", "costs", "deployments"],
+      "examples": ["show metrics", "show containers", "show costs"]
+    }
+  },
+  "actionVerbs": {
+    "display": ["show", "list", "view", "display", "see"],
+    "check": ["check", "verify", "monitor", "test"],
+    "navigate": ["go to", "back to", "return", "navigate"],
+    "analyze": ["analyze", "investigate", "examine", "review"]
+  },
+  "metadata": {
+    "totalRoutes": 7,
+    "totalWidgetTypes": 9,
+    "totalKeywords": 89,
+    "supportedContainers": ["n8n", "redis", "postgres", "langflow"],
+    "supportedWorkflows": ["gmail-filter", "image-generator"]
+  }
+}
