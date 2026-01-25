@@ -2589,7 +2589,7 @@ function DashboardWithAgent() {
           <>
             {/* Voice Overlay - Shows when voice is active */}
             {voiceState !== 'idle' && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-lg pointer-events-none">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-lg pointer-events-none animate-overlay-fade-in">
                 <div className="pointer-events-auto">
                   <VoiceOverlay voiceState={voiceState} transcript={transcript} />
                 </div>

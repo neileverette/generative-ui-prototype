@@ -372,3 +372,19 @@ cpk-web-inspector {
 .copilotKitInputControlButton[aria-label="Send"] svg {
   transform: rotate(90deg);
 }
+
+/* Voice overlay fade-in animation */
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(16px);
+  }
+}
+
+.animate-overlay-fade-in {
+  animation: overlay-fade-in 0.4s ease-in;
+}
