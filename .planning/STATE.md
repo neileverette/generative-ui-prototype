@@ -2,14 +2,14 @@
 
 ## Current Focus
 
-**Milestone**: v9.0 Dynamic Widget Loading & Utterance Routing
-**Phase**: 40 of 41 (Chat-to-Routing Integration)
+**Milestone**: v10.0 Widget Data Caching
+**Phase**: 43 of 48 (Widget Cache Hydration Layer)
 **Plan**: 1/1 plans complete
-**Status**: Phase 40 complete, Milestone 9 nearly complete
+**Status**: Phase 43 complete
 
 ## Quick Context
 
-Completed Phase 40: Chat-to-Routing Integration. Chat input now routes through utterance-router first, loading widgets immediately for matching patterns and falling back to CopilotKit for conversational queries. All route handlers working correctly with proper view transitions.
+Completed Phase 43: Widget Cache Hydration Layer. ClaudeUsageCard now displays cached data instantly on mount (no loading flash), fetches fresh data in background, and shows staleness indicators for old cache. Cache hydration pattern ready to extend to other widgets.
 
 **Core Concept:**
 - Cache widget data in browser storage (localStorage or IndexedDB)
@@ -47,8 +47,8 @@ Completed Phase 40: Chat-to-Routing Integration. Chat input now routes through u
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
 | 42 | Cache Storage Architecture | Complete | 2026-01-25 |
-| 43 | Widget Cache Hydration Layer | Planned | - |
-| 44 | Background Fetch System | Not started | - |
+| 43 | Widget Cache Hydration Layer | Complete | 2026-01-25 |
+| 44 | Background Fetch System | Planned | - |
 | 45 | Smooth Update Transitions | Not started | - |
 | 46 | Cache Invalidation Strategy | Not started | - |
 | 47 | Multi-Widget Cache Orchestration | Not started | - |
@@ -58,20 +58,20 @@ Completed Phase 40: Chat-to-Routing Integration. Chat input now routes through u
 
 | Commit | Type | Description |
 |--------|------|-------------|
-| `271b3ed` | docs | Create Phase 43 plan (Widget Cache Hydration Layer) |
-| `cd816de` | feat | Add cache utilities for staleness detection and pruning |
-| `afe5377` | feat | Implement core cache operations (get, set, delete, clear) |
-| `107e55b` | feat | Design cache storage architecture and TypeScript interfaces |
-| `368a6c4` | feat | Add comprehensive logging and metrics |
-| `7c3f331` | feat | Add storage operation resilience |
+| `6a84ed1` | fix | Fix variable shadowing bug (console → consoleData) |
+| `01ce8ad` | fix | Fix cache hydration to prevent loading flash |
+| `33552d6` | feat | Add custom Console favicon |
+| `a8b2a66` | fix | Add AWS credentials to docker-compose environment |
+| `0be9277` | fix | Properly detect and handle API rate limit errors |
+| `f269dcf` | feat | Add rate limit error fallback for Anthropic usage widget |
 
 ## Next Actions
 
-1. Execute Phase 43 (Widget Cache Hydration Layer) - 3 tasks defined
-2. Add cache hydration to ClaudeUsageCard component
-3. Display cached data immediately on mount
-4. Show staleness indicator for old cache
-5. Update cache after successful background fetch
+1. Plan Phase 44 (Background Fetch System)
+2. Implement fetch deduplication and request management
+3. Add shared fetch coordinator for multiple widgets
+4. Prevent duplicate background requests
+5. Add request queueing and batching
 
 ## Key Files
 
@@ -120,6 +120,25 @@ Completed Phase 40: Chat-to-Routing Integration. Chat input now routes through u
 - Duration: ~45 minutes
 - Issues resolved: 3 (white overlay, route display, navigation)
 - Ready for Phase 41 (final Milestone 9 phase)
+
+### 2026-01-25 - Phase 43 Complete
+- Implemented cache hydration in ClaudeUsageCard for instant widget rendering
+- Task 1: Added synchronous cache check before first render to initialize state correctly
+- Task 2: Added staleness indicator (amber "Cached Xm ago" for >5 min old cache)
+- Task 3: Verified instant rendering with no loading flash on page reload
+- Cache integration: Check cache before first render, initialize state with cached data
+- Loading state prevention: `isLoading = !initialCache` prevents skeleton flash
+- Background fetch: Fresh data fetched without loading state when cache exists
+- Staleness detection: 5-minute threshold, clock icon indicator, disappears when fresh
+- Fixed variable shadowing bug: Renamed `console` → `consoleData` in fetchData
+- Widget now renders instantly on reload with cached data, updates smoothly in background
+- Cache pattern ready to extend to other widgets (AwsCostsCard, SystemMetricsCard)
+- Phase 43 complete (1/1 plans): Widget Cache Hydration Layer
+- Files modified: ClaudeUsageCard.tsx (cache hydration + synchronous initialization)
+- Commits: 01ce8ad (cache hydration fix), 6a84ed1 (variable shadowing fix)
+- Duration: ~25 minutes
+- Issues resolved: 2 (loading flash, variable shadowing)
+- Ready for Phase 44 (Background Fetch System)
 
 ### 2026-01-25 - Phase 42 Complete
 - Implemented browser-side widget cache using localStorage
