@@ -2118,22 +2118,15 @@ app.get('/api/claude-usage/console', async (_req, res) => {
 // Trigger on-demand scrape
 app.post('/api/claude-usage/console/refresh', async (_req, res) => {
   try {
-    console.log('[Console Usage] Manual refresh triggered...');
+    console.log('[Console Usage] Manual refresh triggered (headless mode)...');
 
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
-    const execAsync = promisify(exec);
+    // Use headless Playwright scraper instead of AppleScript
+    const { scrape } = await import('./claude-scraper/scrape.js');
 
-    const scrapeScript = path.join(__dirname, 'claude-scraper/scrape-silent.sh');
+    // Run scraper (completely headless, no visible browser)
+    await scrape();
 
-    // Run scraper
-    const { stdout, stderr } = await execAsync(`bash "${scrapeScript}"`);
-
-    if (stderr) {
-      console.error('[Console Usage] Scraper stderr:', stderr);
-    }
-
-    console.log('[Console Usage] Scraper output:', stdout.trim());
+    console.log('[Console Usage] Scraper completed (headless)');
 
     // Read the fresh data
     if (!fs.existsSync(CONSOLE_USAGE_FILE)) {
