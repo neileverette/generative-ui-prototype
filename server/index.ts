@@ -2097,6 +2097,49 @@ app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
 });
 
 // =============================================================================
+// ERROR RESPONSE HELPERS (Phase 34)
+// =============================================================================
+
+/**
+ * Generate unique request ID for error tracking
+ */
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+}
+
+/**
+ * Error codes for programmatic handling
+ */
+enum ErrorCode {
+  AUTH_MISSING = 'AUTH_MISSING',
+  AUTH_INVALID = 'AUTH_INVALID',
+  VALIDATION_MISSING_FIELD = 'VALIDATION_MISSING_FIELD',
+  VALIDATION_INVALID_TYPE = 'VALIDATION_INVALID_TYPE',
+  VALIDATION_OUT_OF_RANGE = 'VALIDATION_OUT_OF_RANGE',
+  STORAGE_WRITE_FAILED = 'STORAGE_WRITE_FAILED',
+  NOT_FOUND = 'NOT_FOUND',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
+/**
+ * Build detailed error response
+ */
+function buildErrorResponse(
+  errorCode: ErrorCode,
+  message: string,
+  suggestion: string,
+  requestId?: string
+): object {
+  return {
+    errorCode,
+    message,
+    suggestion,
+    requestId: requestId || generateRequestId(),
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// =============================================================================
 // CLAUDE CONSOLE SCRAPED DATA
 // =============================================================================
 
@@ -2130,6 +2173,8 @@ app.get('/api/claude-usage/config', async (_req, res) => {
 // GET endpoint for serving synced Claude Console usage data
 // Supports optional query parameters for version-based and timestamp-based retrieval
 app.get('/api/claude/console-usage', async (req, res) => {
+  const requestId = generateRequestId();
+
   try {
     const versionParam = req.query.version as string | undefined;
     const timestampParam = req.query.timestamp as string | undefined;
@@ -2139,10 +2184,14 @@ app.get('/api/claude/console-usage', async (req, res) => {
 
     // If no versions exist, return 404
     if (metadata.versionCount === 0) {
-      console.log('[Console GET] No versions available');
+      console.log(`[Console GET] No versions available (${requestId})`);
       return res.status(404).json({
-        error: 'No usage data available',
-        message: 'No synced data found. The scraper needs to sync data first.',
+        ...buildErrorResponse(
+          ErrorCode.NOT_FOUND,
+          'No usage data available',
+          'The scraper needs to run and sync data first. Check scraper status.',
+          requestId
+        ),
         versionsAvailable: 0,
         source: 'ec2-sync',
       });
@@ -2362,9 +2411,21 @@ app.get('/api/claude/console-usage', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('[Console GET] Error:', error);
+    console.error(`[Console GET] Error (${requestId}):`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    if (errorStack) {
+      console.error(`[Console GET] Stack trace (${requestId}):`, errorStack);
+    }
+
     res.status(500).json({
-      error: error instanceof Error ? error.message : 'Internal server error',
+      ...buildErrorResponse(
+        ErrorCode.INTERNAL_ERROR,
+        errorMessage,
+        'Check server logs for details or retry the request',
+        requestId
+      ),
       source: 'ec2-sync',
     });
   }
@@ -2372,38 +2433,67 @@ app.get('/api/claude/console-usage', async (req, res) => {
 
 // POST endpoint for scraper-to-EC2 sync (receives usage data from laptop scraper)
 app.post('/api/claude/console-usage', async (req, res) => {
+  const requestId = generateRequestId();
+
   try {
     // Authenticate request
     const apiKey = req.headers['x-api-key'];
 
-    if (!apiKey || apiKey !== CLAUDE_SYNC_API_KEY) {
-      console.warn('[Console Sync] Unauthorized sync attempt');
+    if (!apiKey) {
+      console.warn(`[Console Sync] Missing API key (${requestId})`);
       return res.status(401).json({
+        ...buildErrorResponse(
+          ErrorCode.AUTH_MISSING,
+          'Missing API key',
+          'Set CLAUDE_SYNC_API_KEY environment variable on scraper and EC2',
+          requestId
+        ),
         success: false,
-        message: 'Unauthorized: Invalid or missing API key',
-        timestamp: new Date().toISOString(),
-      } as SyncResponse);
+      } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
+    }
+
+    if (apiKey !== CLAUDE_SYNC_API_KEY) {
+      console.warn(`[Console Sync] Invalid API key (${requestId})`);
+      return res.status(401).json({
+        ...buildErrorResponse(
+          ErrorCode.AUTH_INVALID,
+          'Invalid API key',
+          'Verify CLAUDE_SYNC_API_KEY matches on scraper and EC2',
+          requestId
+        ),
+        success: false,
+      } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
     }
 
     const data = req.body as ConsoleUsageDataSync;
 
     // Validate required structure
     if (!data.lastUpdated) {
+      console.warn(`[Console Sync] Missing lastUpdated field (${requestId})`);
       return res.status(400).json({
+        ...buildErrorResponse(
+          ErrorCode.VALIDATION_MISSING_FIELD,
+          'Missing required field: lastUpdated',
+          'Ensure scraper includes lastUpdated timestamp in ISO 8601 format',
+          requestId
+        ),
         success: false,
-        message: 'Invalid data: missing lastUpdated field',
-        timestamp: new Date().toISOString(),
-      } as SyncResponse);
+      } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
     }
 
     // Validate lastUpdated is valid ISO string
     const lastUpdatedDate = new Date(data.lastUpdated);
     if (isNaN(lastUpdatedDate.getTime())) {
+      console.warn(`[Console Sync] Invalid lastUpdated format (${requestId})`);
       return res.status(400).json({
+        ...buildErrorResponse(
+          ErrorCode.VALIDATION_INVALID_TYPE,
+          'Invalid lastUpdated format',
+          'lastUpdated must be a valid ISO 8601 timestamp (e.g., 2025-01-24T10:00:00Z)',
+          requestId
+        ),
         success: false,
-        message: 'Invalid data: lastUpdated must be valid ISO 8601 timestamp',
-        timestamp: new Date().toISOString(),
-      } as SyncResponse);
+      } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
     }
 
     // Validate currentSession if present
@@ -2489,12 +2579,28 @@ app.post('/api/claude/console-usage', async (req, res) => {
     try {
       savedFilepath = await saveVersion(data);
     } catch (writeError) {
-      console.error('[Console Sync] Storage error:', writeError);
+      console.error(`[Console Sync] Storage error (${requestId}):`, writeError);
+      const errorMessage = writeError instanceof Error ? writeError.message : 'Unknown storage error';
+
+      // Categorize storage errors
+      let suggestion = 'Check server logs and disk space';
+      if (errorMessage.includes('ENOSPC')) {
+        suggestion = 'Disk full - free up space on EC2 instance';
+      } else if (errorMessage.includes('EACCES')) {
+        suggestion = 'Permission denied - check directory permissions';
+      } else if (errorMessage.includes('EROFS')) {
+        suggestion = 'Read-only filesystem - check mount status';
+      }
+
       return res.status(500).json({
+        ...buildErrorResponse(
+          ErrorCode.STORAGE_WRITE_FAILED,
+          `Storage write failed: ${errorMessage}`,
+          suggestion,
+          requestId
+        ),
         success: false,
-        message: 'Failed to save synced data',
-        timestamp: new Date().toISOString(),
-      } as SyncResponse);
+      } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
     }
 
     // Trigger cleanup asynchronously (non-blocking)
@@ -2519,12 +2625,23 @@ app.post('/api/claude/console-usage', async (req, res) => {
       timestamp: new Date().toISOString(),
     } as SyncResponse);
   } catch (error) {
-    console.error('[Console Sync] Error:', error);
+    console.error(`[Console Sync] Unexpected error (${requestId}):`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    if (errorStack) {
+      console.error(`[Console Sync] Stack trace (${requestId}):`, errorStack);
+    }
+
     res.status(500).json({
+      ...buildErrorResponse(
+        ErrorCode.INTERNAL_ERROR,
+        errorMessage,
+        'Check server logs for details or contact support',
+        requestId
+      ),
       success: false,
-      message: error instanceof Error ? error.message : 'Internal server error',
-      timestamp: new Date().toISOString(),
-    } as SyncResponse);
+    } as SyncResponse & { errorCode: string; suggestion: string; requestId: string });
   }
 });
 
