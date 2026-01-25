@@ -64,16 +64,18 @@ async function runScraper(): Promise<void> {
     let sectionsExtracted = 0;
     let totalSections = 3;
     let extractionErrors: Record<string, string> = {};
+    let usageData: ConsoleUsageData | null = null;
 
     try {
-      const usageData: ConsoleUsageData = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
-      isPartial = usageData.isPartial || false;
-      extractionErrors = usageData.extractionErrors || {};
+      const data = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
+      usageData = data;
+      isPartial = data.isPartial || false;
+      extractionErrors = data.extractionErrors || {};
 
       // Count extracted sections
-      if (usageData.currentSession) sectionsExtracted++;
-      if (usageData.weeklyLimits?.allModels) sectionsExtracted++;
-      if (usageData.weeklyLimits?.sonnetOnly) sectionsExtracted++;
+      if (data.currentSession) sectionsExtracted++;
+      if (data.weeklyLimits?.allModels) sectionsExtracted++;
+      if (data.weeklyLimits?.sonnetOnly) sectionsExtracted++;
     } catch (err) {
       // If we can't read the file, treat as full success (backward compatible)
       sectionsExtracted = totalSections;
@@ -103,22 +105,24 @@ async function runScraper(): Promise<void> {
     }
 
     // Sync to EC2 (continue scraper operation even if sync fails)
-    try {
-      const syncResponse = await syncToEC2(usageData);
-      if (syncResponse.success) {
-        console.log(`[Auto-Scraper] Synced to EC2 at ${syncResponse.timestamp}`);
-        if (VERBOSE) {
-          console.log('[Auto-Scraper] EC2 sync successful');
+    if (usageData) {
+      try {
+        const syncResponse = await syncToEC2(usageData);
+        if (syncResponse.success) {
+          console.log(`[Auto-Scraper] Synced to EC2 at ${syncResponse.timestamp}`);
+          if (VERBOSE) {
+            console.log('[Auto-Scraper] EC2 sync successful');
+          }
+        } else {
+          console.warn(`[Auto-Scraper] EC2 sync failed: ${syncResponse.message}`);
         }
-      } else {
-        console.warn(`[Auto-Scraper] EC2 sync failed: ${syncResponse.message}`);
-      }
-    } catch (syncError) {
-      // Log but don't crash - scraper continues regardless
-      const syncErrorMsg = syncError instanceof Error ? syncError.message : String(syncError);
-      console.warn(`[Auto-Scraper] EC2 sync error: ${syncErrorMsg}`);
-      if (VERBOSE) {
-        console.warn('[Auto-Scraper] Scraper will continue despite sync failure');
+      } catch (syncError) {
+        // Log but don't crash - scraper continues regardless
+        const syncErrorMsg = syncError instanceof Error ? syncError.message : String(syncError);
+        console.warn(`[Auto-Scraper] EC2 sync error: ${syncErrorMsg}`);
+        if (VERBOSE) {
+          console.warn('[Auto-Scraper] Scraper will continue despite sync failure');
+        }
       }
     }
   } catch (error) {
