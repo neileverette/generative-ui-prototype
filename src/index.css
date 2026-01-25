@@ -386,5 +386,5 @@ cpk-web-inspector {
 }
 
 .animate-overlay-fade-in {
-  animation: overlay-fade-in 0.4s ease-in;
+  animation: overlay-fade-in 0.15s ease-in;
 }
