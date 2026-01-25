@@ -2222,61 +2222,91 @@ function DashboardWithAgent() {
         },
       };
 
-      // CI/CD pipeline stats (from GitHub Actions API)
-      const pipelineStats = {
-        successRate: 80, // 24/30 successful builds
-        avgBuildTime: '2m 44s',
-        buildsPerDay: 3,
-        totalRuns: 34,
-        successfulRuns: 27,
-        failedRuns: 7,
-      };
-
-      const deploymentStats: A2UIComponent = {
-        id: 'deployment-stats',
-        component: 'card_group' as const,
-        source: 'github',
+      // Large metric card showing total deployments
+      const deploymentCount: A2UIComponent = {
+        id: 'deployment-count',
+        component: 'metric_card' as const,
+        source: 'local',
         priority: 'high',
         timestamp: new Date().toISOString(),
-        columnSpan: 2,
         props: {
-          title: 'CI/CD Pipeline',
-          subtitle: 'GitHub Actions',
-          insight: 'Your deployment pipeline is healthy with an 80% success rate. Most failures are from quick fixes during active development.',
-          metrics: [
-            {
-              label: 'Total Builds',
-              value: pipelineStats.totalRuns,
-              status: 'healthy' as const,
-            },
-            {
-              label: 'Success Rate',
-              value: `${pipelineStats.successRate}%`,
-              status: pipelineStats.successRate >= 80 ? 'healthy' as const : 'warning' as const,
-            },
-            {
-              label: 'Avg Build Time',
-              value: pipelineStats.avgBuildTime,
-              status: 'healthy' as const,
-            },
-            {
-              label: 'Builds/Day',
-              value: pipelineStats.buildsPerDay,
-              status: 'healthy' as const,
-            },
-          ],
-          status: pipelineStats.successRate >= 80 ? 'healthy' as const : 'warning' as const,
+          title: 'Total Deployments',
+          value: deploymentsData.totalDeployments,
+          unit: '',
+          size: 'xl' as const,
+          status: 'healthy' as const,
+          description: 'All GitHub Actions builds',
+        },
+      };
+
+      // CI/CD pipeline stats - 2x2 grid of small metric cards
+      const successRateCard: A2UIComponent = {
+        id: 'pipeline-success-rate',
+        component: 'metric_card' as const,
+        source: 'github',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Success Rate',
+          value: 80,
+          unit: '%',
+          status: 'healthy' as const,
+          description: '27 of 34 builds passed',
+        },
+      };
+
+      const avgBuildTimeCard: A2UIComponent = {
+        id: 'pipeline-avg-build-time',
+        component: 'metric_card' as const,
+        source: 'github',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Avg Build Time',
+          value: '2m 44s',
+          unit: '',
+          status: 'healthy' as const,
+          description: 'Fast CI/CD pipeline',
+        },
+      };
+
+      const buildsPerDayCard: A2UIComponent = {
+        id: 'pipeline-builds-per-day',
+        component: 'metric_card' as const,
+        source: 'github',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Builds/Day',
+          value: 3,
+          unit: '',
+          status: 'healthy' as const,
+          description: 'Average deployment frequency',
+        },
+      };
+
+      const pipelineHealthCard: A2UIComponent = {
+        id: 'pipeline-health',
+        component: 'metric_card' as const,
+        source: 'ai',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          title: 'Pipeline Health',
+          value: 'Healthy',
+          unit: '',
+          status: 'healthy' as const,
+          description: 'Stable CI/CD with quick iterations',
         },
       };
 
       setDashboardState({
-        components: [deploymentStats, deploymentsTable],
+        components: [deploymentCount, successRateCard, avgBuildTimeCard, buildsPerDayCard, pipelineHealthCard, deploymentsTable],
         lastUpdated: new Date().toISOString(),
-        agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container}. Pipeline health: ${pipelineStats.successRate}% success rate with ${pipelineStats.avgBuildTime} average build time.`,
       });
       setCurrentView('home');
 
-      return `Showing ${deploymentsData.totalDeployments} deployments (${pipelineStats.successRate}% success rate)`;
+      return `Showing ${deploymentsData.totalDeployments} deployments`;
     },
   });
 
@@ -2324,55 +2354,87 @@ function DashboardWithAgent() {
       },
     };
 
-    // CI/CD pipeline stats (from GitHub Actions API)
-    const pipelineStats = {
-      successRate: 80, // 24/30 successful builds
-      avgBuildTime: '2m 44s',
-      buildsPerDay: 3,
-      totalRuns: 34,
-    };
-
-    const deploymentStats: A2UIComponent = {
-      id: 'deployment-stats',
-      component: 'card_group' as const,
-      source: 'github',
+    // Large metric card showing total deployments
+    const deploymentCount: A2UIComponent = {
+      id: 'deployment-count',
+      component: 'metric_card' as const,
+      source: 'local',
       priority: 'high',
       timestamp: new Date().toISOString(),
-      columnSpan: 2,
       props: {
-        title: 'CI/CD Pipeline',
-        subtitle: 'GitHub Actions',
-        insight: 'Your deployment pipeline is healthy with an 80% success rate. Most failures are from quick fixes during active development.',
-        metrics: [
-          {
-            label: 'Total Builds',
-            value: pipelineStats.totalRuns,
-            status: 'healthy' as const,
-          },
-          {
-            label: 'Success Rate',
-            value: `${pipelineStats.successRate}%`,
-            status: pipelineStats.successRate >= 80 ? 'healthy' as const : 'warning' as const,
-          },
-          {
-            label: 'Avg Build Time',
-            value: pipelineStats.avgBuildTime,
-            status: 'healthy' as const,
-          },
-          {
-            label: 'Builds/Day',
-            value: pipelineStats.buildsPerDay,
-            status: 'healthy' as const,
-          },
-        ],
-        status: pipelineStats.successRate >= 80 ? 'healthy' as const : 'warning' as const,
+        title: 'Total Deployments',
+        value: deploymentsData.totalDeployments,
+        unit: '',
+        size: 'xl' as const,
+        status: 'healthy' as const,
+        description: 'All GitHub Actions builds',
+      },
+    };
+
+    // CI/CD pipeline stats - 2x2 grid of small metric cards
+    const successRateCard: A2UIComponent = {
+      id: 'pipeline-success-rate',
+      component: 'metric_card' as const,
+      source: 'github',
+      priority: 'medium',
+      timestamp: new Date().toISOString(),
+      props: {
+        title: 'Success Rate',
+        value: 80,
+        unit: '%',
+        status: 'healthy' as const,
+        description: '27 of 34 builds passed',
+      },
+    };
+
+    const avgBuildTimeCard: A2UIComponent = {
+      id: 'pipeline-avg-build-time',
+      component: 'metric_card' as const,
+      source: 'github',
+      priority: 'medium',
+      timestamp: new Date().toISOString(),
+      props: {
+        title: 'Avg Build Time',
+        value: '2m 44s',
+        unit: '',
+        status: 'healthy' as const,
+        description: 'Fast CI/CD pipeline',
+      },
+    };
+
+    const buildsPerDayCard: A2UIComponent = {
+      id: 'pipeline-builds-per-day',
+      component: 'metric_card' as const,
+      source: 'github',
+      priority: 'medium',
+      timestamp: new Date().toISOString(),
+      props: {
+        title: 'Builds/Day',
+        value: 3,
+        unit: '',
+        status: 'healthy' as const,
+        description: 'Average deployment frequency',
+      },
+    };
+
+    const pipelineHealthCard: A2UIComponent = {
+      id: 'pipeline-health',
+      component: 'metric_card' as const,
+      source: 'ai',
+      priority: 'medium',
+      timestamp: new Date().toISOString(),
+      props: {
+        title: 'Pipeline Health',
+        value: 'Healthy',
+        unit: '',
+        status: 'healthy' as const,
+        description: 'Stable CI/CD with quick iterations',
       },
     };
 
     setDashboardState({
-      components: [deploymentStats, deploymentsTable],
+      components: [deploymentCount, successRateCard, avgBuildTimeCard, buildsPerDayCard, pipelineHealthCard, deploymentsTable],
       lastUpdated: new Date().toISOString(),
-      agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container}. Pipeline health: ${pipelineStats.successRate}% success rate with ${pipelineStats.avgBuildTime} average build time.`,
     });
     setCurrentView('home');
   }, []);
