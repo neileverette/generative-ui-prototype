@@ -676,7 +676,7 @@ None - Express.js API patterns, HTTP client requests, standard error handling
 - [x] **Phase 30: Data Sync Client** - Add sync client to scraper that POSTs after each scrape
 - [x] **Phase 31: EC2 Data Storage** - Implement storage layer with versioning and cleanup
 - [x] **Phase 32: EC2 GET Endpoint** - Create GET endpoint to serve stored usage data
-- [ ] **Phase 33: Widget Migration** - Update widget to fetch from EC2 instead of local file
+- [x] **Phase 33: Widget Migration** - Update widget to fetch from EC2 instead of local file
 - [ ] **Phase 34: Error Handling & Fallbacks** - Add retry logic, fallback behavior, health checks
 
 ## Phase Details (Milestone 8)
@@ -746,7 +746,6 @@ Requirements:
 
 Plans:
 - [x] 32-01: EC2 GET Endpoint implementation (Complete - 2026-01-25)
-- [ ] 32-01: TBD (run /gsd:plan-phase 32 to break down)
 
 ### Phase 33: Widget Migration
 
@@ -762,7 +761,7 @@ Requirements:
 - Update error messages to reflect remote data source
 
 Plans:
-- [ ] 33-01: TBD (run /gsd:plan-phase 33 to break down)
+- [x] 33-01: Widget Migration implementation (Complete - 2026-01-25)
 
 ### Phase 34: Error Handling & Fallbacks
 

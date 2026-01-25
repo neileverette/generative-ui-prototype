@@ -4,8 +4,8 @@
 
 **Milestone**: v8.0 Scraper-to-EC2 Data Sync
 **Phase**: 33 of 34 (Widget Migration)
-**Plan**: 0/1 plans complete
-**Status**: Phase 33 planned, ready to execute
+**Plan**: 1/1 plans complete
+**Status**: Phase 33 complete, ready for Phase 34 (Error Handling & Fallbacks)
 
 ## Quick Context
 
@@ -55,19 +55,19 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 
 | Commit | Type | Description |
 |--------|------|-------------|
+| `548d578` | refactor | Remove legacy local scraper endpoints |
+| `3d9e2d6` | feat | Migrate widget to use EC2 sync endpoint |
 | `742244b` | feat | Implement GET /api/claude/console-usage endpoint |
 | `dd77836` | chore | Document CLAUDE_SYNC_URL env var |
 | `72392c9` | feat | Integrate sync into auto-scraper |
 | `143d4db` | feat | Create EC2 sync client module |
-| `7bafdfc` | chore | Add environment variable documentation |
-| `62d8b78` | feat | Add POST endpoint with authentication and validation |
 
 ## Next Actions
 
-1. Execute Phase 33 Plan 01 (Widget Migration) - Update widget to fetch from EC2
-2. Test widget with EC2 synced data endpoint
-3. Verify old local scraper endpoints removed
-4. Confirm auto-refresh works with new endpoint
+1. Plan Phase 34 (Error Handling & Fallbacks) - Add retry logic, circuit breaker, health checks
+2. Execute Phase 34 to improve widget resilience
+3. Test error scenarios (network failures, stale data, missing data)
+4. Consider completing Milestone 8 or moving to Milestone 9 (Dynamic Widget Loading)
 
 ## Key Files
 
@@ -97,6 +97,22 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 33 Complete
+- Successfully migrated ClaudeUsageCard widget to EC2 sync architecture
+- Widget now fetches from `/api/claude/console-usage` instead of `/api/claude-usage/console`
+- Updated MCP client: `getConsoleUsage()` calls EC2 endpoint, removed `refreshConsoleUsage()`
+- Removed manual refresh button and functionality from widget (scraper handles syncing)
+- Simplified `fetchData()` to always fetch latest synced data
+- Auto-refresh (5-min interval) remains active
+- Removed legacy endpoints: GET/POST `/api/claude-usage/console`, POST `/api/claude-usage/console/refresh`
+- Added architecture documentation comment in server code
+- Widget now decoupled from scraper location - works on any EC2 instance with synced data
+- Code simplification: -146 lines removed, -130 net change
+- Phase 33 complete (1/1 plans): Widget Migration
+- Commits: 3d9e2d6 (feature), 548d578 (refactor)
+- Duration: 5 minutes
+- Ready for Phase 34 (Error Handling & Fallbacks)
 
 ### 2026-01-25 - Phase 33 Planned
 - Created executable plan for Phase 33: Widget Migration
