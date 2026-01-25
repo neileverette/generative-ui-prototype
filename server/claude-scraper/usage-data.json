@@ -1,7 +1,7 @@
 {
   "currentSession": {
-    "resetsIn": "4 hr 10 min",
-    "percentageUsed": 21
+    "resetsIn": "4 hr 5 min",
+    "percentageUsed": 23
   },
   "weeklyLimits": {
     "allModels": {
@@ -13,5 +13,5 @@
       "percentageUsed": 7
     }
   },
-  "lastUpdated": "2026-01-25T01:49:28Z"
+  "lastUpdated": "2026-01-25T01:54:29Z"
 }
