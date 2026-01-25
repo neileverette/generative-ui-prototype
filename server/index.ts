@@ -2065,97 +2065,12 @@ app.get('/api/claude-usage/config', async (_req, res) => {
   }
 });
 
-// POST scraped Claude Console usage data (from bookmarklet)
-app.post('/api/claude-usage/console', async (req, res) => {
-  try {
-    const data = req.body;
-
-    if (!data.currentSession || !data.weeklyLimits) {
-      return res.status(400).json({ error: 'Invalid data format' });
-    }
-
-    const usageData = {
-      ...data,
-      lastUpdated: new Date().toISOString(),
-    };
-
-    fs.writeFileSync(CONSOLE_USAGE_FILE, JSON.stringify(usageData, null, 2));
-    console.log('[Console Usage] Data saved:', usageData);
-
-    res.json({ success: true, data: usageData });
-  } catch (error) {
-    console.error('[Console Usage] Error saving:', error);
-    res.status(500).json({ error: 'Failed to save data' });
-  }
-});
-
-// Get scraped Claude Console usage data
-app.get('/api/claude-usage/console', async (_req, res) => {
-  try {
-    if (!fs.existsSync(CONSOLE_USAGE_FILE)) {
-      return res.status(404).json({
-        error: 'No scraped data available. Run the scraper first.',
-        instructions: 'npx ts-node server/claude-scraper/login.ts (once), then npx ts-node server/claude-scraper/scrape.ts',
-      });
-    }
-
-    const data = JSON.parse(fs.readFileSync(CONSOLE_USAGE_FILE, 'utf-8'));
-
-    // Check if data is stale (older than 10 minutes)
-    const lastUpdated = new Date(data.lastUpdated);
-    const ageMinutes = (Date.now() - lastUpdated.getTime()) / 1000 / 60;
-    const isStale = ageMinutes > 10;
-
-    res.json({
-      ...data,
-      isStale,
-      ageMinutes: Math.round(ageMinutes),
-      source: 'console-scraper',
-    });
-  } catch (error) {
-    console.error('[Console Usage] Error:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      source: 'console-scraper',
-    });
-  }
-});
-
-// Trigger on-demand scrape
-app.post('/api/claude-usage/console/refresh', async (_req, res) => {
-  try {
-    console.log('[Console Usage] Manual refresh triggered (headless mode)...');
-
-    // Use headless Playwright scraper instead of AppleScript
-    const { scrape } = await import('./claude-scraper/scrape.js');
-
-    // Run scraper (completely headless, no visible browser)
-    await scrape();
-
-    console.log('[Console Usage] Scraper completed (headless)');
-
-    // Read the fresh data
-    if (!fs.existsSync(CONSOLE_USAGE_FILE)) {
-      return res.status(500).json({ error: 'Scrape failed - no data file created' });
-    }
-
-    const data = JSON.parse(fs.readFileSync(CONSOLE_USAGE_FILE, 'utf-8'));
-
-    res.json({
-      ...data,
-      isStale: false,
-      ageMinutes: 0,
-      source: 'console-scraper',
-      refreshedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[Console Usage] Refresh error:', error);
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Scrape failed',
-      source: 'console-scraper',
-    });
-  }
-});
+// ============================================================================
+// Claude Console Usage - EC2 Sync Architecture
+// ============================================================================
+// Widget fetches from GET /api/claude/console-usage (synced data)
+// Scraper POSTs to POST /api/claude/console-usage (sync new data)
+// Legacy endpoints (local scraper file) removed in Phase 33
 
 // GET endpoint for serving synced Claude Console usage data
 // Supports optional query parameters for version-based and timestamp-based retrieval
