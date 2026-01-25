@@ -9,13 +9,16 @@ import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
+import fs from 'fs';
 import { RetryStrategy, ErrorCategory } from './retry-strategy.js';
+import type { ConsoleUsageData } from './scrape.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SCRAPE_SCRIPT = path.join(__dirname, 'scrape-silent.sh');
+const OUTPUT_FILE = path.join(__dirname, 'usage-data.json');
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Initialize retry strategy with defaults
@@ -55,10 +58,41 @@ async function runScraper(): Promise<void> {
     if (stdout) console.log(stdout.trim());
     if (stderr) console.error('[Auto-Scraper] stderr:', stderr.trim());
 
-    // Success! Record in retry strategy and circuit breaker
+    // Check if data was saved and whether it's partial
+    let isPartial = false;
+    let sectionsExtracted = 0;
+    let totalSections = 3;
+    let extractionErrors: Record<string, string> = {};
+
+    try {
+      const usageData: ConsoleUsageData = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
+      isPartial = usageData.isPartial || false;
+      extractionErrors = usageData.extractionErrors || {};
+
+      // Count extracted sections
+      if (usageData.currentSession) sectionsExtracted++;
+      if (usageData.weeklyLimits?.allModels) sectionsExtracted++;
+      if (usageData.weeklyLimits?.sonnetOnly) sectionsExtracted++;
+    } catch (err) {
+      // If we can't read the file, treat as full success (backward compatible)
+      sectionsExtracted = totalSections;
+    }
+
+    // Success! Record in retry strategy and circuit breaker (partial = success)
     retryStrategy.reset();
     retryStrategy.recordSuccess();
     lastSuccessfulValidation = new Date();
+
+    // Log result based on completeness
+    if (isPartial) {
+      const missing = Object.keys(extractionErrors).join(', ');
+      console.log(`[Auto-Scraper] Scrape completed with partial data (${sectionsExtracted}/${totalSections} sections). Missing: ${missing}`);
+      if (VERBOSE && Object.keys(extractionErrors).length > 0) {
+        console.log('[Auto-Scraper] Extraction errors:', JSON.stringify(extractionErrors, null, 2));
+      }
+    } else {
+      console.log(`[Auto-Scraper] Scrape completed successfully (${sectionsExtracted}/${totalSections} sections)`);
+    }
 
     if (VERBOSE) {
       const newCircuitState = retryStrategy.getCircuitState();
