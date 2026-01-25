@@ -10,9 +10,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import fs from 'fs';
-import { RetryStrategy, ErrorCategory } from './retry-strategy.js';
+import { RetryStrategy, ErrorCategory, CircuitState } from './retry-strategy.js';
 import type { ConsoleUsageData } from './scrape.js';
-import { syncWithRetry } from './sync-client.js';
+import { syncWithRetry, getSyncMetrics } from './sync-client.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +30,14 @@ let retryTimeoutId: NodeJS.Timeout | null = null;
 // Check for verbose flag
 const VERBOSE = process.argv.includes('--verbose');
 
+// Scraper metrics tracking
+let scraperRunCount = 0;
+let lastCircuitStateTransition: { from: CircuitState; to: CircuitState; timestamp: Date } | null = null;
+
 async function runScraper(): Promise<void> {
+  scraperRunCount++;
+  const runStartTime = Date.now();
+
   try {
     // Check if circuit breaker is open
     if (retryStrategy.isCircuitOpen()) {
@@ -42,12 +49,15 @@ async function runScraper(): Promise<void> {
       return;
     }
 
-    const circuitState = retryStrategy.getCircuitState();
-    if (VERBOSE && circuitState !== 'CLOSED') {
-      console.log(`[Auto-Scraper] Circuit state: ${circuitState}`);
+    const prevCircuitState = retryStrategy.getCircuitState();
+    if (VERBOSE && prevCircuitState !== 'CLOSED') {
+      console.log(`[Auto-Scraper] Circuit state: ${prevCircuitState}`);
     }
 
-    console.log(`[Auto-Scraper] Running scraper at ${new Date().toLocaleTimeString()}...`);
+    console.log(
+      `[Auto-Scraper] Running scraper at ${new Date().toLocaleTimeString()} ` +
+      `(run #${scraperRunCount})...`
+    );
 
     if (VERBOSE && lastSuccessfulValidation) {
       const ageMinutes = Math.floor((Date.now() - lastSuccessfulValidation.getTime()) / 1000 / 60);
@@ -97,10 +107,25 @@ async function runScraper(): Promise<void> {
       console.log(`[Auto-Scraper] Scrape completed successfully (${sectionsExtracted}/${totalSections} sections)`);
     }
 
+    const newCircuitState = retryStrategy.getCircuitState();
+    if (newCircuitState !== prevCircuitState) {
+      lastCircuitStateTransition = {
+        from: prevCircuitState,
+        to: newCircuitState,
+        timestamp: new Date(),
+      };
+      console.log(`[Auto-Scraper] Circuit state transition: ${prevCircuitState} → ${newCircuitState}`);
+    }
+
+    // Log performance metrics
+    const runDuration = Date.now() - runStartTime;
     if (VERBOSE) {
-      const newCircuitState = retryStrategy.getCircuitState();
-      if (newCircuitState !== circuitState) {
-        console.log(`[Auto-Scraper] Circuit state transition: ${circuitState} → ${newCircuitState}`);
+      console.log(`[Auto-Scraper] Scrape completed in ${runDuration}ms`);
+
+      // Log sync metrics every 5 runs
+      if (scraperRunCount % 5 === 0) {
+        const syncMetrics = getSyncMetrics();
+        console.log('[Auto-Scraper] Sync metrics:', syncMetrics);
       }
     }
 
@@ -164,8 +189,23 @@ async function runScraper(): Promise<void> {
     }
 
     // Record failure in circuit breaker
+    const prevCircuitState = retryStrategy.getCircuitState();
     retryStrategy.recordFailure();
     retryStrategy.recordAttempt();
+    const newCircuitState = retryStrategy.getCircuitState();
+
+    // Log circuit state transition
+    if (newCircuitState !== prevCircuitState) {
+      lastCircuitStateTransition = {
+        from: prevCircuitState,
+        to: newCircuitState,
+        timestamp: new Date(),
+      };
+      console.error(
+        `[Auto-Scraper] Circuit breaker transition: ${prevCircuitState} → ${newCircuitState} ` +
+        `(error: ${errorCategory})`
+      );
+    }
 
     const attemptNumber = retryStrategy.getAttemptCount();
     const maxAttempts = retryStrategy.getMaxAttempts();

@@ -11,6 +11,72 @@ import type { ConsoleUsageDataSync, SyncResponse } from '../claude-console-sync-
 const DEFAULT_SYNC_URL = 'http://localhost:4000/api/claude/console-usage';
 const SYNC_TIMEOUT_MS = 10000; // 10 seconds
 
+// Check for verbose logging
+const SYNC_VERBOSE = process.env.SYNC_VERBOSE === 'true';
+
+// Sync metrics tracking
+interface SyncMetrics {
+  totalAttempts: number;
+  successCount: number;
+  failureCount: number;
+  retryCount: number;
+  durations: number[]; // Last 10 durations in ms
+}
+
+const syncMetrics: SyncMetrics = {
+  totalAttempts: 0,
+  successCount: 0,
+  failureCount: 0,
+  retryCount: 0,
+  durations: [],
+};
+
+/**
+ * Record sync duration for metrics
+ */
+function recordSyncDuration(durationMs: number): void {
+  syncMetrics.durations.push(durationMs);
+  // Keep only last 10 durations
+  if (syncMetrics.durations.length > 10) {
+    syncMetrics.durations.shift();
+  }
+}
+
+/**
+ * Get sync metrics summary
+ */
+export function getSyncMetrics(): {
+  totalAttempts: number;
+  successCount: number;
+  failureCount: number;
+  retryCount: number;
+  successRate: string;
+  avgDuration: string;
+  minDuration: string;
+  maxDuration: string;
+} {
+  const durations = syncMetrics.durations;
+  const avgDuration = durations.length > 0
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : 0;
+  const minDuration = durations.length > 0 ? Math.min(...durations) : 0;
+  const maxDuration = durations.length > 0 ? Math.max(...durations) : 0;
+  const successRate = syncMetrics.totalAttempts > 0
+    ? ((syncMetrics.successCount / syncMetrics.totalAttempts) * 100).toFixed(1)
+    : '0.0';
+
+  return {
+    totalAttempts: syncMetrics.totalAttempts,
+    successCount: syncMetrics.successCount,
+    failureCount: syncMetrics.failureCount,
+    retryCount: syncMetrics.retryCount,
+    successRate: `${successRate}%`,
+    avgDuration: `${avgDuration}ms`,
+    minDuration: `${minDuration}ms`,
+    maxDuration: `${maxDuration}ms`,
+  };
+}
+
 // Sync error categories for retry logic
 export enum SyncErrorCategory {
   NETWORK = 'NETWORK',   // Retry - network issues, timeouts
@@ -247,19 +313,26 @@ export async function syncToEC2(data: ConsoleUsageData): Promise<SyncResponse> {
 
 /**
  * Syncs usage data to EC2 endpoint with automatic retry logic
+ * Includes structured logging and performance metrics
  * @param data - ConsoleUsageData from scraper
- * @param verbose - Enable verbose logging
+ * @param verbose - Enable verbose logging (overrides SYNC_VERBOSE env var)
  * @returns SyncResponse with success status and timestamp
  * @throws Error if all retry attempts fail or error is not retryable
  */
 export async function syncWithRetry(
   data: ConsoleUsageData,
-  verbose: boolean = false
+  verbose: boolean = SYNC_VERBOSE
 ): Promise<SyncResponse> {
   const strategy = new SyncRetryStrategy();
   let lastError: Error | null = null;
+  const startTime = Date.now();
+
+  // Increment total attempts
+  syncMetrics.totalAttempts++;
 
   for (let attempt = 1; attempt <= strategy.getMaxAttempts(); attempt++) {
+    const attemptStartTime = Date.now();
+
     try {
       if (verbose && attempt > 1) {
         console.log(`[Sync Retry] Attempt ${attempt}/${strategy.getMaxAttempts()}...`);
@@ -267,17 +340,34 @@ export async function syncWithRetry(
 
       const response = await syncToEC2(data);
 
-      // Success! Record and return
+      // Success! Record metrics and return
       strategy.recordSuccess();
+      const duration = Date.now() - startTime;
+      recordSyncDuration(duration);
+      syncMetrics.successCount++;
 
-      if (verbose && attempt > 1) {
-        console.log(`[Sync Retry] Sync succeeded on attempt ${attempt}`);
+      if (attempt > 1) {
+        syncMetrics.retryCount++;
+        console.log(
+          `[Sync Retry] ✓ Sync succeeded on attempt ${attempt}/${strategy.getMaxAttempts()} ` +
+          `(duration: ${duration}ms, retried: ${attempt - 1} times)`
+        );
+      } else if (verbose) {
+        console.log(`[Sync Retry] ✓ Sync succeeded (duration: ${duration}ms)`);
+      }
+
+      // Log metrics periodically (every 10th successful sync)
+      if (syncMetrics.successCount % 10 === 0 && verbose) {
+        const metrics = getSyncMetrics();
+        console.log('[Sync Metrics] Last 10 syncs:', metrics);
       }
 
       return response;
     } catch (error) {
       lastError = error as Error;
       strategy.recordAttempt();
+
+      const attemptDuration = Date.now() - attemptStartTime;
 
       // Extract status code if available
       const statusCode = (error as any).statusCode;
@@ -286,16 +376,41 @@ export async function syncWithRetry(
       const errorCategory = SyncRetryStrategy.classifyError(lastError, statusCode);
       strategy.recordFailure(errorCategory);
 
+      // Structured error logging
+      const errorLog = {
+        timestamp: new Date().toISOString(),
+        attempt: `${attempt}/${strategy.getMaxAttempts()}`,
+        category: errorCategory,
+        statusCode: statusCode || 'N/A',
+        message: lastError.message,
+        duration: `${attemptDuration}ms`,
+      };
+
       // Check if we should retry
       if (!strategy.shouldRetry(errorCategory, attempt)) {
         // Non-retryable error or max attempts reached
+        const totalDuration = Date.now() - startTime;
+        syncMetrics.failureCount++;
+
         if (errorCategory === SyncErrorCategory.AUTH) {
-          console.error('[Sync Retry] Authentication failed. No retry.');
+          console.error('[Sync Retry] ✗ Authentication failed. No retry.');
+          console.error('[Sync Retry] Error:', JSON.stringify(errorLog));
         } else if (errorCategory === SyncErrorCategory.VALIDATION) {
-          console.error('[Sync Retry] Validation failed. No retry.');
+          console.error('[Sync Retry] ✗ Validation failed. No retry.');
+          console.error('[Sync Retry] Error:', JSON.stringify(errorLog));
         } else if (attempt >= strategy.getMaxAttempts()) {
-          console.error(`[Sync Retry] Max retry attempts (${strategy.getMaxAttempts()}) exhausted.`);
+          console.error(
+            `[Sync Retry] ✗ Max retry attempts (${strategy.getMaxAttempts()}) exhausted ` +
+            `(total duration: ${totalDuration}ms)`
+          );
+          console.error('[Sync Retry] Final error:', JSON.stringify(errorLog));
         }
+
+        if (verbose) {
+          const metrics = getSyncMetrics();
+          console.error('[Sync Metrics] Current stats:', metrics);
+        }
+
         throw lastError;
       }
 
@@ -309,7 +424,7 @@ export async function syncWithRetry(
       console.error(`[Sync Retry] Retrying in ${delaySeconds}s...`);
 
       if (verbose) {
-        console.error(`[Sync Retry] Error category: ${errorCategory}, Next delay: ${delayMs}ms`);
+        console.error('[Sync Retry] Error details:', JSON.stringify(errorLog));
       }
 
       // Wait before next attempt
@@ -318,5 +433,6 @@ export async function syncWithRetry(
   }
 
   // Should never reach here, but throw last error as fallback
+  syncMetrics.failureCount++;
   throw lastError || new Error('Sync failed for unknown reason');
 }
