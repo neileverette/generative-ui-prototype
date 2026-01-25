@@ -23,13 +23,127 @@ export interface SessionValidationResult {
   valid: boolean;
   reason?: string;
   timestamp: string;
+  recoveryAttempted?: boolean;
+  recoveryResult?: SessionRecoveryResult;
+}
+
+export interface SessionRecoveryResult {
+  recovered: boolean;
+  action: 'auto-refreshed' | 'manual-login-required' | 'network-error';
+  timestamp: string;
+}
+
+/**
+ * Attempts to recover an expired session by refreshing the browser
+ * Opens browser in non-headless mode and waits for auto-refresh or manual login
+ * @returns Recovery result indicating if session was recovered and what action is needed
+ */
+export async function attemptSessionRecovery(): Promise<SessionRecoveryResult> {
+  const timestamp = new Date().toISOString();
+
+  console.log('[Session Recovery] Attempting session recovery...');
+  console.log('[Session Recovery] Opening browser (you may see a window briefly)...');
+
+  let browser;
+  try {
+    // Launch browser with persistent context (headless: false so user can see if needed)
+    browser = await chromium.launchPersistentContext(USER_DATA_DIR, {
+      headless: false,
+      viewport: { width: 1280, height: 800 },
+    });
+
+    const page = await browser.newPage();
+
+    // Navigate to usage page
+    try {
+      await page.goto('https://console.anthropic.com/settings/usage', {
+        waitUntil: 'networkidle',
+        timeout: 30000,
+      });
+    } catch (error) {
+      console.error('[Session Recovery] Network error during navigation');
+      return {
+        recovered: false,
+        action: 'network-error',
+        timestamp,
+      };
+    }
+
+    // Wait up to 30 seconds for either auto-refresh success or login page
+    try {
+      const result = await Promise.race([
+        // Success: "Current session" appears (auto-refreshed)
+        page.waitForSelector('text=Current session', { timeout: 30000 })
+          .then(() => 'auto-refreshed' as const),
+        // Failure: Redirected to login page (manual login required)
+        page.waitForURL('**/login**', { timeout: 30000 })
+          .then(() => 'manual-login-required' as const),
+      ]).catch(() => 'timeout' as const);
+
+      if (result === 'auto-refreshed') {
+        console.log('[Session Recovery] Success! Session auto-refreshed.');
+        // Close browser since recovery succeeded
+        await browser.close();
+        return {
+          recovered: true,
+          action: 'auto-refreshed',
+          timestamp,
+        };
+      } else if (result === 'manual-login-required') {
+        console.log('[Session Recovery] Manual login required.');
+        console.log('[Session Recovery] Browser window left open - complete login and close browser when done.');
+        // Keep browser open for user to complete login
+        return {
+          recovered: false,
+          action: 'manual-login-required',
+          timestamp,
+        };
+      } else {
+        // Timeout - check current state
+        const currentUrl = page.url();
+        if (currentUrl.includes('login')) {
+          console.log('[Session Recovery] Redirected to login page.');
+          console.log('[Session Recovery] Browser window left open - complete login and close browser when done.');
+          return {
+            recovered: false,
+            action: 'manual-login-required',
+            timestamp,
+          };
+        } else {
+          console.error('[Session Recovery] Timeout waiting for page state.');
+          await browser.close();
+          return {
+            recovered: false,
+            action: 'network-error',
+            timestamp,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('[Session Recovery] Error during recovery attempt:', error);
+      await browser.close();
+      return {
+        recovered: false,
+        action: 'network-error',
+        timestamp,
+      };
+    }
+  } catch (error) {
+    console.error('[Session Recovery] Failed to launch browser:', error);
+    return {
+      recovered: false,
+      action: 'network-error',
+      timestamp,
+    };
+  }
 }
 
 /**
  * Validates the current session by checking authentication state
+ * @param attemptRecovery If true, will attempt to recover the session if validation fails
  * @returns Validation result indicating if session is valid and ready to use
  */
-export async function validateSession(): Promise<SessionValidationResult> {
+export async function validateSession(attemptRecovery: boolean = false): Promise<SessionValidationResult> {
   const timestamp = new Date().toISOString();
 
   // Check if session directory exists
@@ -95,27 +209,49 @@ export async function validateSession(): Promise<SessionValidationResult> {
           timestamp,
         };
       } else if (isAuthenticated === false) {
-        return {
+        const failedResult = {
           valid: false,
           reason: 'Redirected to login page. Session expired.',
           timestamp,
         };
+
+        // Attempt recovery if requested
+        if (attemptRecovery) {
+          console.log('[Session Validator] Session expired. Attempting recovery...');
+          const recoveryResult = await attemptSessionRecovery();
+          return {
+            ...failedResult,
+            recoveryAttempted: true,
+            recoveryResult,
+            valid: recoveryResult.recovered,
+          };
+        }
+
+        return failedResult;
       } else {
         // Check current URL to provide better error message
         const currentUrl = page.url();
-        if (currentUrl.includes('login')) {
+        const failedResult = {
+          valid: false,
+          reason: currentUrl.includes('login')
+            ? 'Redirected to login page. Session expired.'
+            : 'Could not verify authentication state. Page did not load expected content.',
+          timestamp,
+        };
+
+        // Attempt recovery if requested and likely expired
+        if (attemptRecovery && currentUrl.includes('login')) {
+          console.log('[Session Validator] Session expired. Attempting recovery...');
+          const recoveryResult = await attemptSessionRecovery();
           return {
-            valid: false,
-            reason: 'Redirected to login page. Session expired.',
-            timestamp,
-          };
-        } else {
-          return {
-            valid: false,
-            reason: 'Could not verify authentication state. Page did not load expected content.',
-            timestamp,
+            ...failedResult,
+            recoveryAttempted: true,
+            recoveryResult,
+            valid: recoveryResult.recovered,
           };
         }
+
+        return failedResult;
       }
     } catch (error) {
       return {
