@@ -130,7 +130,11 @@ button[aria-label*="inspector"] svg {
 .group.relative.pointer-events-auto.inline-flex.h-12.w-12,
 button[class*="bg-slate-950"],
 div[class*="console-button"],
-[class*="backdrop-blur-md"][class*="rounded-full"][class*="h-12"] {
+[class*="backdrop-blur-md"][class*="rounded-full"][class*="h-12"],
+cpk-web-inspector,
+[data-cpk-inspector],
+[class*="cpk-inspector"],
+[class*="web-inspector"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -277,6 +281,55 @@ div[class*="console-button"],
 [class*="CopilotKit"] [data-role="user"],
 [class*="copilotKit"] [data-role="user"] {
   color: #1e293b !important;
+}
+
+/* CopilotKit assistant message styling - prevent bold responses */
+[class*="copilotKitAssistantMessage"],
+[class*="assistantMessage"],
+[data-role="assistant"],
+.copilotKitMessage[data-role="assistant"],
+[class*="CopilotKit"] [data-role="assistant"],
+[class*="copilotKit"] [data-role="assistant"] {
+  font-weight: 400 !important;
+}
+
+/* Reduce list block size in assistant responses */
+[class*="copilotKitAssistantMessage"] .copilotKitMarkdownElement,
+[class*="assistantMessage"] .copilotKitMarkdownElement,
+[data-role="assistant"] .copilotKitMarkdownElement,
+.copilotKitMessage[data-role="assistant"] .copilotKitMarkdownElement {
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+}
+
+[class*="copilotKitAssistantMessage"] .copilotKitMarkdownElement ul,
+[class*="assistantMessage"] .copilotKitMarkdownElement ul,
+[data-role="assistant"] .copilotKitMarkdownElement ul,
+.copilotKitMessage[data-role="assistant"] .copilotKitMarkdownElement ul,
+[class*="copilotKitAssistantMessage"] .copilotKitMarkdownElement ol,
+[class*="assistantMessage"] .copilotKitMarkdownElement ol,
+[data-role="assistant"] .copilotKitMarkdownElement ol,
+.copilotKitMessage[data-role="assistant"] .copilotKitMarkdownElement ol {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* Re-enable bullets for nested lists (e.g., under Success Rate) */
+[class*="copilotKitAssistantMessage"] .copilotKitMarkdownElement ul ul,
+[class*="assistantMessage"] .copilotKitMarkdownElement ul ul,
+[data-role="assistant"] .copilotKitMarkdownElement ul ul,
+.copilotKitMessage[data-role="assistant"] .copilotKitMarkdownElement ul ul {
+  list-style: none !important;
+  padding-left: 14px !important;
+  margin-left: 0 !important;
+}
+
+[class*="copilotKitAssistantMessage"] .copilotKitMarkdownElement ul ul > li::before,
+[class*="assistantMessage"] .copilotKitMarkdownElement ul ul > li::before,
+[data-role="assistant"] .copilotKitMarkdownElement ul ul > li::before,
+.copilotKitMessage[data-role="assistant"] .copilotKitMarkdownElement ul ul > li::before {
+  content: "- ";
 }
 
 /* Target user message text content specifically */

@@ -47,7 +47,9 @@ interface DashboardData {
   systemUptime: string;
   memoryPercent: number;
   automationHours: number;
+  automationExecutions: number;
   monthlyCost: number;
+  projectedCost: number;
   costs: NavCardStatus;
   systemMetrics: NavCardStatus;
   automations: NavCardStatus;
@@ -63,7 +65,9 @@ const DEFAULT_DATA: DashboardData = {
   systemUptime: '0h 0m',
   memoryPercent: 0,
   automationHours: 0,
+  automationExecutions: 0,
   monthlyCost: 0,
+  projectedCost: 0,
   costs: { current: 12, total: 12, status: 'good', label: 'Good' },
   systemMetrics: { current: 10, total: 10, status: 'good', label: 'Good' },
   automations: { current: 2, total: 2, status: 'good', label: 'Good' },
@@ -88,10 +92,12 @@ export function LandingPage({
       setIsLoading(true);
       try {
         // Fetch data from multiple sources in parallel
-        const [containersData, systemData, costsData] = await Promise.all([
+        const [containersData, systemData, costsData, gmailData, imageGenData] = await Promise.all([
           mcpClient.getRunningContainers(timeWindow).catch(() => ({ error: true })),
           mcpClient.getOverviewFast(timeWindow).catch(() => ({ error: true })),
           mcpClient.getCostsOverview().catch(() => ({ error: true })),
+          mcpClient.getGmailFilterMetrics(timeWindow).catch(() => ({ error: true })),
+          mcpClient.getImageGeneratorMetrics(timeWindow).catch(() => ({ error: true })),
         ]);
 
         const newData = { ...DEFAULT_DATA };
@@ -124,9 +130,32 @@ export function LandingPage({
           }
         }
 
+        // Process automation metrics (gmail filter + image generator)
+        let totalExecutions = 0;
+        let totalHours = 0;
+
+        if (!gmailData.error && gmailData.currentValue !== undefined) {
+          totalExecutions += gmailData.currentValue;
+          // Estimate 0.5 minutes per execution = 0.00833 hours
+          totalHours += gmailData.currentValue * 0.00833;
+        }
+
+        if (!imageGenData.error && imageGenData.currentValue !== undefined) {
+          totalExecutions += imageGenData.currentValue;
+          // Estimate 2 minutes per execution = 0.0333 hours
+          totalHours += imageGenData.currentValue * 0.0333;
+        }
+
+        newData.automationExecutions = totalExecutions;
+        newData.automationHours = Math.round(totalHours * 10) / 10; // Round to 1 decimal
+
         // Process costs
         if (!costsData.error && costsData.aws && !costsData.aws.error) {
           newData.monthlyCost = costsData.aws.totalCost || 0;
+          // Forecast is remaining cost from tomorrow to end of month
+          // So projected total = current month-to-date + forecast for remaining days
+          const forecastRemaining = costsData.forecast?.forecastedCost || 0;
+          newData.projectedCost = newData.monthlyCost + forecastRemaining;
         }
 
         setData(newData);
@@ -142,7 +171,7 @@ export function LandingPage({
   }, [timeWindow]);
 
   // Build the summary text
-  const summaryText = `[${data.containerCount}] containers running, [${data.alertCount}] alerts firing, [${data.uptimePercent}]% uptime—your automations saved [${data.automationHours}] hours while costing you [$${data.monthlyCost.toFixed(0)}] this month.`;
+  const summaryText = `${data.containerCount} containers running, ${data.alertCount} alerts firing, ${data.uptimePercent}% uptime—your automations saved ${data.automationExecutions} executions, ${data.automationHours} hours, your current costs are $${data.monthlyCost.toFixed(2)} and projected cost will be $${data.projectedCost.toFixed(2)} this month.`;
 
   // Claude usage component
   const claudeUsageComponent: A2UIComponent = {
