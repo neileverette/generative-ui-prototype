@@ -2645,29 +2645,20 @@ function DashboardWithAgent() {
               <p className="text-xl font-bold text-text-primary mb-4 font-orbitron tracking-wider">
                 CONSOLE/AI
               </p>
-              <p className="text-base text-text-secondary mb-6">
-                Console is an Agent-Driven UI. You give me a command, and I retrieve.
+              <p className="text-base text-text-secondary mb-4 font-semibold">
+                Console AI is a <button onClick={startListening} className="text-accent-primary hover:underline cursor-pointer">voice</button> first assistant. You can use the voice button or the chat to ask common things like:
               </p>
 
-              {/* Quick Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: 'Quick status', message: 'Give me a quick status summary' },
-                  { label: 'System metrics', message: 'Show all system metrics' },
-                  { label: 'Container status', message: 'Which containers are running?' },
-                  { label: 'Disk space', message: 'How much disk space is left?' },
-                  { label: 'Deployments', message: 'Show deployments' },
-                  { label: 'Workflow health', message: 'Are my n8n workflows healthy?' },
-                ].map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => handleSendMessage(action.message)}
-                    className="px-3 py-1.5 text-sm bg-white/80 hover:bg-white border border-gray-200 hover:border-accent-primary/30 rounded-full transition-colors text-text-secondary hover:text-accent-primary"
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
+              {/* Example Queries List */}
+              <ul className="text-base text-text-secondary space-y-2 ml-1">
+                <li>- <button onClick={() => handleSendMessage('Show me performance metrics')} className="text-accent-primary hover:underline cursor-pointer">Performance</button></li>
+                <li>- <button onClick={() => handleSendMessage('Show me costs')} className="text-accent-primary hover:underline cursor-pointer">Costs</button></li>
+                <li>- <button onClick={() => handleSendMessage('Show latest deployments')} className="text-accent-primary hover:underline cursor-pointer">Latest deployments</button></li>
+                <li>- <button onClick={() => handleSendMessage('Show automations')} className="text-accent-primary hover:underline cursor-pointer">Automations</button></li>
+                <li>- <button onClick={() => handleSendMessage('Show AI usage')} className="text-accent-primary hover:underline cursor-pointer">AI usage</button></li>
+                <li>- <button onClick={() => handleSendMessage('Go back')} className="text-accent-primary hover:underline cursor-pointer">Back</button></li>
+                <li>- <button onClick={startListening} className="text-accent-primary hover:underline cursor-pointer">Voice</button></li>
+              </ul>
             </div>
 
             {/* Divider */}
@@ -2677,8 +2668,8 @@ function DashboardWithAgent() {
             <div className="flex-1 overflow-hidden">
               <CopilotChat
                 labels={{
-                  initial: "Let's get started. Ask or tell me something and I'll retrieve that data.",
-                  placeholder: 'Ask about CPU, costs, containers...',
+                  initial: '',
+                  placeholder: 'Ask about performance, costs, deployments...',
                 }}
                 className="h-full"
               />
