@@ -9,6 +9,7 @@
 - [x] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21) — [Details](milestones/v5.0-ROADMAP.md)
 - [ ] **Milestone 6: Claude Scraper Service** - Improve reliability, error handling, and expand scraper capabilities (Phases 22-27)
 - [x] **Milestone 7: Voice UI Restoration** - Restore voice input button as persistent floating element (Phase 28)
+- [ ] **Milestone 8: Scraper-to-EC2 Data Sync** - Decouple data collection from serving by syncing to EC2 (Phases 29-34)
 
 ---
 
@@ -640,3 +641,151 @@ Voice button is now a persistent floating element:
 - z-index: 50 to appear above all other content
 - Voice overlay shows with backdrop blur when voice is active
 - Works on all views: landing page, home, commands, and loading states
+
+---
+
+## Milestone 8: Scraper-to-EC2 Data Sync
+
+### Overview
+
+Decouple data collection (laptop) from data serving (EC2) by syncing scraped usage data to EC2. This enables the widget to work from anywhere, not just the laptop running the scraper.
+
+### Domain Expertise
+
+None - Express.js API patterns, HTTP client requests, standard error handling
+
+### Current Architecture
+
+- Scraper runs locally on laptop (has authenticated Claude Console session)
+- Scraper writes data to local JSON file
+- Widget reads from local file via server endpoint
+- **Problem**: Widget only works when running on same machine as scraper
+
+### Target Architecture
+
+- Scraper runs locally on laptop (keeps authenticated session)
+- After each successful scrape, POST data to EC2 endpoint
+- EC2 stores and serves the usage data
+- Widget fetches data from EC2 instead of local file
+- **Benefit**: Widget works from anywhere, data is centrally available
+
+### Phases
+
+- [ ] **Phase 29: EC2 API Endpoint** - Create POST endpoint to receive and store usage data
+- [ ] **Phase 30: Data Sync Client** - Add sync client to scraper that POSTs after each scrape
+- [ ] **Phase 31: EC2 Data Storage** - Implement storage layer with versioning and cleanup
+- [ ] **Phase 32: EC2 GET Endpoint** - Create GET endpoint to serve stored usage data
+- [ ] **Phase 33: Widget Migration** - Update widget to fetch from EC2 instead of local file
+- [ ] **Phase 34: Error Handling & Fallbacks** - Add retry logic, fallback behavior, health checks
+
+## Phase Details (Milestone 8)
+
+### Phase 29: EC2 API Endpoint
+
+**Goal**: Create a POST endpoint on EC2 to receive and store Claude usage data from the scraper
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (standard Express.js endpoint)
+
+Requirements:
+- POST /api/claude/usage endpoint
+- Accept JSON payload with usage data structure
+- Validate incoming data (schema validation)
+- Basic authentication (API key header)
+- Store to filesystem initially (simple JSON file)
+- Return success/error status
+
+Plans:
+- [ ] 29-01: TBD (run /gsd:plan-phase 29 to break down)
+
+### Phase 30: Data Sync Client
+
+**Goal**: Add HTTP client to scraper that POSTs data to EC2 after each successful scrape
+**Depends on**: Phase 29
+**Research**: Unlikely (fetch/axios patterns)
+
+Requirements:
+- Add POST request after successful scrape in auto-scraper.ts
+- Include API key from environment variable
+- Handle network errors gracefully (log but don't crash scraper)
+- Continue scraper operation even if sync fails
+- Log sync success/failure with timestamps
+
+Plans:
+- [ ] 30-01: TBD (run /gsd:plan-phase 30 to break down)
+
+### Phase 31: EC2 Data Storage
+
+**Goal**: Implement robust storage layer on EC2 with versioning and data retention
+**Depends on**: Phase 30
+**Research**: Unlikely (filesystem or simple database patterns)
+
+Requirements:
+- Store timestamped versions of usage data
+- Implement data retention policy (keep last 7 days or 100 records)
+- Auto-cleanup old data to prevent disk bloat
+- Atomic writes to prevent corruption
+- Optional: Add metadata (scraper version, upload timestamp)
+
+Plans:
+- [ ] 31-01: TBD (run /gsd:plan-phase 31 to break down)
+
+### Phase 32: EC2 GET Endpoint
+
+**Goal**: Create GET endpoint on EC2 to serve the latest usage data to clients
+**Depends on**: Phase 31
+**Research**: Unlikely (standard Express.js endpoint)
+
+Requirements:
+- GET /api/claude/usage endpoint
+- Return latest usage data as JSON
+- Add optional query params (timestamp, version)
+- Include metadata (lastUpdated, dataAge)
+- CORS configuration for frontend access
+- Cache headers for performance
+
+Plans:
+- [ ] 32-01: TBD (run /gsd:plan-phase 32 to break down)
+
+### Phase 33: Widget Migration
+
+**Goal**: Update ClaudeUsageCard to fetch data from EC2 instead of local file
+**Depends on**: Phase 32
+**Research**: Unlikely (update existing API call)
+
+Requirements:
+- Update API endpoint URL to point to EC2
+- Update environment variable (EC2_API_URL)
+- Test with EC2 data source
+- Verify auto-refresh still works
+- Update error messages to reflect remote data source
+
+Plans:
+- [ ] 33-01: TBD (run /gsd:plan-phase 33 to break down)
+
+### Phase 34: Error Handling & Fallbacks
+
+**Goal**: Add comprehensive error handling, retry logic, and fallback behaviors
+**Depends on**: Phase 33
+**Research**: Unlikely (standard error handling patterns)
+
+Requirements:
+- Scraper: Retry failed POSTs with exponential backoff
+- Scraper: Log sync failures but continue scraping
+- Widget: Fallback to "data unavailable" state on EC2 errors
+- Widget: Show data staleness warnings (if data >15 minutes old)
+- EC2: Health check endpoint for monitoring
+- Optional: Circuit breaker pattern for repeated failures
+
+Plans:
+- [ ] 34-01: TBD (run /gsd:plan-phase 34 to break down)
+
+## Progress (Milestone 8)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 29. EC2 API Endpoint | 0/? | Not started | - |
+| 30. Data Sync Client | 0/? | Not started | - |
+| 31. EC2 Data Storage | 0/? | Not started | - |
+| 32. EC2 GET Endpoint | 0/? | Not started | - |
+| 33. Widget Migration | 0/? | Not started | - |
+| 34. Error Handling & Fallbacks | 0/? | Not started | - |

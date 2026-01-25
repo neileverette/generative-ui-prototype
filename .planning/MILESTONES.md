@@ -1,5 +1,61 @@
 # Project Milestones: Console Landing Page
 
+## v8.0 Scraper-to-EC2 Data Sync (In Progress)
+
+**Goal:** Decouple data collection from serving by syncing scraped data to EC2
+
+**Phases planned:** 29-34 (6 phases)
+
+**Key objectives:**
+- Scraper POSTs data to EC2 endpoint after each successful scrape
+- EC2 stores and serves usage data via GET endpoint
+- Widget fetches from EC2 instead of local file
+- Add retry logic, error handling, and health checks
+- Enable widget to work from anywhere, not just scraper machine
+
+**Current status:** Milestone created, ready to plan Phase 29
+
+**Started:** 2026-01-24
+
+---
+
+## v7.0 Voice UI Restoration (Shipped: 2025-01-24)
+
+**Delivered:** Restored voice input button as persistent floating element
+
+**Phases completed:** 28 (1 phase)
+
+**Key accomplishments:**
+- Removed voice UI from DashboardCanvas conditional rendering
+- Added VoiceButton and VoiceOverlay as floating elements in App.tsx
+- Positioned at bottom center with fixed positioning
+- z-index: 50 to appear above all content
+- Works on all views (landing, home, commands, loading)
+
+**Git range:** TBD
+
+---
+
+## v6.0 Claude Scraper Service (In Progress)
+
+**Goal:** Improve scraper reliability, error handling, and expand capabilities
+
+**Phases planned:** 22-27 (6 phases)
+
+**Key objectives:**
+- Improve session persistence and auth reliability
+- Add comprehensive error handling with retry logic
+- Extract additional metrics (billing, plan details, historical data)
+- Add monitoring, logging, and health checks
+- Implement intelligent rate limiting
+- Production hardening with tests and documentation
+
+**Current status:** Phases 22-23 complete, paused for v8.0 priority
+
+**Started:** 2025-01-24
+
+---
+
 ## v5.0 Claude Data Hydration (Shipped: 2025-01-24)
 
 **Delivered:** ClaudeUsageCard now displays 100% real Console usage data via automated scraping

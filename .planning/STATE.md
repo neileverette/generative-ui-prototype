@@ -2,29 +2,27 @@
 
 ## Current Focus
 
-**Milestone**: v6.0 Claude Scraper Service
-**Phase**: 23 of 27 (Error Handling & Retry Logic)
-**Plan**: 23-02 Complete
-**Status**: Phase 23 Complete (2/2 plans), Ready for Phase 24
+**Milestone**: v8.0 Scraper-to-EC2 Data Sync
+**Phase**: 29 of 34 (EC2 API Endpoint)
+**Plan**: Not started
+**Status**: Ready to plan Phase 29
 
 ## Quick Context
 
-Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper foundation to add production-level reliability, monitoring, and expanded data capabilities.
+Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (laptop) from data serving (EC2) to enable the widget to work from anywhere.
 
-**Current scraper status:**
-- Playwright-based headless scraper
-- Extracts usage data from console.anthropic.com
-- Auto-refresh every 5 minutes
-- Basic error handling (stops after 3 consecutive failures)
-- Session management via persistent browser context
+**Current Architecture:**
+- Scraper runs locally on laptop (authenticated Console session)
+- Writes data to local JSON file
+- Widget reads from local file via server endpoint
+- Problem: Widget only works on same machine as scraper
 
-**v6.0 Goals:**
-- Improve session persistence and auth reliability
-- Add comprehensive error handling with retry logic
-- Extract additional metrics (billing, plan details, historical data)
-- Add monitoring, logging, and health checks
-- Implement intelligent rate limiting
-- Production hardening with tests and documentation
+**v8.0 Goals:**
+- POST scraped data to EC2 endpoint after each successful scrape
+- EC2 stores and serves usage data
+- Widget fetches from EC2 instead of local file
+- Add retry logic, error handling, and health checks
+- Enable widget to work from anywhere, not just scraper machine
 
 ## Milestone Progress
 
@@ -36,17 +34,19 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 | 4. Claude Code Widget Enhancements | Complete | 10-15 | 2025-01-24 |
 | 5. Claude Data Hydration | Complete | 16-21 | 2025-01-24 |
 | 6. Claude Scraper Service | In Progress | 22-27 | - |
+| 7. Voice UI Restoration | Complete | 28 | 2025-01-24 |
+| 8. Scraper-to-EC2 Data Sync | In Progress | 29-34 | - |
 
-## Phase Status (Milestone 6)
+## Phase Status (Milestone 8)
 
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
-| 22 | Session Management & Authentication | Complete (2/2 plans) | 2026-01-25 |
-| 23 | Error Handling & Retry Logic | Complete (2/2 plans) | 2026-01-25 |
-| 24 | Data Extraction Enhancement | Not started | - |
-| 25 | Monitoring & Health Checks | Not started | - |
-| 26 | Rate Limiting & Throttling | Not started | - |
-| 27 | Testing & Documentation | Not started | - |
+| 29 | EC2 API Endpoint | Not started | - |
+| 30 | Data Sync Client | Not started | - |
+| 31 | EC2 Data Storage | Not started | - |
+| 32 | EC2 GET Endpoint | Not started | - |
+| 33 | Widget Migration | Not started | - |
+| 34 | Error Handling & Fallbacks | Not started | - |
 
 ## Recent Commits
 
@@ -61,10 +61,10 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 
 ## Next Actions
 
-1. Plan next milestone (optional - project is feature-complete)
-2. Consider UI enhancements or additional widgets
-3. Monitor scraper stability and Console UI changes
-4. Migrate to official API when/if Anthropic releases one
+1. Plan Phase 29 (EC2 API Endpoint) - Create POST endpoint to receive usage data
+2. Research EC2 deployment patterns if needed
+3. Consider authentication strategy (API keys, JWT, etc.)
+4. Plan data schema and storage format
 
 ## Key Files
 
@@ -94,6 +94,16 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-24 - Milestone 8 Created
+- Created v8.0 Scraper-to-EC2 Data Sync milestone
+- 6 phases defined (29-34)
+- Focus: Decouple data collection from serving by syncing to EC2
+- Scraper POSTs data to EC2, widget fetches from EC2
+- Enables widget to work from anywhere, not just scraper machine
+- Phase directories created
+- ROADMAP.md and STATE.md updated
+- Ready to plan Phase 29 (EC2 API Endpoint)
 
 ### 2026-01-25 - Phase 23 Complete
 - Implemented graceful degradation for partial data extraction
