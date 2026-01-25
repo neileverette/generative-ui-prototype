@@ -240,7 +240,11 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   const ecrComponents = components.filter(c => c.component === 'ecr_summary');
 
   // Featured components go at the top in a 2-column layout (card on left, table on right)
-  const featuredIds = ['running-containers-count', 'containers-list-table', 'deployment-count', 'deployment-stats', 'deployments-table'];
+  const featuredIds = [
+    'running-containers-count', 'containers-list-table',
+    'deployment-count', 'deployment-stats', 'deployments-table',
+    'pipeline-success-rate', 'pipeline-avg-build-time', 'pipeline-builds-per-day', 'pipeline-health'
+  ];
   const featuredComponents = components
     .filter(c => featuredIds.includes(c.id))
     .sort((a, b) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
@@ -309,22 +313,41 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
           const isDeploymentView = featuredComponents.some(c => c.id === 'deployment-count' || c.id === 'deployment-stats');
 
           if (isDeploymentView) {
-            // Deployment view: 1 column for card, 3 columns for table (1/4 + 3/4)
+            // Deployment view: left column with stacked cards, right column with table
+            const deploymentCount = featuredComponents.find(c => c.id === 'deployment-count');
+            const pipelineCards = featuredComponents.filter(c => c.id.startsWith('pipeline-'));
+            const deploymentsTable = featuredComponents.find(c => c.component === 'data_table');
+
             return (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">
-                {featuredComponents.map((component, index) => {
-                  const Component = COMPONENT_REGISTRY[component.component];
-                  const isTable = component.component === 'data_table';
-                  return (
-                    <div
-                      key={component.id || index}
-                      className={`animate-slide-up h-full ${isTable ? 'md:col-span-3' : ''}`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      {Component ? <Component component={component} className="h-full" /> : null}
+                {/* Left column: deployment count + pipeline stats stacked */}
+                <div className="animate-slide-up flex flex-col gap-4">
+                  {deploymentCount && (() => {
+                    const Component = COMPONENT_REGISTRY[deploymentCount.component];
+                    return Component ? <Component component={deploymentCount} /> : null;
+                  })()}
+                  {pipelineCards.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {pipelineCards.map((card, idx) => {
+                        const Component = COMPONENT_REGISTRY[card.component];
+                        return Component ? (
+                          <div key={card.id} style={{ animationDelay: `${(idx + 1) * 50}ms` }}>
+                            <Component component={card} />
+                          </div>
+                        ) : null;
+                      })}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+                {/* Right column: deployments table */}
+                {deploymentsTable && (
+                  <div className="md:col-span-3 animate-slide-up" style={{ animationDelay: '100ms' }}>
+                    {(() => {
+                      const Component = COMPONENT_REGISTRY[deploymentsTable.component];
+                      return Component ? <Component component={deploymentsTable} className="h-full" /> : null;
+                    })()}
+                  </div>
+                )}
               </div>
             );
           }
