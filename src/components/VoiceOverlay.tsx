@@ -34,17 +34,17 @@ export function VoiceOverlay({ voiceState, transcript }: VoiceOverlayProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 pt-12">
       {/* Waveform Animation - Always visible when voice is active */}
-      <div className="flex flex-col items-center animate-fade-in mb-8" style={{ opacity: 0.6 }}>
+      <div className="flex flex-col items-center animate-fade-in mb-8">
         {/* Waveform Animation */}
-        <div className="flex items-center gap-1.5 mb-6">
+        <div className="flex items-center gap-3 mb-6">
           {[0, 100, 200, 300, 400, 500, 600].map((delay, i) => (
             <div
               key={i}
-              className="w-1.5 rounded-full animate-wave"
+              className="w-4 rounded-full animate-wave"
               style={{
                 animationDelay: `${delay}ms`,
-                height: [32, 64, 48, 80, 40, 64, 48][i],
-                background: 'linear-gradient(180deg, #22d3ee 0%, #7c3aed 100%)',
+                height: [64, 128, 96, 160, 80, 128, 96][i],
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
               }}
             />
           ))}
