@@ -9,6 +9,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { validateSession } from './session-validator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,11 +37,17 @@ export interface ConsoleUsageData {
 }
 
 async function scrape(): Promise<ConsoleUsageData> {
-  // Check if session exists
-  if (!fs.existsSync(USER_DATA_DIR)) {
-    throw new Error('No session found. Run login.ts first.');
+  // Validate session before scraping
+  console.log('[Scraper] Validating session...');
+  const validationResult = await validateSession();
+
+  if (!validationResult.valid) {
+    const errorMessage = `Session validation failed: ${validationResult.reason}. Run login.ts to re-authenticate.`;
+    console.error(`[Scraper] ${errorMessage}`);
+    throw new Error(errorMessage);
   }
 
+  console.log('[Scraper] Session validated successfully');
   console.log('[Scraper] Starting headless browser...');
 
   const browser = await chromium.launchPersistentContext(USER_DATA_DIR, {

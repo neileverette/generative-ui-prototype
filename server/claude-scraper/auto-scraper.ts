@@ -31,8 +31,21 @@ async function runScraper(): Promise<void> {
 
     consecutiveErrors = 0; // Reset error counter on success
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Check if this is a session validation failure
+    if (errorMessage.includes('Session validation failed')) {
+      console.error('[Auto-Scraper] Session validation failed!');
+      console.error('[Auto-Scraper] Your Claude Console session has expired or is invalid.');
+      console.error('[Auto-Scraper] Run the following command to re-authenticate:');
+      console.error('  npx ts-node server/claude-scraper/login.ts');
+      console.error('[Auto-Scraper] Stopping auto-scraper. Restart after re-authentication.');
+      process.exit(1);
+    }
+
+    // For other errors, use existing retry logic
     consecutiveErrors++;
-    console.error(`[Auto-Scraper] Error (${consecutiveErrors}/${MAX_ERRORS}):`, error instanceof Error ? error.message : error);
+    console.error(`[Auto-Scraper] Error (${consecutiveErrors}/${MAX_ERRORS}):`, errorMessage);
 
     if (consecutiveErrors >= MAX_ERRORS) {
       console.error(`[Auto-Scraper] Too many consecutive errors. Stopping.`);
