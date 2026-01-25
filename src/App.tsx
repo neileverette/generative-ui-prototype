@@ -2650,7 +2650,10 @@ function DashboardWithAgent() {
               </p>
 
               {/* Example Queries List */}
-              <ul className="text-base text-text-secondary space-y-2 ml-1">
+              <p className="text-base text-text-primary mb-3 font-bold">
+                Ask me things in voice or text like:
+              </p>
+              <ul className="text-base text-text-secondary space-y-1 ml-1">
                 <li>- <button onClick={() => handleSendMessage('Show me performance metrics')} className="text-accent-primary hover:underline cursor-pointer">Performance</button></li>
                 <li>- <button onClick={() => handleSendMessage('Show me costs')} className="text-accent-primary hover:underline cursor-pointer">Costs</button></li>
                 <li>- <button onClick={() => handleSendMessage('Show latest deployments')} className="text-accent-primary hover:underline cursor-pointer">Latest deployments</button></li>
