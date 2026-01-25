@@ -5,11 +5,11 @@
  * Usage: npx ts-node server/claude-scraper/scrape.ts
  */
 export interface ConsoleUsageData {
-    currentSession: {
+    currentSession?: {
         resetsIn: string;
         percentageUsed: number;
     };
-    weeklyLimits: {
+    weeklyLimits?: {
         allModels: {
             resetsIn: string;
             percentageUsed: number;
@@ -21,6 +21,8 @@ export interface ConsoleUsageData {
     };
     lastUpdated: string;
     error?: string;
+    extractionErrors?: Record<string, string>;
+    isPartial?: boolean;
 }
 declare function scrape(): Promise<ConsoleUsageData>;
 export { scrape };

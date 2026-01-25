@@ -44,115 +44,289 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { validateSession } from './session-validator.js';
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var USER_DATA_DIR = path.join(__dirname, '.session');
 var OUTPUT_FILE = path.join(__dirname, 'usage-data.json');
 function scrape() {
     return __awaiter(this, void 0, void 0, function () {
-        var browser, page, data, usageData;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var validationResult, reason, isLikelyExpired, isNetworkIssue, isCorrupted, recoveryResult, recoveryAction, errorMessage, errorMessage, errorMessage, errorMessage, browser, page, extractionErrors, sectionsExtracted, totalSections, currentSession, extracted, err_1, errorMsg, allModels, extracted, err_2, errorMsg, sonnetOnly, extracted, err_3, errorMsg, usageData, missing;
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    // Check if session exists
-                    if (!fs.existsSync(USER_DATA_DIR)) {
-                        throw new Error('No session found. Run login.ts first.');
+                    // Validate session before scraping
+                    console.log('[Scraper] Validating session...');
+                    return [4 /*yield*/, validateSession()];
+                case 1:
+                    validationResult = _b.sent();
+                    if (!!validationResult.valid) return [3 /*break*/, 4];
+                    reason = validationResult.reason || 'Unknown error';
+                    isLikelyExpired = reason.includes('Session expired') ||
+                        reason.includes('login page') ||
+                        reason.includes('Redirected to login');
+                    isNetworkIssue = reason.includes('Navigation timeout') ||
+                        reason.includes('network error');
+                    isCorrupted = reason.includes('Session directory') ||
+                        reason.includes('Failed to launch browser context');
+                    if (!isLikelyExpired) return [3 /*break*/, 3];
+                    console.log('[Scraper] Session appears expired. Attempting automatic recovery...');
+                    return [4 /*yield*/, validateSession(true)];
+                case 2:
+                    recoveryResult = _b.sent();
+                    if (recoveryResult.valid) {
+                        console.log('[Scraper] Session recovered successfully! Continuing with scrape...');
+                        // Fall through to continue scraping
                     }
+                    else {
+                        recoveryAction = (_a = recoveryResult.recoveryResult) === null || _a === void 0 ? void 0 : _a.action;
+                        errorMessage = void 0;
+                        if (recoveryAction === 'manual-login-required') {
+                            errorMessage = 'SESSION_EXPIRED: Auto-recovery failed. Manual login required. Run: npx tsx server/claude-scraper/login.ts';
+                        }
+                        else if (recoveryAction === 'network-error') {
+                            errorMessage = 'NETWORK_ERROR: Network timeout during recovery. Check connection and try again.';
+                        }
+                        else {
+                            errorMessage = "SESSION_EXPIRED: ".concat(reason, ". Run: npx tsx server/claude-scraper/login.ts");
+                        }
+                        console.error("[Scraper] ".concat(errorMessage));
+                        throw new Error(errorMessage);
+                    }
+                    return [3 /*break*/, 4];
+                case 3:
+                    if (isNetworkIssue) {
+                        errorMessage = 'NETWORK_ERROR: Network timeout accessing Console. Check connection and try again in 5 minutes.';
+                        console.error("[Scraper] ".concat(errorMessage));
+                        throw new Error(errorMessage);
+                    }
+                    else if (isCorrupted) {
+                        errorMessage = 'CONTEXT_CORRUPTED: Browser session corrupted. Delete server/claude-scraper/.session/ and run: npx tsx server/claude-scraper/login.ts';
+                        console.error("[Scraper] ".concat(errorMessage));
+                        throw new Error(errorMessage);
+                    }
+                    else {
+                        errorMessage = "UNKNOWN_ERROR: Session validation failed: ".concat(reason, ". Run: npx tsx server/claude-scraper/login.ts");
+                        console.error("[Scraper] ".concat(errorMessage));
+                        throw new Error(errorMessage);
+                    }
+                    _b.label = 4;
+                case 4:
+                    console.log('[Scraper] Session validated successfully');
                     console.log('[Scraper] Starting headless browser...');
                     return [4 /*yield*/, chromium.launchPersistentContext(USER_DATA_DIR, {
                             headless: true,
                             viewport: { width: 1280, height: 800 },
                         })];
-                case 1:
-                    browser = _a.sent();
-                    _a.label = 2;
-                case 2:
-                    _a.trys.push([2, , 7, 9]);
+                case 5:
+                    browser = _b.sent();
+                    _b.label = 6;
+                case 6:
+                    _b.trys.push([6, , 25, 27]);
                     return [4 /*yield*/, browser.newPage()];
-                case 3:
-                    page = _a.sent();
+                case 7:
+                    page = _b.sent();
                     console.log('[Scraper] Navigating to usage page...');
                     return [4 /*yield*/, page.goto('https://console.anthropic.com/settings/usage', {
                             waitUntil: 'networkidle',
                             timeout: 30000,
                         })];
-                case 4:
-                    _a.sent();
+                case 8:
+                    _b.sent();
                     // Wait for the usage data to load
                     return [4 /*yield*/, page.waitForSelector('text=Current session', { timeout: 10000 })];
-                case 5:
+                case 9:
                     // Wait for the usage data to load
-                    _a.sent();
+                    _b.sent();
                     console.log('[Scraper] Extracting usage data...');
+                    extractionErrors = {};
+                    sectionsExtracted = 0;
+                    totalSections = 3;
+                    currentSession = void 0;
+                    _b.label = 10;
+                case 10:
+                    _b.trys.push([10, 13, , 14]);
+                    return [4 /*yield*/, page.waitForSelector('text=Current session', { timeout: 5000 })];
+                case 11:
+                    _b.sent();
                     return [4 /*yield*/, page.evaluate(function () {
-                            var getText = function (selector) {
-                                var _a;
-                                var el = document.querySelector(selector);
-                                return ((_a = el === null || el === void 0 ? void 0 : el.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || '';
-                            };
-                            // Find all sections by looking for headers
                             var sections = document.querySelectorAll('div');
-                            var currentSession = { resetsIn: '', percentageUsed: 0 };
-                            var allModels = { resetsIn: '', percentageUsed: 0 };
-                            var sonnetOnly = { resetsIn: '', percentageUsed: 0 };
+                            var result = { resetsIn: '', percentageUsed: 0 };
                             sections.forEach(function (section) {
                                 var text = section.textContent || '';
-                                // Current session section
                                 if (text.includes('Current session') && text.includes('Resets in')) {
                                     var resetsMatch = text.match(/Resets in ([^%]+?)(?=\d+%)/);
                                     var percentMatch = text.match(/(\d+)%\s*used/);
                                     if (resetsMatch)
-                                        currentSession.resetsIn = resetsMatch[1].trim();
+                                        result.resetsIn = resetsMatch[1].trim();
                                     if (percentMatch)
-                                        currentSession.percentageUsed = parseInt(percentMatch[1], 10);
+                                        result.percentageUsed = parseInt(percentMatch[1], 10);
                                 }
-                                // Weekly - All models
+                            });
+                            return result.resetsIn ? result : null;
+                        })];
+                case 12:
+                    extracted = _b.sent();
+                    if (extracted) {
+                        currentSession = extracted;
+                    }
+                    if (currentSession) {
+                        sectionsExtracted++;
+                        console.log('[Scraper] Current session extracted successfully');
+                    }
+                    else {
+                        extractionErrors['currentSession'] = 'Data not found in DOM';
+                        console.warn('[Scraper] Current session: Data not found');
+                    }
+                    return [3 /*break*/, 14];
+                case 13:
+                    err_1 = _b.sent();
+                    errorMsg = err_1 instanceof Error ? err_1.message : String(err_1);
+                    extractionErrors['currentSession'] = errorMsg;
+                    console.warn('[Scraper] Current session extraction failed:', errorMsg);
+                    return [3 /*break*/, 14];
+                case 14:
+                    allModels = void 0;
+                    _b.label = 15;
+                case 15:
+                    _b.trys.push([15, 18, , 19]);
+                    return [4 /*yield*/, page.waitForSelector('text=All models', { timeout: 5000 })];
+                case 16:
+                    _b.sent();
+                    return [4 /*yield*/, page.evaluate(function () {
+                            var sections = document.querySelectorAll('div');
+                            var result = { resetsIn: '', percentageUsed: 0 };
+                            sections.forEach(function (section) {
+                                var text = section.textContent || '';
                                 if (text.includes('All models') && text.includes('Resets')) {
                                     var resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
                                     var percentMatch = text.match(/(\d+)%\s*used/);
                                     if (resetsMatch)
-                                        allModels.resetsIn = resetsMatch[1].trim();
+                                        result.resetsIn = resetsMatch[1].trim();
                                     if (percentMatch)
-                                        allModels.percentageUsed = parseInt(percentMatch[1], 10);
+                                        result.percentageUsed = parseInt(percentMatch[1], 10);
                                 }
-                                // Weekly - Sonnet only
+                            });
+                            return result.resetsIn ? result : null;
+                        })];
+                case 17:
+                    extracted = _b.sent();
+                    if (extracted) {
+                        allModels = extracted;
+                    }
+                    if (allModels) {
+                        sectionsExtracted++;
+                        console.log('[Scraper] Weekly all models extracted successfully');
+                    }
+                    else {
+                        extractionErrors['allModels'] = 'Data not found in DOM';
+                        console.warn('[Scraper] Weekly all models: Data not found');
+                    }
+                    return [3 /*break*/, 19];
+                case 18:
+                    err_2 = _b.sent();
+                    errorMsg = err_2 instanceof Error ? err_2.message : String(err_2);
+                    extractionErrors['allModels'] = errorMsg;
+                    console.warn('[Scraper] Weekly all models extraction failed:', errorMsg);
+                    return [3 /*break*/, 19];
+                case 19:
+                    sonnetOnly = void 0;
+                    _b.label = 20;
+                case 20:
+                    _b.trys.push([20, 23, , 24]);
+                    return [4 /*yield*/, page.waitForSelector('text=Sonnet only', { timeout: 5000 })];
+                case 21:
+                    _b.sent();
+                    return [4 /*yield*/, page.evaluate(function () {
+                            var sections = document.querySelectorAll('div');
+                            var result = { resetsIn: '', percentageUsed: 0 };
+                            sections.forEach(function (section) {
+                                var text = section.textContent || '';
                                 if (text.includes('Sonnet only') && text.includes('Resets')) {
                                     var resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
                                     var percentMatch = text.match(/(\d+)%\s*used/);
                                     if (resetsMatch)
-                                        sonnetOnly.resetsIn = resetsMatch[1].trim();
+                                        result.resetsIn = resetsMatch[1].trim();
                                     if (percentMatch)
-                                        sonnetOnly.percentageUsed = parseInt(percentMatch[1], 10);
+                                        result.percentageUsed = parseInt(percentMatch[1], 10);
                                 }
                             });
-                            return { currentSession: currentSession, allModels: allModels, sonnetOnly: sonnetOnly };
+                            return result.resetsIn ? result : null;
                         })];
-                case 6:
-                    data = _a.sent();
+                case 22:
+                    extracted = _b.sent();
+                    if (extracted) {
+                        sonnetOnly = extracted;
+                    }
+                    if (sonnetOnly) {
+                        sectionsExtracted++;
+                        console.log('[Scraper] Weekly Sonnet only extracted successfully');
+                    }
+                    else {
+                        extractionErrors['sonnetOnly'] = 'Data not found in DOM';
+                        console.warn('[Scraper] Weekly Sonnet only: Data not found');
+                    }
+                    return [3 /*break*/, 24];
+                case 23:
+                    err_3 = _b.sent();
+                    errorMsg = err_3 instanceof Error ? err_3.message : String(err_3);
+                    extractionErrors['sonnetOnly'] = errorMsg;
+                    console.warn('[Scraper] Weekly Sonnet only extraction failed:', errorMsg);
+                    return [3 /*break*/, 24];
+                case 24:
+                    // Check if we got any data at all
+                    if (sectionsExtracted === 0) {
+                        throw new Error('All sections failed to extract. Extraction errors: ' + JSON.stringify(extractionErrors));
+                    }
                     usageData = {
-                        currentSession: data.currentSession,
-                        weeklyLimits: {
-                            allModels: data.allModels,
-                            sonnetOnly: data.sonnetOnly,
-                        },
                         lastUpdated: new Date().toISOString(),
+                        isPartial: sectionsExtracted < totalSections,
                     };
+                    if (currentSession) {
+                        usageData.currentSession = currentSession;
+                    }
+                    if (allModels && sonnetOnly) {
+                        usageData.weeklyLimits = {
+                            allModels: allModels,
+                            sonnetOnly: sonnetOnly,
+                        };
+                    }
+                    else if (allModels || sonnetOnly) {
+                        // Partial weekly limits data - only include what we have
+                        usageData.weeklyLimits = {
+                            allModels: allModels || { resetsIn: '', percentageUsed: 0 },
+                            sonnetOnly: sonnetOnly || { resetsIn: '', percentageUsed: 0 },
+                        };
+                    }
+                    if (Object.keys(extractionErrors).length > 0) {
+                        usageData.extractionErrors = extractionErrors;
+                    }
+                    // Log result
+                    if (usageData.isPartial) {
+                        missing = Object.keys(extractionErrors).join(', ');
+                        console.log("[Scraper] Partial data extracted (".concat(sectionsExtracted, "/").concat(totalSections, " sections). Missing: ").concat(missing));
+                    }
+                    else {
+                        console.log("[Scraper] Scrape completed successfully (".concat(sectionsExtracted, "/").concat(totalSections, " sections)"));
+                    }
                     console.log('[Scraper] Data extracted:', JSON.stringify(usageData, null, 2));
                     // Save to file
                     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(usageData, null, 2));
                     console.log('[Scraper] Saved to:', OUTPUT_FILE);
                     return [2 /*return*/, usageData];
-                case 7: return [4 /*yield*/, browser.close()];
-                case 8:
-                    _a.sent();
+                case 25: return [4 /*yield*/, browser.close()];
+                case 26:
+                    _b.sent();
                     return [7 /*endfinally*/];
-                case 9: return [2 /*return*/];
+                case 27: return [2 /*return*/];
             }
         });
     });
 }
-// Run if called directly
-if (require.main === module) {
+export { scrape };
+// Run if called directly (ESM-compatible check)
+if (import.meta.url === "file://".concat(process.argv[1])) {
     scrape()
         .then(function () {
         console.log('[Scraper] Done!');
@@ -163,4 +337,3 @@ if (require.main === module) {
         process.exit(1);
     });
 }
-export { scrape };

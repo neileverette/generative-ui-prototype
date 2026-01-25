@@ -15,6 +15,8 @@ import { VoiceButton } from './components/VoiceButton';
 import { VoiceOverlay } from './components/VoiceOverlay';
 import { mcpClient } from './services/mcp-client';
 import { getCachedInsight, setCachedInsight } from './utils/insights-cache';
+import { useWidgetLoader } from './hooks/useWidgetLoader';
+import { RouteMatch } from './services/utterance-router';
 
 function DashboardWithAgent() {
   const [dashboardState, setDashboardState] = useState<DashboardState>({
@@ -206,6 +208,39 @@ function DashboardWithAgent() {
     onError: (error) => console.error('Voice error:', error),
   });
 
+  // Widget loader - handles utterance routing and dynamic widget loading
+  const { processUtterance, loadOverview } = useWidgetLoader({
+    onRouteMatch: (match: RouteMatch) => {
+      console.log('[WidgetLoader] Route matched:', match);
+
+      // For now, just set the view based on the route
+      // In the next phase, we'll actually load the widgets
+      if (match.view === 'landing') {
+        setCurrentView('landing');
+      } else {
+        setCurrentView('home');
+      }
+    },
+    onRouteNotFound: (utterance: string) => {
+      console.log('[WidgetLoader] No route found, falling back to chat:', utterance);
+      // Fall back to sending the message to chat
+      appendMessage(
+        new TextMessage({
+          role: MessageRole.User,
+          content: utterance,
+        })
+      );
+    },
+    onLoadStart: () => {
+      console.log('[WidgetLoader] Loading started');
+      setCurrentView('loading');
+    },
+    onLoadComplete: () => {
+      console.log('[WidgetLoader] Loading completed');
+    },
+    autoLoadOverview: true, // Automatically load overview on mount
+  });
+
   // Handler for command clicks - sends query to chat
   const handleCommandClick = useCallback(async (query: string) => {
     console.log('[handleCommandClick] Sending query:', query);
@@ -229,25 +264,28 @@ function DashboardWithAgent() {
   const handleNavigate = useCallback((destination: string) => {
     console.log('[handleNavigate] Navigating to:', destination);
     if (destination === 'back') {
-      setCurrentView('landing');
+      processUtterance('home');
       return;
     }
-    // Map destinations to chat queries
-    const destinationQueries: Record<string, string> = {
-      'costs': 'Show me AWS costs breakdown',
-      'system-metrics': 'Show all system metrics',
-      'automations': 'Show automation workflows status',
-      'applications': 'Show running containers',
-      'deployments': 'Show deployments',
-      'ai-usage': 'Show Claude usage',
+
+    // Use the routing system to determine which widgets to load
+    // Map destination names to utterances that the router understands
+    const destinationUtterances: Record<string, string> = {
+      'costs': 'costs',
+      'system-metrics': 'system metrics',
+      'automations': 'automations',
+      'applications': 'containers',
+      'deployments': 'deployments',
+      'ai-usage': 'ai usage',
     };
-    const query = destinationQueries[destination];
-    if (query) {
-      handleCommandClick(query);
+
+    const utterance = destinationUtterances[destination];
+    if (utterance) {
+      processUtterance(utterance);
     } else {
-      console.error('[handleNavigate] No query mapping for destination:', destination);
+      console.error('[handleNavigate] No utterance mapping for destination:', destination);
     }
-  }, [handleCommandClick]);
+  }, [processUtterance]);
 
   // Handler for sending messages from landing page
   const handleSendMessage = useCallback(async (message: string) => {
@@ -2384,12 +2422,12 @@ function DashboardWithAgent() {
 
   // Handler for going back to landing page
   const handleBackToHome = useCallback(() => {
-    setCurrentView('landing');
+    processUtterance('home');
     setDashboardState({
       components: [],
       lastUpdated: new Date().toISOString(),
     });
-  }, []);
+  }, [processUtterance]);
 
   // Handler for showing Claude Usage widget
   const handleShowClaudeUsage = useCallback(() => {

@@ -1,2 +1,3 @@
-2026/01/24-17:06:07.441 4405b77 Creating DB /Users/neileverette/Desktop/generative-ui-prototype/server/claude-scraper/.session/Default/shared_proto_db since it was missing.
-2026/01/24-17:06:07.444 4405b77 Reusing MANIFEST /Users/neileverette/Desktop/generative-ui-prototype/server/claude-scraper/.session/Default/shared_proto_db/MANIFEST-000001
+2026/01/24-22:53:20.345 449a055 Reusing MANIFEST /Users/neileverette/Desktop/generative-ui-prototype/server/claude-scraper/.session/Default/shared_proto_db/MANIFEST-000001
+2026/01/24-22:53:20.346 449a055 Recovering log #3
+2026/01/24-22:53:20.346 449a055 Reusing old log /Users/neileverette/Desktop/generative-ui-prototype/server/claude-scraper/.session/Default/shared_proto_db/000003.log 
