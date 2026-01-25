@@ -18,11 +18,11 @@ const USER_DATA_DIR = path.join(__dirname, '.session');
 const OUTPUT_FILE = path.join(__dirname, 'usage-data.json');
 
 export interface ConsoleUsageData {
-  currentSession: {
+  currentSession?: {
     resetsIn: string;
     percentageUsed: number;
   };
-  weeklyLimits: {
+  weeklyLimits?: {
     allModels: {
       resetsIn: string;
       percentageUsed: number;
@@ -34,6 +34,8 @@ export interface ConsoleUsageData {
   };
   lastUpdated: string;
   error?: string;
+  extractionErrors?: Record<string, string>;
+  isPartial?: boolean;
 }
 
 async function scrape(): Promise<ConsoleUsageData> {
@@ -118,58 +120,164 @@ async function scrape(): Promise<ConsoleUsageData> {
 
     console.log('[Scraper] Extracting usage data...');
 
-    // Extract the data from the page
-    const data = await page.evaluate(() => {
-      const getText = (selector: string): string => {
-        const el = document.querySelector(selector);
-        return el?.textContent?.trim() || '';
-      };
+    // Extract sections independently with error handling
+    const extractionErrors: Record<string, string> = {};
+    let sectionsExtracted = 0;
+    const totalSections = 3;
 
-      // Find all sections by looking for headers
-      const sections = document.querySelectorAll('div');
-      let currentSession = { resetsIn: '', percentageUsed: 0 };
-      let allModels = { resetsIn: '', percentageUsed: 0 };
-      let sonnetOnly = { resetsIn: '', percentageUsed: 0 };
+    // Extract current session
+    let currentSession: { resetsIn: string; percentageUsed: number } | undefined;
+    try {
+      await page.waitForSelector('text=Current session', { timeout: 5000 });
+      const extracted = await page.evaluate(() => {
+        const sections = document.querySelectorAll('div');
+        let result = { resetsIn: '', percentageUsed: 0 };
 
-      sections.forEach((section) => {
-        const text = section.textContent || '';
+        sections.forEach((section) => {
+          const text = section.textContent || '';
+          if (text.includes('Current session') && text.includes('Resets in')) {
+            const resetsMatch = text.match(/Resets in ([^%]+?)(?=\d+%)/);
+            const percentMatch = text.match(/(\d+)%\s*used/);
+            if (resetsMatch) result.resetsIn = resetsMatch[1].trim();
+            if (percentMatch) result.percentageUsed = parseInt(percentMatch[1], 10);
+          }
+        });
 
-        // Current session section
-        if (text.includes('Current session') && text.includes('Resets in')) {
-          const resetsMatch = text.match(/Resets in ([^%]+?)(?=\d+%)/);
-          const percentMatch = text.match(/(\d+)%\s*used/);
-          if (resetsMatch) currentSession.resetsIn = resetsMatch[1].trim();
-          if (percentMatch) currentSession.percentageUsed = parseInt(percentMatch[1], 10);
-        }
-
-        // Weekly - All models
-        if (text.includes('All models') && text.includes('Resets')) {
-          const resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
-          const percentMatch = text.match(/(\d+)%\s*used/);
-          if (resetsMatch) allModels.resetsIn = resetsMatch[1].trim();
-          if (percentMatch) allModels.percentageUsed = parseInt(percentMatch[1], 10);
-        }
-
-        // Weekly - Sonnet only
-        if (text.includes('Sonnet only') && text.includes('Resets')) {
-          const resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
-          const percentMatch = text.match(/(\d+)%\s*used/);
-          if (resetsMatch) sonnetOnly.resetsIn = resetsMatch[1].trim();
-          if (percentMatch) sonnetOnly.percentageUsed = parseInt(percentMatch[1], 10);
-        }
+        return result.resetsIn ? result : null;
       });
 
-      return { currentSession, allModels, sonnetOnly };
-    });
+      if (extracted) {
+        currentSession = extracted;
+      }
 
+      if (currentSession) {
+        sectionsExtracted++;
+        console.log('[Scraper] Current session extracted successfully');
+      } else {
+        extractionErrors['currentSession'] = 'Data not found in DOM';
+        console.warn('[Scraper] Current session: Data not found');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      extractionErrors['currentSession'] = errorMsg;
+      console.warn('[Scraper] Current session extraction failed:', errorMsg);
+    }
+
+    // Extract weekly all models
+    let allModels: { resetsIn: string; percentageUsed: number } | undefined;
+    try {
+      await page.waitForSelector('text=All models', { timeout: 5000 });
+      const extracted = await page.evaluate(() => {
+        const sections = document.querySelectorAll('div');
+        let result = { resetsIn: '', percentageUsed: 0 };
+
+        sections.forEach((section) => {
+          const text = section.textContent || '';
+          if (text.includes('All models') && text.includes('Resets')) {
+            const resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
+            const percentMatch = text.match(/(\d+)%\s*used/);
+            if (resetsMatch) result.resetsIn = resetsMatch[1].trim();
+            if (percentMatch) result.percentageUsed = parseInt(percentMatch[1], 10);
+          }
+        });
+
+        return result.resetsIn ? result : null;
+      });
+
+      if (extracted) {
+        allModels = extracted;
+      }
+
+      if (allModels) {
+        sectionsExtracted++;
+        console.log('[Scraper] Weekly all models extracted successfully');
+      } else {
+        extractionErrors['allModels'] = 'Data not found in DOM';
+        console.warn('[Scraper] Weekly all models: Data not found');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      extractionErrors['allModels'] = errorMsg;
+      console.warn('[Scraper] Weekly all models extraction failed:', errorMsg);
+    }
+
+    // Extract weekly Sonnet only
+    let sonnetOnly: { resetsIn: string; percentageUsed: number } | undefined;
+    try {
+      await page.waitForSelector('text=Sonnet only', { timeout: 5000 });
+      const extracted = await page.evaluate(() => {
+        const sections = document.querySelectorAll('div');
+        let result = { resetsIn: '', percentageUsed: 0 };
+
+        sections.forEach((section) => {
+          const text = section.textContent || '';
+          if (text.includes('Sonnet only') && text.includes('Resets')) {
+            const resetsMatch = text.match(/Resets\s+([A-Za-z]+\s+\d+:\d+\s*[AP]M)/i);
+            const percentMatch = text.match(/(\d+)%\s*used/);
+            if (resetsMatch) result.resetsIn = resetsMatch[1].trim();
+            if (percentMatch) result.percentageUsed = parseInt(percentMatch[1], 10);
+          }
+        });
+
+        return result.resetsIn ? result : null;
+      });
+
+      if (extracted) {
+        sonnetOnly = extracted;
+      }
+
+      if (sonnetOnly) {
+        sectionsExtracted++;
+        console.log('[Scraper] Weekly Sonnet only extracted successfully');
+      } else {
+        extractionErrors['sonnetOnly'] = 'Data not found in DOM';
+        console.warn('[Scraper] Weekly Sonnet only: Data not found');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      extractionErrors['sonnetOnly'] = errorMsg;
+      console.warn('[Scraper] Weekly Sonnet only extraction failed:', errorMsg);
+    }
+
+    // Check if we got any data at all
+    if (sectionsExtracted === 0) {
+      throw new Error('All sections failed to extract. Extraction errors: ' + JSON.stringify(extractionErrors));
+    }
+
+    // Build usage data with whatever we extracted
     const usageData: ConsoleUsageData = {
-      currentSession: data.currentSession,
-      weeklyLimits: {
-        allModels: data.allModels,
-        sonnetOnly: data.sonnetOnly,
-      },
       lastUpdated: new Date().toISOString(),
+      isPartial: sectionsExtracted < totalSections,
     };
+
+    if (currentSession) {
+      usageData.currentSession = currentSession;
+    }
+
+    if (allModels && sonnetOnly) {
+      usageData.weeklyLimits = {
+        allModels,
+        sonnetOnly,
+      };
+    } else if (allModels || sonnetOnly) {
+      // Partial weekly limits data - only include what we have
+      usageData.weeklyLimits = {
+        allModels: allModels || { resetsIn: '', percentageUsed: 0 },
+        sonnetOnly: sonnetOnly || { resetsIn: '', percentageUsed: 0 },
+      };
+    }
+
+    if (Object.keys(extractionErrors).length > 0) {
+      usageData.extractionErrors = extractionErrors;
+    }
+
+    // Log result
+    if (usageData.isPartial) {
+      const missing = Object.keys(extractionErrors).join(', ');
+      console.log(`[Scraper] Partial data extracted (${sectionsExtracted}/${totalSections} sections). Missing: ${missing}`);
+    } else {
+      console.log(`[Scraper] Scrape completed successfully (${sectionsExtracted}/${totalSections} sections)`);
+    }
 
     console.log('[Scraper] Data extracted:', JSON.stringify(usageData, null, 2));
 
