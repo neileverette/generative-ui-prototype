@@ -37,3 +37,16 @@ export interface StorageMetadata {
   totalVersionsCreated: number;
   totalVersionsDeleted: number;
 }
+
+export interface ConsoleUsageResponse extends ConsoleUsageDataSync {
+  // Metadata fields
+  isStale: boolean;           // true if data age > 10 minutes
+  ageMinutes: number;         // age since lastUpdated
+  source: 'ec2-sync';         // distinguish from local scraper
+  versionInfo: {
+    current: number;          // 1-based version number
+    total: number;            // total versions available
+    timestamp: string;        // file creation timestamp
+    filename: string;         // version filename
+  };
+}

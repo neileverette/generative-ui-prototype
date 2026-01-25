@@ -34,7 +34,7 @@ import {
   getAnthropicTokenUsage,
   validateAdminApiKey,
 } from './anthropic-admin-api.js';
-import type { ConsoleUsageDataSync, SyncResponse } from './claude-console-sync-types.js';
+import type { ConsoleUsageDataSync, SyncResponse, ConsoleUsageResponse } from './claude-console-sync-types.js';
 
 // Load environment variables
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -2046,7 +2046,7 @@ app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
 // =============================================================================
 
 import fs from 'fs';
-import { initializeStorage, saveVersion, cleanupOldVersions } from './console-storage.js';
+import { initializeStorage, saveVersion, cleanupOldVersions, listVersions, getStorageMetadata, parseTimestampFromFilename } from './console-storage.js';
 
 const CONSOLE_USAGE_FILE = path.join(__dirname, 'claude-scraper/usage-data.json');
 const CONSOLE_USAGE_SYNCED_FILE = path.join(__dirname, 'claude-scraper/console-usage-synced.json');
@@ -2153,6 +2153,249 @@ app.post('/api/claude-usage/console/refresh', async (_req, res) => {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Scrape failed',
       source: 'console-scraper',
+    });
+  }
+});
+
+// GET endpoint for serving synced Claude Console usage data
+// Supports optional query parameters for version-based and timestamp-based retrieval
+app.get('/api/claude/console-usage', async (req, res) => {
+  try {
+    const versionParam = req.query.version as string | undefined;
+    const timestampParam = req.query.timestamp as string | undefined;
+
+    // Get storage metadata for version info
+    const metadata = getStorageMetadata();
+
+    // If no versions exist, return 404
+    if (metadata.versionCount === 0) {
+      console.log('[Console GET] No versions available');
+      return res.status(404).json({
+        error: 'No usage data available',
+        message: 'No synced data found. The scraper needs to sync data first.',
+        versionsAvailable: 0,
+        source: 'ec2-sync',
+      });
+    }
+
+    let selectedFile: string | null = null;
+    let versionNumber: number = metadata.versionCount; // Default to latest
+
+    // CASE 1: Timestamp-based retrieval
+    if (timestampParam) {
+      console.log(`[Console GET] Timestamp query: ${timestampParam}`);
+
+      // Validate timestamp format
+      const requestedTime = new Date(timestampParam);
+      if (isNaN(requestedTime.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid timestamp format',
+          message: 'Timestamp must be a valid ISO 8601 date string',
+          example: '2025-01-24T10:00:00Z',
+        });
+      }
+
+      // Find nearest version by timestamp
+      const allVersions = listVersions();
+      if (allVersions.length === 0) {
+        return res.status(404).json({
+          error: 'No versions available',
+          versionsAvailable: 0,
+        });
+      }
+
+      const targetTime = requestedTime.getTime();
+      let closestFile: string | null = null;
+      let smallestDiff = Infinity;
+      let closestIndex = -1;
+
+      for (let i = 0; i < allVersions.length; i++) {
+        const filepath = allVersions[i];
+        const filename = path.basename(filepath);
+        const fileTime = parseTimestampFromFilename(filename);
+
+        if (fileTime) {
+          const diff = Math.abs(fileTime.getTime() - targetTime);
+          if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closestFile = filepath;
+            closestIndex = i;
+          }
+        }
+      }
+
+      if (!closestFile) {
+        return res.status(404).json({
+          error: 'No valid versions found',
+          versionsAvailable: allVersions.length,
+        });
+      }
+
+      selectedFile = closestFile;
+      versionNumber = allVersions.length - closestIndex; // Convert to 1-based
+      console.log(`[Console GET] Found nearest version: ${path.basename(closestFile)} (diff: ${Math.round(smallestDiff / 1000)}s)`);
+    }
+    // CASE 2: Version-based retrieval
+    else if (versionParam) {
+      console.log(`[Console GET] Version query: ${versionParam}`);
+
+      const versionInt = parseInt(versionParam, 10);
+      if (isNaN(versionInt)) {
+        return res.status(400).json({
+          error: 'Invalid version parameter',
+          message: 'Version must be an integer',
+          validRange: `1 to ${metadata.versionCount} or -1 to -${metadata.versionCount}`,
+        });
+      }
+
+      // Get all versions (sorted newest-first)
+      const allVersions = listVersions();
+
+      // Convert version number to array index
+      let arrayIndex: number;
+      if (versionInt < 0) {
+        // Negative indexing: -1 = latest, -2 = second-latest
+        arrayIndex = Math.abs(versionInt) - 1;
+      } else if (versionInt > 0) {
+        // Positive indexing: 1 = oldest, 2 = second-oldest
+        arrayIndex = allVersions.length - versionInt;
+      } else {
+        return res.status(400).json({
+          error: 'Invalid version number',
+          message: 'Version cannot be 0',
+          validRange: `1 to ${metadata.versionCount} or -1 to -${metadata.versionCount}`,
+        });
+      }
+
+      // Check if version is in range
+      if (arrayIndex < 0 || arrayIndex >= allVersions.length) {
+        return res.status(400).json({
+          error: 'Version out of range',
+          message: `Version ${versionInt} does not exist`,
+          validRange: `1 to ${metadata.versionCount} or -1 to -${metadata.versionCount}`,
+          versionsAvailable: metadata.versionCount,
+        });
+      }
+
+      selectedFile = allVersions[arrayIndex];
+      versionNumber = versionInt < 0 ? allVersions.length + versionInt + 1 : versionInt;
+      console.log(`[Console GET] Selected version ${versionNumber}: ${path.basename(selectedFile)}`);
+    }
+    // CASE 3: Latest version (no query params)
+    else {
+      console.log('[Console GET] Latest version request');
+
+      // Try to read from latest symlink file first
+      if (fs.existsSync(CONSOLE_USAGE_SYNCED_FILE)) {
+        selectedFile = CONSOLE_USAGE_SYNCED_FILE;
+      } else {
+        // Fall back to newest versioned file
+        const versions = listVersions(1);
+        if (versions.length > 0) {
+          selectedFile = versions[0];
+        }
+      }
+
+      if (!selectedFile) {
+        return res.status(404).json({
+          error: 'No data available',
+          message: 'No synced data found',
+          versionsAvailable: 0,
+        });
+      }
+
+      versionNumber = metadata.versionCount;
+    }
+
+    // Read the selected file
+    if (!fs.existsSync(selectedFile)) {
+      console.error(`[Console GET] File not found: ${selectedFile}`);
+      return res.status(500).json({
+        error: 'Data file not found',
+        message: 'Selected version file is missing',
+      });
+    }
+
+    const fileData = fs.readFileSync(selectedFile, 'utf-8');
+    const data: ConsoleUsageDataSync = JSON.parse(fileData);
+
+    // Calculate data freshness
+    const lastUpdatedDate = new Date(data.lastUpdated);
+    const ageMinutes = Math.round((Date.now() - lastUpdatedDate.getTime()) / 1000 / 60);
+    const isStale = ageMinutes > 10;
+
+    // Extract file timestamp
+    const filename = path.basename(selectedFile);
+    const fileTimestamp = parseTimestampFromFilename(filename);
+    const fileTimestampString = fileTimestamp ? fileTimestamp.toISOString() : data.lastUpdated;
+
+    // Build response with metadata
+    const response: ConsoleUsageResponse = {
+      ...data,
+      isStale,
+      ageMinutes,
+      source: 'ec2-sync',
+      versionInfo: {
+        current: versionNumber,
+        total: metadata.versionCount,
+        timestamp: fileTimestampString,
+        filename: filename,
+      },
+    };
+
+    // Set cache headers based on data freshness
+    let cacheControl: string;
+    if (ageMinutes < 5) {
+      // Fresh data: cache for 1 minute
+      cacheControl = 'public, max-age=60';
+    } else if (ageMinutes < 10) {
+      // Slightly stale: cache for 30 seconds
+      cacheControl = 'public, max-age=30';
+    } else {
+      // Very stale: don't cache
+      cacheControl = 'no-cache';
+    }
+
+    res.set('Cache-Control', cacheControl);
+
+    // Set Last-Modified header
+    res.set('Last-Modified', lastUpdatedDate.toUTCString());
+
+    // Set ETag based on lastUpdated timestamp
+    const etag = `"${lastUpdatedDate.getTime()}"`;
+    res.set('ETag', etag);
+
+    // Support conditional requests
+    const ifNoneMatch = req.headers['if-none-match'];
+    const ifModifiedSince = req.headers['if-modified-since'];
+
+    if (ifNoneMatch === etag) {
+      console.log('[Console GET] 304 Not Modified (ETag match)');
+      return res.status(304).end();
+    }
+
+    if (ifModifiedSince) {
+      const modifiedSinceDate = new Date(ifModifiedSince);
+      if (!isNaN(modifiedSinceDate.getTime()) && lastUpdatedDate <= modifiedSinceDate) {
+        console.log('[Console GET] 304 Not Modified (If-Modified-Since)');
+        return res.status(304).end();
+      }
+    }
+
+    // Log successful response
+    console.log(
+      `[Console GET] Served version ${versionNumber}/${metadata.versionCount} ` +
+      `(age: ${ageMinutes}min, stale: ${isStale}, ` +
+      `file: ${filename}, ` +
+      `params: ${versionParam ? `version=${versionParam}` : timestampParam ? `timestamp=${timestampParam}` : 'latest'})`
+    );
+
+    res.json(response);
+  } catch (error) {
+    console.error('[Console GET] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Internal server error',
+      source: 'ec2-sync',
     });
   }
 });
