@@ -42,9 +42,58 @@ async function scrape(): Promise<ConsoleUsageData> {
   const validationResult = await validateSession();
 
   if (!validationResult.valid) {
-    const errorMessage = `Session validation failed: ${validationResult.reason}. Run login.ts to re-authenticate.`;
-    console.error(`[Scraper] ${errorMessage}`);
-    throw new Error(errorMessage);
+    // Categorize error and determine if recovery should be attempted
+    const reason = validationResult.reason || 'Unknown error';
+
+    // Check if this is a likely expired session (not corrupted context or network issue)
+    const isLikelyExpired = reason.includes('Session expired') ||
+                           reason.includes('login page') ||
+                           reason.includes('Redirected to login');
+
+    const isNetworkIssue = reason.includes('Navigation timeout') ||
+                          reason.includes('network error');
+
+    const isCorrupted = reason.includes('Session directory') ||
+                       reason.includes('Failed to launch browser context');
+
+    // Attempt recovery for likely expired sessions
+    if (isLikelyExpired) {
+      console.log('[Scraper] Session appears expired. Attempting automatic recovery...');
+      const recoveryResult = await validateSession(true);
+
+      if (recoveryResult.valid) {
+        console.log('[Scraper] Session recovered successfully! Continuing with scrape...');
+        // Fall through to continue scraping
+      } else {
+        // Recovery failed
+        const recoveryAction = recoveryResult.recoveryResult?.action;
+        let errorMessage: string;
+
+        if (recoveryAction === 'manual-login-required') {
+          errorMessage = 'SESSION_EXPIRED: Auto-recovery failed. Manual login required. Run: npx tsx server/claude-scraper/login.ts';
+        } else if (recoveryAction === 'network-error') {
+          errorMessage = 'NETWORK_ERROR: Network timeout during recovery. Check connection and try again.';
+        } else {
+          errorMessage = `SESSION_EXPIRED: ${reason}. Run: npx tsx server/claude-scraper/login.ts`;
+        }
+
+        console.error(`[Scraper] ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
+    } else if (isNetworkIssue) {
+      const errorMessage = 'NETWORK_ERROR: Network timeout accessing Console. Check connection and try again in 5 minutes.';
+      console.error(`[Scraper] ${errorMessage}`);
+      throw new Error(errorMessage);
+    } else if (isCorrupted) {
+      const errorMessage = 'CONTEXT_CORRUPTED: Browser session corrupted. Delete server/claude-scraper/.session/ and run: npx tsx server/claude-scraper/login.ts';
+      console.error(`[Scraper] ${errorMessage}`);
+      throw new Error(errorMessage);
+    } else {
+      // Unknown error
+      const errorMessage = `UNKNOWN_ERROR: Session validation failed: ${reason}. Run: npx tsx server/claude-scraper/login.ts`;
+      console.error(`[Scraper] ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
   }
 
   console.log('[Scraper] Session validated successfully');
