@@ -57,10 +57,10 @@ const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon
 
 // Size configuration for the value display
 const SIZE_CONFIG = {
-  compact: { value: 'text-3xl', unit: 'text-base' },
-  default: { value: 'text-4xl', unit: 'text-lg' },
-  large: { value: 'text-5xl', unit: 'text-xl' },
-  xl: { value: 'text-7xl', unit: 'text-2xl' },
+  compact: { value: 'text-2xl', unit: 'text-sm', title: 'text-xs', hideIcon: true },
+  default: { value: 'text-4xl', unit: 'text-lg', title: 'widget-title', hideIcon: false },
+  large: { value: 'text-5xl', unit: 'text-xl', title: 'widget-title', hideIcon: false },
+  xl: { value: 'text-7xl', unit: 'text-2xl', title: 'widget-title', hideIcon: false },
 };
 
 export function MetricCard({ component, className }: MetricCardProps) {
@@ -76,18 +76,20 @@ export function MetricCard({ component, className }: MetricCardProps) {
   return (
     <div
       className={`
-        bg-white/70 backdrop-blur-sm rounded-xl p-5 border transition-all duration-300 shadow-sm
+        bg-white/70 backdrop-blur-sm rounded-xl ${size === 'compact' ? 'p-3' : 'p-5'} border transition-all duration-300 shadow-sm
         ${isCritical ? 'border-accent-danger/50 animate-pulse-critical' : 'border-white/50'}
         card-hover flex flex-col ${className || ''}
       `}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className={`flex items-start justify-between ${size === 'compact' ? 'mb-2' : 'mb-3'}`}>
         <div className="flex items-center gap-2 min-w-0">
-          <div className={`p-1.5 rounded-lg ${statusConfig.bgColor} flex-shrink-0`}>
-            <StatusIcon className={`w-4 h-4 ${statusConfig.color}`} />
-          </div>
-          <span className="widget-title truncate">{title}</span>
+          {!sizeConfig.hideIcon && (
+            <div className={`p-1.5 rounded-lg ${statusConfig.bgColor} flex-shrink-0`}>
+              <StatusIcon className={`w-4 h-4 ${statusConfig.color}`} />
+            </div>
+          )}
+          <span className={`${sizeConfig.title} truncate ${sizeConfig.hideIcon ? 'text-text-muted font-medium' : ''}`}>{title}</span>
         </div>
         {priority === 'critical' && (
           <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-accent-danger/20 text-accent-danger rounded-full flex-shrink-0">
