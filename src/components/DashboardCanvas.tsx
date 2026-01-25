@@ -240,7 +240,7 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
   const ecrComponents = components.filter(c => c.component === 'ecr_summary');
 
   // Featured components go at the top in a 2-column layout (card on left, table on right)
-  const featuredIds = ['running-containers-count', 'containers-list-table', 'deployment-count', 'deployments-table'];
+  const featuredIds = ['running-containers-count', 'containers-list-table', 'deployment-count', 'deployment-stats', 'deployments-table'];
   const featuredComponents = components
     .filter(c => featuredIds.includes(c.id))
     .sort((a, b) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
@@ -305,8 +305,8 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
       {/* Featured components - layout depends on content */}
       {featuredComponents.length > 0 && (
         (() => {
-          // Check if this is a deployment view (metric card + table)
-          const isDeploymentView = featuredComponents.some(c => c.id === 'deployment-count');
+          // Check if this is a deployment view (stats card + table)
+          const isDeploymentView = featuredComponents.some(c => c.id === 'deployment-count' || c.id === 'deployment-stats');
 
           if (isDeploymentView) {
             // Deployment view: 1 column for card, 3 columns for table (1/4 + 3/4)
@@ -398,9 +398,9 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
         </div>
       )}
 
-      {/* Widget components (claude_usage, ecr_summary) - single column, max width */}
+      {/* Widget components (claude_usage, anthropic_usage, ecr_summary) - 2-column layout to fill width */}
       {widgetComponents.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {widgetComponents.map((component, index) =>
             renderComponent(component, featuredComponents.length + cardGroupComponents.length + smallComponents.length + largeComponents.length + index)
           )}
