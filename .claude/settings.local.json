@@ -65,7 +65,9 @@
       "Bash(pbcopy)",
       "Bash(npx tsc:*)",
       "Bash(npx ts-node:*)",
-      "Bash(./scrape.sh)"
+      "Bash(./scrape.sh)",
+      "Bash(npm view:*)",
+      "Bash(npm root:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

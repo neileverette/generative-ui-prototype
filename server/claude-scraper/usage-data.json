@@ -1,17 +1,17 @@
 {
   "currentSession": {
-    "resetsIn": "4 hr 48 min",
-    "percentageUsed": 5
+    "resetsIn": "4 hr 10 min",
+    "percentageUsed": 21
   },
   "weeklyLimits": {
     "allModels": {
-      "resetsIn": "Thu 7:00 AM",
-      "percentageUsed": 28
+      "resetsIn": "Thu 6:59 AM",
+      "percentageUsed": 29
     },
     "sonnetOnly": {
-      "resetsIn": "Sat 12:00 PM",
-      "percentageUsed": 5
+      "resetsIn": "Sat 11:59 AM",
+      "percentageUsed": 7
     }
   },
-  "lastUpdated": "2026-01-25T01:11:39Z"
+  "lastUpdated": "2026-01-25T01:49:28Z"
 }
