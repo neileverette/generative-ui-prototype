@@ -35,20 +35,20 @@ export interface SessionRecoveryResult {
 
 /**
  * Attempts to recover an expired session by refreshing the browser
- * Opens browser in non-headless mode and waits for auto-refresh or manual login
+ * Runs headless first, only shows browser if manual login is required
  * @returns Recovery result indicating if session was recovered and what action is needed
  */
 export async function attemptSessionRecovery(): Promise<SessionRecoveryResult> {
   const timestamp = new Date().toISOString();
 
   console.log('[Session Recovery] Attempting session recovery...');
-  console.log('[Session Recovery] Opening browser (you may see a window briefly)...');
+  console.log('[Session Recovery] Opening browser in headless mode...');
 
   let browser;
   try {
-    // Launch browser with persistent context (headless: false so user can see if needed)
+    // Launch browser with persistent context (headless to avoid interrupting user)
     browser = await chromium.launchPersistentContext(USER_DATA_DIR, {
-      headless: false,
+      headless: true,
       viewport: { width: 1280, height: 800 },
     });
 
@@ -91,8 +91,9 @@ export async function attemptSessionRecovery(): Promise<SessionRecoveryResult> {
         };
       } else if (result === 'manual-login-required') {
         console.log('[Session Recovery] Manual login required.');
-        console.log('[Session Recovery] Browser window left open - complete login and close browser when done.');
-        // Keep browser open for user to complete login
+        console.log('[Session Recovery] Run: npx tsx server/claude-scraper/login.ts');
+        // Close headless browser - user needs to run login.ts
+        await browser.close();
         return {
           recovered: false,
           action: 'manual-login-required',
@@ -103,7 +104,8 @@ export async function attemptSessionRecovery(): Promise<SessionRecoveryResult> {
         const currentUrl = page.url();
         if (currentUrl.includes('login')) {
           console.log('[Session Recovery] Redirected to login page.');
-          console.log('[Session Recovery] Browser window left open - complete login and close browser when done.');
+          console.log('[Session Recovery] Run: npx tsx server/claude-scraper/login.ts');
+          await browser.close();
           return {
             recovered: false,
             action: 'manual-login-required',
