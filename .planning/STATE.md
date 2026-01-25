@@ -2,14 +2,14 @@
 
 ## Current Focus
 
-**Milestone**: v8.0 Scraper-to-EC2 Data Sync
-**Phase**: 33 of 34 (Widget Migration)
-**Plan**: 1/1 plans complete
-**Status**: Phase 33 complete, ready for Phase 34 (Error Handling & Fallbacks)
+**Milestone**: v9.0 Dynamic Widget Loading & Utterance Routing
+**Phase**: 40 of 41 (Chat-to-Routing Integration)
+**Plan**: 1/1 plans ready
+**Status**: Phase 40 planned, ready to execute
 
 ## Quick Context
 
-Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a chat-driven widget loading system where utterances control UI state and widget composition.
+Phase 40 connects chat input to the utterance routing system. Chat messages will route through the utterance-router BEFORE CopilotKit, enabling immediate widget loading for matching patterns and conversational fallback for non-matching queries.
 
 **Core Concept:**
 - Chat input drives the display, order, and composition of widgets
@@ -48,7 +48,7 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 | 37 | Initial Load with Invisible Utterance | Not started | - |
 | 38 | Dynamic Widget Loader | Not started | - |
 | 39 | Shortcut Group UI Integration | Not started | - |
-| 40 | Chat-to-Routing Integration | Not started | - |
+| 40 | Chat-to-Routing Integration | Planned | - |
 | 41 | Testing & Edge Cases | Not started | - |
 
 ## Recent Commits
@@ -64,10 +64,10 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 
 ## Next Actions
 
-1. Plan Phase 34 (Error Handling & Fallbacks) - Add retry logic, circuit breaker, health checks
-2. Execute Phase 34 to improve widget resilience
-3. Test error scenarios (network failures, stale data, missing data)
-4. Consider completing Milestone 8 or moving to Milestone 9 (Dynamic Widget Loading)
+1. Execute Phase 40 Plan 1 (Chat-to-Routing Integration) - 3 tasks: intercept chat, action deduplication, human verification
+2. Test chat routing with matching patterns ("show costs", "system metrics")
+3. Verify fallback to CopilotKit for non-matching queries
+4. Complete Phase 40, ready for Phase 41 (Testing & Edge Cases)
 
 ## Key Files
 
@@ -97,6 +97,18 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 34 Planned
+- Created executable plan for Phase 34: Error Handling & Fallbacks
+- Plan file: .planning/phases/34-error-handling-fallbacks/34-error-handling-fallbacks-PLAN.md
+- 7 tasks defined: health check, sync retry, widget retry, error responses, storage resilience, circuit breaker, logging
+- Architecture: Three-layer resilience (scraper sync, EC2 endpoints, widget frontend)
+- Key features: SyncRetryStrategy (3 attempts), Widget CircuitBreaker (60s cooldown), Health endpoint
+- Retry strategies: Sync (10s/20s/40s backoff), Widget (2s x 2 attempts)
+- Error handling: Network (retry), Auth (no retry), Storage (retry transient), Not Found (show empty state)
+- Production scenarios covered: EC2 unavailable, network timeout, disk full, stale data, circuit breaker
+- Testing plan: Chaos engineering approach with deliberate failures
+- Ready to execute Phase 34 (1/1 plan)
 
 ### 2026-01-25 - Phase 33 Complete
 - Successfully migrated ClaudeUsageCard widget to EC2 sync architecture
@@ -295,3 +307,16 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 
 ---
 *Last updated: 2026-01-25 after Phase 22 completion*
+
+### 2026-01-25 - Phase 40 Planned
+- Created executable plan for Phase 40: Chat-to-Routing Integration
+- Plan file: .planning/phases/40-chat-routing-integration/40-01-PLAN.md
+- 3 tasks defined: intercept chat messages, CopilotKit action deduplication, human verification
+- Architecture: Chat routes through utterance-router BEFORE CopilotKit
+- Matching utterances (confidence >= 40%) load widgets immediately via processUtterance()
+- Non-matching utterances (<40% confidence) fall back to CopilotKit for conversational responses
+- Voice input follows same routing logic as text chat
+- CopilotKit actions detect and prevent duplicate widget loading
+- Widgets appear immediately (no LLM wait) for routing patterns
+- Console logs show routing vs fallback decisions
+- Ready to execute Phase 40 (1/1 plan)
