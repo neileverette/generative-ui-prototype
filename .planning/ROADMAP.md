@@ -7,6 +7,7 @@
 - [x] **Milestone 3: Chat Panel Visual Enhancements** - Visual polish for the right-side chat panel (Phases 6-9)
 - [x] **Milestone 4: Claude Code Widget Enhancements** - Rebuild ClaudeUsageCard to match wireframe design (Phases 10-15)
 - [x] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21) — [Details](milestones/v5.0-ROADMAP.md)
+- [ ] **Milestone 6: Claude Scraper Service** - Improve reliability, error handling, and expand scraper capabilities (Phases 22-27)
 
 ---
 
@@ -418,3 +419,169 @@ ClaudeUsageCard now displays 100% real data from Claude Console with 5-minute au
 | 19. Weekly Limits Integration | 1/1 | Complete | 2025-01-24 |
 | 20. Plan & Billing Info Integration | 1/1 | Complete | 2025-01-24 |
 | 21. Cleanup & Testing | 1/1 | Complete | 2025-01-24 |
+
+---
+
+## Milestone 6: Claude Scraper Service (IN PROGRESS)
+
+### Overview
+
+Improve the reliability, error handling, and capabilities of the Claude Console scraper service. The current implementation uses Playwright to scrape usage data from console.anthropic.com, but needs enhancements for production robustness and expanded data collection.
+
+### Domain Expertise
+
+Playwright automation, error handling patterns, session management, production service reliability
+
+### Milestone Goal
+
+Build a production-ready scraper service that reliably extracts Claude Console data with comprehensive error handling, retry logic, monitoring, and expanded data capabilities.
+
+### Phases
+
+- [ ] **Phase 22: Session Management & Authentication** - Improve session persistence and auth reliability
+- [ ] **Phase 23: Error Handling & Retry Logic** - Add comprehensive error handling with smart retries
+- [ ] **Phase 24: Data Extraction Enhancement** - Extract additional usage metrics and billing data
+- [ ] **Phase 25: Monitoring & Health Checks** - Add logging, metrics, and health monitoring
+- [ ] **Phase 26: Rate Limiting & Throttling** - Implement intelligent rate limiting to avoid detection
+- [ ] **Phase 27: Testing & Documentation** - Add tests, improve docs, production hardening
+
+## Phase Details (Milestone 6)
+
+### Phase 22: Session Management & Authentication
+
+**Goal**: Improve session persistence and authentication reliability to reduce login failures
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (Playwright session management patterns)
+
+Current issues:
+- Session expires unpredictably requiring manual re-login
+- No automatic session refresh or validation
+- No graceful handling of auth failures
+
+Improvements needed:
+- Detect session expiration before scraping attempts
+- Implement automatic session validation on startup
+- Add session refresh mechanism when possible
+- Better error messages for auth-related failures
+
+Plans:
+- [ ] 22-01: TBD (run /gsd:plan-phase 22 to break down)
+
+### Phase 23: Error Handling & Retry Logic
+
+**Goal**: Add comprehensive error handling with intelligent retry logic
+**Depends on**: Phase 22
+**Research**: Unlikely (standard retry patterns)
+
+Current issues:
+- Simple error logging without recovery attempts
+- No retry logic for transient failures
+- Scraper stops completely after 3 consecutive errors
+- No differentiation between fatal vs recoverable errors
+
+Improvements needed:
+- Exponential backoff retry strategy
+- Distinguish between recoverable errors (network timeout) vs fatal (auth failure)
+- Circuit breaker pattern for repeated failures
+- Graceful degradation when partial data is available
+
+Plans:
+- [ ] 23-01: TBD (run /gsd:plan-phase 23 to break down)
+
+### Phase 24: Data Extraction Enhancement
+
+**Goal**: Extract additional usage metrics and billing data from Console
+**Depends on**: Phase 23
+**Research**: Likely (Console DOM structure, available data fields)
+
+Current data extracted:
+- Current session usage percentage and reset time
+- Weekly limits for all models and Sonnet-only
+- Last updated timestamp
+
+Additional data to extract:
+- Plan tier details (Pro, Team, Enterprise)
+- Billing cycle information
+- Cost per token/request metrics
+- Historical usage trends if available
+- API key usage breakdown
+- Organization-level usage (if applicable)
+
+Plans:
+- [ ] 24-01: TBD (run /gsd:plan-phase 24 to break down)
+
+### Phase 25: Monitoring & Health Checks
+
+**Goal**: Add comprehensive logging, metrics collection, and health monitoring
+**Depends on**: Phase 24
+**Research**: Unlikely (standard monitoring patterns)
+
+Improvements needed:
+- Structured logging with levels (info, warn, error)
+- Scraper performance metrics (duration, success rate)
+- Health check endpoint for service status
+- Alert on consecutive failures or stale data
+- Track scraper uptime and reliability statistics
+
+Plans:
+- [ ] 25-01: TBD (run /gsd:plan-phase 25 to break down)
+
+### Phase 26: Rate Limiting & Throttling
+
+**Goal**: Implement intelligent rate limiting to avoid detection and respect Console
+**Depends on**: Phase 25
+**Research**: Unlikely (rate limiting patterns)
+
+Current behavior:
+- Scrapes every 5 minutes unconditionally
+- No jitter or randomization in timing
+- Immediate consecutive requests on startup
+
+Improvements needed:
+- Add jitter to scrape intervals (4-6 minutes instead of exactly 5)
+- Respect rate limiting signals from Console
+- Implement request throttling during high-activity periods
+- Add configurable scrape intervals
+- Cache results to reduce unnecessary scrapes
+
+Plans:
+- [ ] 26-01: TBD (run /gsd:plan-phase 26 to break down)
+
+### Phase 27: Testing & Documentation
+
+**Goal**: Add comprehensive tests, improve documentation, and production hardening
+**Depends on**: Phase 26
+**Research**: Unlikely (standard testing practices)
+
+Testing needed:
+- Unit tests for data extraction logic
+- Integration tests with mock Console pages
+- Error scenario testing (auth failure, network issues)
+- Session expiration handling tests
+
+Documentation needed:
+- Architecture overview and data flow
+- Setup and configuration guide
+- Troubleshooting common issues
+- Environment variable reference
+- Monitoring and alerting setup
+
+Production hardening:
+- Environment-based configuration
+- Secrets management for credentials
+- Docker containerization option
+- Process manager integration (PM2, systemd)
+
+Plans:
+- [ ] 27-01: TBD (run /gsd:plan-phase 27 to break down)
+
+## Progress (Milestone 6)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 22. Session Management & Authentication | 0/? | Not started | - |
+| 23. Error Handling & Retry Logic | 0/? | Not started | - |
+| 24. Data Extraction Enhancement | 0/? | Not started | - |
+| 25. Monitoring & Health Checks | 0/? | Not started | - |
+| 26. Rate Limiting & Throttling | 0/? | Not started | - |
+| 27. Testing & Documentation | 0/? | Not started | - |

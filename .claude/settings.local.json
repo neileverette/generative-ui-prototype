@@ -62,7 +62,10 @@
       "Bash(gh workflow run:*)",
       "Bash(gh run watch:*)",
       "Bash(python /tmp/test_anthropic_card.py:*)",
-      "Bash(pbcopy)"
+      "Bash(pbcopy)",
+      "Bash(npx tsc:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(./scrape.sh)"
     ]
   },
   "enableAllProjectMcpServers": true,
