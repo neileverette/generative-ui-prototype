@@ -1,5 +1,5 @@
 import { DataTableComponent } from '../../types/a2ui';
-import { Table, ArrowUpDown } from 'lucide-react';
+import { Table, ArrowUpDown, ExternalLink } from 'lucide-react';
 
 interface DataTableProps {
   component: DataTableComponent;
@@ -106,6 +106,25 @@ export function DataTable({ component, className }: DataTableProps) {
       {rows.length === 0 && (
         <div className="p-8 text-center text-text-muted">
           No data available
+        </div>
+      )}
+
+      {/* Footer */}
+      {props.footer && (
+        <div className="px-4 py-3 border-t border-surface-3 bg-surface-3/20">
+          {props.footer.link ? (
+            <a
+              href={props.footer.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-accent-primary hover:underline"
+            >
+              {props.footer.text}
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <span className="text-sm text-text-muted">{props.footer.text}</span>
+          )}
         </div>
       )}
     </div>

@@ -2180,10 +2180,11 @@ function DashboardWithAgent() {
         return 'Deployments are already displayed on the dashboard.';
       }
 
-      // Trigger the deployments view
-      const deployments = deploymentsData.deployments;
-      const githubActionsCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
-      const manualCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
+      // Trigger the deployments view - show last 10 deployments
+      const allDeployments = deploymentsData.deployments;
+      const deployments = allDeployments.slice(0, 10);
+      const githubActionsCount = allDeployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
+      const manualCount = allDeployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
 
       const deploymentsTable: A2UIComponent = {
         id: 'deployments-table',
@@ -2192,7 +2193,7 @@ function DashboardWithAgent() {
         priority: 'high',
         timestamp: new Date().toISOString(),
         props: {
-          title: `Deployments (${deploymentsData.totalDeployments} total)`,
+          title: `Recent Deployments (${deployments.length} of ${deploymentsData.totalDeployments})`,
           columns: [
             { key: 'tag', label: 'Tag' },
             { key: 'name', label: 'Name' },
@@ -2216,6 +2217,10 @@ function DashboardWithAgent() {
             summary: d.summary,
             commits: d.commits.map((c) => `${c.hash}: ${c.message}`).join('\n'),
           })),
+          footer: {
+            text: 'View all deployments on GitHub',
+            link: 'https://github.com/neileverette/generative-ui-prototype/actions',
+          },
         },
       };
 
@@ -2248,9 +2253,10 @@ function DashboardWithAgent() {
 
   // Handler for Deployments
   const handleFetchDeployments = useCallback(() => {
-    const deployments = deploymentsData.deployments;
-    const githubActionsCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
-    const manualCount = deployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
+    const allDeployments = deploymentsData.deployments;
+    const deployments = allDeployments.slice(0, 10); // Show last 10 deployments
+    const githubActionsCount = allDeployments.filter((d: { trigger?: string }) => d.trigger === 'github_actions').length;
+    const manualCount = allDeployments.filter((d: { trigger?: string }) => d.trigger === 'manual').length;
 
     // Create a data table component for deployments
     const deploymentsTable: A2UIComponent = {
@@ -2260,7 +2266,7 @@ function DashboardWithAgent() {
       priority: 'high',
       timestamp: new Date().toISOString(),
       props: {
-        title: `Deployments (${deploymentsData.totalDeployments} total)`,
+        title: `Recent Deployments (${deployments.length} of ${deploymentsData.totalDeployments})`,
         columns: [
           { key: 'tag', label: 'Tag' },
           { key: 'name', label: 'Name' },
@@ -2284,6 +2290,10 @@ function DashboardWithAgent() {
           summary: d.summary,
           commits: d.commits.map((c) => `${c.hash}: ${c.message}`).join('\n'),
         })),
+        footer: {
+          text: 'View all deployments on GitHub',
+          link: 'https://github.com/neileverette/generative-ui-prototype/actions',
+        },
       },
     };
 

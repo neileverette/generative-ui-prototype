@@ -100,6 +100,10 @@ export interface DataTableComponent extends A2UIComponentBase {
     rows: Record<string, unknown>[];
     sortBy?: string;
     sortDirection?: 'asc' | 'desc';
+    footer?: {
+      text: string;
+      link?: string;
+    };
   };
 }
 
