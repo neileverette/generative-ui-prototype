@@ -466,7 +466,8 @@ Improvements needed:
 - Better error messages for auth-related failures
 
 Plans:
-- [ ] 22-01: TBD (run /gsd:plan-phase 22 to break down)
+- [x] 22-01: Implement session validation and health checking
+- [ ] 22-02: Session recovery and enhanced error handling
 
 ### Phase 23: Error Handling & Retry Logic
 
@@ -580,7 +581,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Session Management & Authentication | 0/? | Not started | - |
+| 22. Session Management & Authentication | 1/2 | In Progress | - |
 | 23. Error Handling & Retry Logic | 0/? | Not started | - |
 | 24. Data Extraction Enhancement | 0/? | Not started | - |
 | 25. Monitoring & Health Checks | 0/? | Not started | - |
