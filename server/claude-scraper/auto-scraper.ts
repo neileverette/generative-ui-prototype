@@ -12,6 +12,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { RetryStrategy, ErrorCategory } from './retry-strategy.js';
 import type { ConsoleUsageData } from './scrape.js';
+import { syncToEC2 } from './sync-client.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -98,6 +99,26 @@ async function runScraper(): Promise<void> {
       const newCircuitState = retryStrategy.getCircuitState();
       if (newCircuitState !== circuitState) {
         console.log(`[Auto-Scraper] Circuit state transition: ${circuitState} → ${newCircuitState}`);
+      }
+    }
+
+    // Sync to EC2 (continue scraper operation even if sync fails)
+    try {
+      const syncResponse = await syncToEC2(usageData);
+      if (syncResponse.success) {
+        console.log(`[Auto-Scraper] Synced to EC2 at ${syncResponse.timestamp}`);
+        if (VERBOSE) {
+          console.log('[Auto-Scraper] EC2 sync successful');
+        }
+      } else {
+        console.warn(`[Auto-Scraper] EC2 sync failed: ${syncResponse.message}`);
+      }
+    } catch (syncError) {
+      // Log but don't crash - scraper continues regardless
+      const syncErrorMsg = syncError instanceof Error ? syncError.message : String(syncError);
+      console.warn(`[Auto-Scraper] EC2 sync error: ${syncErrorMsg}`);
+      if (VERBOSE) {
+        console.warn('[Auto-Scraper] Scraper will continue despite sync failure');
       }
     }
   } catch (error) {
