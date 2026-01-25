@@ -26,14 +26,31 @@ interface PlanConfig {
 export function ClaudeUsageCard({
   className,
 }: ClaudeUsageCardComponentProps) {
-  const [claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(null);
-  const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
-  const [consoleUsage, setConsoleUsage] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Check cache synchronously before first render to prevent loading flash
+  const initialCache = getCachedWidget<{
+    claudeCode: ClaudeCodeUsage;
+    planConfig: PlanConfig | null;
+    consoleUsage: any | null;
+  }>('claude-usage', 'console');
+
+  const [claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(
+    initialCache?.data.claudeCode || null
+  );
+  const [planConfig, setPlanConfig] = useState<PlanConfig | null>(
+    initialCache?.data.planConfig || null
+  );
+  const [consoleUsage, setConsoleUsage] = useState<any | null>(
+    initialCache?.data.consoleUsage || null
+  );
+  const [isLoading, setIsLoading] = useState(!initialCache); // Only load if no cache
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isStale, setIsStale] = useState(false);
-  const [cachedEntry, setCachedEntry] = useState<WidgetCacheEntry | null>(null);
+  const [isStale, setIsStale] = useState(
+    initialCache ? isCacheStale(initialCache, 5 * 60 * 1000) : false
+  );
+  const [cachedEntry, setCachedEntry] = useState<WidgetCacheEntry | null>(
+    initialCache || null
+  );
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const handleRefresh = async () => {
@@ -62,9 +79,9 @@ export function ClaudeUsageCard({
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (skipLoadingState = false) => {
     // Only show loading state if we don't have cached data
-    if (!claudeCode) {
+    if (!skipLoadingState) {
       setIsLoading(true);
     }
     setError(null);
@@ -82,6 +99,7 @@ export function ClaudeUsageCard({
       if (console) setConsoleUsage(console);
 
       // Update cache with fresh data
+      console.log('[ClaudeUsageCard] Saving fresh data to cache');
       setCachedWidget('claude-usage', 'console', {
         claudeCode: usage,
         planConfig: config?.plan || null,
@@ -103,30 +121,17 @@ export function ClaudeUsageCard({
   };
 
   useEffect(() => {
-    // Check cache first before fetching
-    const cached = getCachedWidget<{
-      claudeCode: ClaudeCodeUsage;
-      planConfig: PlanConfig | null;
-      consoleUsage: any | null;
-    }>('claude-usage', 'console');
-
-    if (cached) {
-      // Display cached data immediately
-      setClaudeCode(cached.data.claudeCode);
-      if (cached.data.planConfig) setPlanConfig(cached.data.planConfig);
-      if (cached.data.consoleUsage) setConsoleUsage(cached.data.consoleUsage);
-      setIsLoading(false);
-
-      // Check if cache is stale (>5 minutes)
-      const stale = isCacheStale(cached, 5 * 60 * 1000);
-      setIsStale(stale);
-      setCachedEntry(cached);
+    // Cache already loaded during initialization
+    // Fetch fresh data in background (with or without loading state based on cache)
+    if (initialCache) {
+      console.log('[ClaudeUsageCard] Cache hit! Fetching fresh data in background...');
+      fetchData(true); // Skip loading state
+    } else {
+      console.log('[ClaudeUsageCard] Cache miss. Fetching fresh data with loading state');
+      fetchData(false); // Show loading state
     }
 
-    // Fetch fresh data in background
-    fetchData();
-
-    const interval = setInterval(() => fetchData(), 5 * 60 * 1000);
+    const interval = setInterval(() => fetchData(false), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
