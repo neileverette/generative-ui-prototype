@@ -1,0 +1,8 @@
+{
+  "plan": {
+    "name": "Max",
+    "tier": "5x",
+    "cost": "$100/month",
+    "nextBillingDate": "2026-02-01"
+  }
+}

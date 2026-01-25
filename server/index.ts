@@ -2037,6 +2037,127 @@ app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
   }
 });
 
+// =============================================================================
+// CLAUDE CONSOLE SCRAPED DATA
+// =============================================================================
+
+import fs from 'fs';
+
+const CONSOLE_USAGE_FILE = path.join(__dirname, 'claude-scraper/usage-data.json');
+const CLAUDE_CONFIG_FILE = path.join(__dirname, 'claude-config.json');
+
+// Get Claude plan config
+app.get('/api/claude-usage/config', async (_req, res) => {
+  try {
+    if (!fs.existsSync(CLAUDE_CONFIG_FILE)) {
+      return res.status(404).json({ error: 'No config file. Create server/claude-config.json' });
+    }
+    const config = JSON.parse(fs.readFileSync(CLAUDE_CONFIG_FILE, 'utf-8'));
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read config' });
+  }
+});
+
+// POST scraped Claude Console usage data (from bookmarklet)
+app.post('/api/claude-usage/console', async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data.currentSession || !data.weeklyLimits) {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
+
+    const usageData = {
+      ...data,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    fs.writeFileSync(CONSOLE_USAGE_FILE, JSON.stringify(usageData, null, 2));
+    console.log('[Console Usage] Data saved:', usageData);
+
+    res.json({ success: true, data: usageData });
+  } catch (error) {
+    console.error('[Console Usage] Error saving:', error);
+    res.status(500).json({ error: 'Failed to save data' });
+  }
+});
+
+// Get scraped Claude Console usage data
+app.get('/api/claude-usage/console', async (_req, res) => {
+  try {
+    if (!fs.existsSync(CONSOLE_USAGE_FILE)) {
+      return res.status(404).json({
+        error: 'No scraped data available. Run the scraper first.',
+        instructions: 'npx ts-node server/claude-scraper/login.ts (once), then npx ts-node server/claude-scraper/scrape.ts',
+      });
+    }
+
+    const data = JSON.parse(fs.readFileSync(CONSOLE_USAGE_FILE, 'utf-8'));
+
+    // Check if data is stale (older than 10 minutes)
+    const lastUpdated = new Date(data.lastUpdated);
+    const ageMinutes = (Date.now() - lastUpdated.getTime()) / 1000 / 60;
+    const isStale = ageMinutes > 10;
+
+    res.json({
+      ...data,
+      isStale,
+      ageMinutes: Math.round(ageMinutes),
+      source: 'console-scraper',
+    });
+  } catch (error) {
+    console.error('[Console Usage] Error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      source: 'console-scraper',
+    });
+  }
+});
+
+// Trigger on-demand scrape
+app.post('/api/claude-usage/console/refresh', async (_req, res) => {
+  try {
+    console.log('[Console Usage] Manual refresh triggered...');
+
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+
+    const scrapeScript = path.join(__dirname, 'claude-scraper/scrape-silent.sh');
+
+    // Run scraper
+    const { stdout, stderr } = await execAsync(`bash "${scrapeScript}"`);
+
+    if (stderr) {
+      console.error('[Console Usage] Scraper stderr:', stderr);
+    }
+
+    console.log('[Console Usage] Scraper output:', stdout.trim());
+
+    // Read the fresh data
+    if (!fs.existsSync(CONSOLE_USAGE_FILE)) {
+      return res.status(500).json({ error: 'Scrape failed - no data file created' });
+    }
+
+    const data = JSON.parse(fs.readFileSync(CONSOLE_USAGE_FILE, 'utf-8'));
+
+    res.json({
+      ...data,
+      isStale: false,
+      ageMinutes: 0,
+      source: 'console-scraper',
+      refreshedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Console Usage] Refresh error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Scrape failed',
+      source: 'console-scraper',
+    });
+  }
+});
+
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));

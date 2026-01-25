@@ -366,6 +366,77 @@ class MCPClient {
   }
 
   /**
+   * Get Claude plan config (user-configured)
+   */
+  async getClaudeConfig(): Promise<{
+    plan: { name: string; tier: string; cost: string; nextBillingDate: string };
+  }> {
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/config`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch Claude config');
+    }
+    return response.json();
+  }
+
+  /**
+   * Get Claude Console usage data (scraped from console.anthropic.com)
+   * Returns real usage limits and percentages
+   */
+  async getConsoleUsage(): Promise<{
+    currentSession: { resetsIn: string; percentageUsed: number };
+    weeklyLimits: {
+      allModels: { resetsIn: string; percentageUsed: number };
+      sonnetOnly: { resetsIn: string; percentageUsed: number };
+    };
+    lastUpdated: string;
+    isStale: boolean;
+    ageMinutes: number;
+    source: string;
+    error?: string;
+  }> {
+    console.log('[MCP Client] getConsoleUsage via direct API');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/console`);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to fetch console usage: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Trigger immediate scrape of Claude Console usage data
+   * Returns fresh data after scraping
+   */
+  async refreshConsoleUsage(): Promise<{
+    currentSession: { resetsIn: string; percentageUsed: number };
+    weeklyLimits: {
+      allModels: { resetsIn: string; percentageUsed: number };
+      sonnetOnly: { resetsIn: string; percentageUsed: number };
+    };
+    lastUpdated: string;
+    isStale: boolean;
+    ageMinutes: number;
+    source: string;
+    refreshedAt: string;
+  }> {
+    console.log('[MCP Client] refreshConsoleUsage - triggering immediate scrape');
+
+    const response = await fetch(`${this.directBaseUrl}/claude-usage/console/refresh`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(error.error || `Failed to refresh console usage: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
    * Get API Credits usage data (manual entry or Admin API)
    * Uses direct API endpoint
    */

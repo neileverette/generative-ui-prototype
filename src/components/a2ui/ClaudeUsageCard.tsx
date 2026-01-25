@@ -2,43 +2,56 @@ import { useState, useEffect } from 'react';
 import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { mcpClient } from '../../services/mcp-client';
-import { RefreshCw, Zap } from 'lucide-react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 
 interface ClaudeUsageCardComponentProps {
   component: ClaudeUsageComponent;
   className?: string;
 }
 
-// Main component - rebuilt to match wireframe
+interface PlanConfig {
+  name: string;
+  tier: string;
+  cost: string;
+  nextBillingDate: string;
+}
+
 export function ClaudeUsageCard({
-  component,
   className,
 }: ClaudeUsageCardComponentProps) {
-  const { props } = component;
-
-  // State for Claude Code data (fetch kept for future use, using fake data for now)
-  const [_claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(props.claudeCode);
-  const [isLoading, setIsLoading] = useState(!props.claudeCode);
+  const [claudeCode, setClaudeCode] = useState<ClaudeCodeUsage | null>(null);
+  const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
+  const [consoleUsage, setConsoleUsage] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch Claude Code usage data
   const fetchData = async (isManualRefresh = false) => {
-    if (props.claudeCode && !isManualRefresh) return;
-
     if (isManualRefresh) {
       setIsRefreshing(true);
     } else {
       setIsLoading(true);
     }
+    setError(null);
 
     try {
-      const usage = await mcpClient.getClaudeCodeUsage(undefined, 'max5');
+      // For manual refresh, trigger immediate scrape. Otherwise use cached data.
+      const consolePromise = isManualRefresh
+        ? mcpClient.refreshConsoleUsage().catch(() => null)
+        : mcpClient.getConsoleUsage().catch(() => null);
+
+      const [usage, config, console] = await Promise.all([
+        mcpClient.getClaudeCodeUsage(undefined, 'max5'),
+        mcpClient.getClaudeConfig().catch(() => null),
+        consolePromise,
+      ]);
+
       setClaudeCode(usage);
+      if (config?.plan) setPlanConfig(config.plan);
+      if (console) setConsoleUsage(console);
     } catch (err) {
       console.error('[ClaudeUsageCard] Error fetching usage:', err);
-      if (!isManualRefresh) {
-        setClaudeCode(MOCK_CLAUDE_CODE_USAGE);
-      }
+      setError(err instanceof Error ? err.message : 'Failed to fetch usage data');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -47,45 +60,56 @@ export function ClaudeUsageCard({
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(() => fetchData(), 5 * 60 * 1000);
+    const interval = setInterval(() => fetchData(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [props.claudeCode]);
+  }, []);
 
-  // Fake data to match Claude Console (until real API available)
-  const fiveHourPercentage = 9;
-  const fiveHourRemaining = 91;
-  const resetsIn = '4h 38m';
-  const showWarning = false;
-  // Determine bar color based on percentage
-  const barColor = fiveHourPercentage > 80 ? 'bg-red-500' : fiveHourPercentage > 60 ? 'bg-amber-500' : 'bg-blue-500';
-
-  // Fake weekly data (matching Claude Console)
-  const weeklyPercentage = 22;
-  const weeklyRemaining = 78;
-
+  // Loading state
   if (isLoading) {
     return (
       <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-24 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
           <div className="h-3 bg-gray-200 rounded-full w-full mb-4"></div>
-          <div className="h-3 bg-gray-200 rounded-full w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
         </div>
       </div>
     );
   }
 
+  // Error state
+  if (error || !claudeCode) {
+    return (
+      <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <span className="widget-title">Claude</span>
+          <button
+            onClick={() => fetchData(true)}
+            disabled={isRefreshing}
+            className="p-1 text-text-muted hover:text-accent-primary transition-colors disabled:opacity-50"
+            title="Retry"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+        <div className="flex items-center gap-2 text-red-600">
+          <AlertCircle className="w-4 h-4" />
+          <span className="text-sm">{error || 'No usage data available'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // MAGENTA = No API access, needs Console scraping
+  // Data from JSONL files (real)
+  const fiveHour = claudeCode.fiveHourWindow;
+
   return (
     <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
-      {/* Header with refresh button */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-accent-primary" />
-          <span className="widget-title">Claude Code</span>
-        </div>
+        <span className="widget-title">Claude</span>
         <button
           onClick={() => fetchData(true)}
           disabled={isRefreshing}
@@ -96,92 +120,167 @@ export function ClaudeUsageCard({
         </button>
       </div>
 
-      {/* Plan Info Section */}
+      {/* Plan Info - from config file */}
       <div className="mb-4 space-y-0.5">
         <p className="text-gray-700">
-          <span className="font-bold">Plan:</span> Claude Code Max (5x tier, based on $100/month)
+          <span className="font-bold">Plan:</span>{' '}
+          {planConfig ? (
+            <span>{planConfig.name} ({planConfig.tier} tier, {planConfig.cost})</span>
+          ) : (
+            <span className="text-gray-400">Not configured</span>
+          )}
         </p>
         <p className="text-gray-700">
-          <span className="font-bold">Cost:</span> $100/m
+          <span className="font-bold">Cost:</span>{' '}
+          {planConfig ? planConfig.cost : <span className="text-gray-400">--</span>}
         </p>
         <p className="text-gray-700">
-          <span className="font-bold">Next bill:</span> [mo]/[day]
+          <span className="font-bold">Next bill:</span>{' '}
+          {planConfig ? (
+            new Date(planConfig.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          ) : (
+            <span className="text-gray-400">--</span>
+          )}
         </p>
       </div>
 
-      {/* Warning Banner - shows when approaching limit */}
-      {showWarning && (
-        <p className="text-red-500 font-medium mb-4">
-          Approaching usage limit
-        </p>
-      )}
-
-      {/* 5-Hour Limit Section */}
+      {/* Current Session - from Console Scraper */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-gray-900">5-hour limit</span>
-          <span className="text-gray-600">Resets in {resetsIn}</span>
+          <span className="font-bold text-gray-900">Current session</span>
+          {consoleUsage ? (
+            <span className="text-gray-600">Resets in {consoleUsage.currentSession.resetsIn}</span>
+          ) : (
+            <span className="text-gray-400">--</span>
+          )}
         </div>
-
-        {/* Progress Bar */}
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${barColor}`}
-            style={{ width: `${fiveHourPercentage}%` }}
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              width: consoleUsage ? `${consoleUsage.currentSession.percentageUsed}%` : '0%',
+              backgroundColor: consoleUsage?.currentSession.percentageUsed > 80 ? '#ef4444' : '#3b82f6',
+            }}
           />
         </div>
-
-        {/* Usage Text */}
         <p className="text-right text-gray-600">
-          {Math.round(fiveHourPercentage)}% used / {Math.round(fiveHourRemaining)}% remain
+          {consoleUsage ? `${consoleUsage.currentSession.percentageUsed}% used` : 'No data'}
+          {consoleUsage?.isStale && <span className="text-amber-600 ml-2">(stale)</span>}
         </p>
       </div>
 
-      {/* Weekly Limit Section (Fake Data) */}
-      <div>
+      {/* Weekly Limits - from Console Scraper */}
+      <div className="mb-6">
+        <span className="font-bold text-gray-900 block mb-3">Weekly limits</span>
+
+        {/* All Models */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-gray-700">All models</span>
+            {consoleUsage ? (
+              <span className="text-gray-600 text-sm">Resets {consoleUsage.weeklyLimits.allModels.resetsIn}</span>
+            ) : (
+              <span className="text-gray-400 text-sm">--</span>
+            )}
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: consoleUsage ? `${consoleUsage.weeklyLimits.allModels.percentageUsed}%` : '0%',
+                backgroundColor: consoleUsage?.weeklyLimits.allModels.percentageUsed > 80 ? '#ef4444' : '#3b82f6',
+              }}
+            />
+          </div>
+          <p className="text-right text-sm text-gray-600">
+            {consoleUsage ? `${consoleUsage.weeklyLimits.allModels.percentageUsed}% used` : 'No data'}
+          </p>
+        </div>
+
+        {/* Sonnet Only */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-gray-700">Sonnet only</span>
+            {consoleUsage ? (
+              <span className="text-gray-600 text-sm">Resets {consoleUsage.weeklyLimits.sonnetOnly.resetsIn}</span>
+            ) : (
+              <span className="text-gray-400 text-sm">--</span>
+            )}
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: consoleUsage ? `${consoleUsage.weeklyLimits.sonnetOnly.percentageUsed}%` : '0%',
+                backgroundColor: consoleUsage?.weeklyLimits.sonnetOnly.percentageUsed > 80 ? '#ef4444' : '#3b82f6',
+              }}
+            />
+          </div>
+          <p className="text-right text-sm text-gray-600">
+            {consoleUsage ? `${consoleUsage.weeklyLimits.sonnetOnly.percentageUsed}% used` : 'No data'}
+          </p>
+        </div>
+      </div>
+
+      {/* 5-Hour Window - REAL DATA from JSONL */}
+      <div className="mb-6 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-gray-900">Weekly limit</span>
-          <span className="text-gray-600">Resets in 4 days</span>
+          <span className="font-bold text-gray-900">5-hour window (local)</span>
+          <span className="text-gray-600">Resets in {fiveHour.resetsIn}</span>
         </div>
-
-        {/* Progress Bar */}
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
-          <div
-            className="h-full bg-gray-400 rounded-full transition-all duration-300"
-            style={{ width: `${weeklyPercentage}%` }}
-          />
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>{fiveHour.used.toLocaleString()} tokens used</span>
+          <span>Limit: <span className="text-fuchsia-600">{fiveHour.limit.toLocaleString()}</span></span>
         </div>
+      </div>
 
-        {/* Usage Text */}
-        <p className="text-right text-gray-600">
-          {weeklyPercentage}% used / {weeklyRemaining}% remain
-        </p>
+      {/* Today - REAL DATA from JSONL */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-gray-900">Today</span>
+          <span className="text-gray-600">
+            {claudeCode.today.tokens.toLocaleString()} tokens · {claudeCode.today.sessions} sessions
+          </span>
+        </div>
+      </div>
+
+      {/* Month to Date - REAL DATA from JSONL */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-gray-900">Month to date</span>
+          <span className="text-gray-600">
+            {claudeCode.monthToDate.tokens.toLocaleString()} tokens · {claudeCode.monthToDate.sessions} sessions
+          </span>
+        </div>
+      </div>
+
+      {/* Model Breakdown - REAL DATA from JSONL */}
+      {claudeCode.modelBreakdown.length > 0 && (
+        <div className="pt-4 border-t border-gray-200">
+          <span className="font-bold text-gray-900 block mb-2">Model breakdown</span>
+          <div className="space-y-2">
+            {claudeCode.modelBreakdown.map((model) => (
+              <div key={model.model} className="flex items-center justify-between text-sm">
+                <span className="capitalize text-gray-700">{model.model}</span>
+                <span className="text-gray-600">
+                  {model.tokens.toLocaleString()} tokens ({model.percentage.toFixed(0)}%)
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Last Updated */}
+      <div className="text-xs text-gray-400 mt-4 text-right space-y-1">
+        <p>JSONL: {new Date(claudeCode.lastUpdated).toLocaleTimeString()}</p>
+        {consoleUsage && (
+          <p>
+            Console: {new Date(consoleUsage.lastUpdated).toLocaleTimeString()}
+            {consoleUsage.isStale && <span className="text-amber-600 ml-1">⚠️ Stale ({consoleUsage.ageMinutes}min)</span>}
+          </p>
+        )}
       </div>
     </div>
   );
 }
-
-// Mock data for testing
-export const MOCK_CLAUDE_CODE_USAGE: ClaudeCodeUsage = {
-  plan: 'max5',
-  fiveHourWindow: {
-    used: 34320,
-    limit: 44000,
-    percentage: 78,
-    resetsAt: new Date(Date.now() + 2 * 60 * 60 * 1000 + 14 * 60 * 1000).toISOString(),
-    resetsIn: '2h 14m',
-  },
-  today: {
-    tokens: 156000,
-    estimatedCost: 4.2,
-    sessions: 12,
-  },
-  monthToDate: {
-    tokens: 1850000,
-    estimatedCost: 48.5,
-    sessions: 89,
-  },
-  modelBreakdown: [],
-  lastUpdated: new Date().toISOString(),
-  dataSource: 'ccusage',
-};

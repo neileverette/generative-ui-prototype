@@ -1,0 +1,17 @@
+{
+  "currentSession": {
+    "resetsIn": "4 hr 50 min",
+    "percentageUsed": 3
+  },
+  "weeklyLimits": {
+    "allModels": {
+      "resetsIn": "Thu 6:59 AM",
+      "percentageUsed": 28
+    },
+    "sonnetOnly": {
+      "resetsIn": "Sat 11:59 AM",
+      "percentageUsed": 5
+    }
+  },
+  "lastUpdated": "2026-01-25T01:09:07Z"
+}
