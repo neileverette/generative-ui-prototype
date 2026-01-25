@@ -100,7 +100,7 @@ export function MetricCard({ component, className }: MetricCardProps) {
 
       {/* Value */}
       <div className={`flex items-baseline gap-1.5 ${size === 'xl' ? 'mb-4 flex-1' : 'mb-2'}`}>
-        <span className={`${sizeConfig.value} font-semibold text-text-primary`}>
+        <span className={`${sizeConfig.value} font-semibold ${typeof value === 'string' ? statusConfig.color : 'text-text-primary'}`}>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {unit && (
