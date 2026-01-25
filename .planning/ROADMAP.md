@@ -9,7 +9,7 @@
 - [x] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21) — [Details](milestones/v5.0-ROADMAP.md)
 - [ ] **Milestone 6: Claude Scraper Service** - Improve reliability, error handling, and expand scraper capabilities (Phases 22-27)
 - [x] **Milestone 7: Voice UI Restoration** - Restore voice input button as persistent floating element (Phase 28)
-- [ ] **Milestone 8: Scraper-to-EC2 Data Sync** - Decouple data collection from serving by syncing to EC2 (Phases 29-34)
+- [x] **Milestone 8: Scraper-to-EC2 Data Sync** - Decouple data collection from serving by syncing to EC2 (Phases 29-34)
 - [ ] **Milestone 9: Dynamic Widget Loading & Utterance Routing** - Chat-driven widget loading system with groups and shortcuts (Phases 35-41)
 - [ ] **Milestone 10: Widget Data Caching** - Browser-side caching layer for instant widget loading with background updates (Phases 42-48)
 
@@ -646,11 +646,15 @@ Voice button is now a persistent floating element:
 
 ---
 
-## Milestone 8: Scraper-to-EC2 Data Sync
+## Milestone 8: Scraper-to-EC2 Data Sync ✅ Complete
 
 ### Overview
 
 Decouple data collection (laptop) from data serving (EC2) by syncing scraped usage data to EC2. This enables the widget to work from anywhere, not just the laptop running the scraper.
+
+**Status**: Complete (2026-01-25)
+**Duration**: 6 phases (29-34)
+**Achievement**: Production-ready scraper-to-EC2 sync with comprehensive error handling
 
 ### Domain Expertise
 
@@ -678,7 +682,7 @@ None - Express.js API patterns, HTTP client requests, standard error handling
 - [x] **Phase 31: EC2 Data Storage** - Implement storage layer with versioning and cleanup
 - [x] **Phase 32: EC2 GET Endpoint** - Create GET endpoint to serve stored usage data
 - [x] **Phase 33: Widget Migration** - Update widget to fetch from EC2 instead of local file
-- [ ] **Phase 34: Error Handling & Fallbacks** - Add retry logic, fallback behavior, health checks
+- [x] **Phase 34: Error Handling & Fallbacks** - Add retry logic, fallback behavior, health checks
 
 ## Phase Details (Milestone 8)
 
