@@ -2239,7 +2239,7 @@ function DashboardWithAgent() {
         },
       };
 
-      // CI/CD pipeline stats - 2x2 grid of small metric cards
+      // CI/CD pipeline stats - 2x2 grid of compact metric cards
       const successRateCard: A2UIComponent = {
         id: 'pipeline-success-rate',
         component: 'metric_card' as const,
@@ -2250,8 +2250,8 @@ function DashboardWithAgent() {
           title: 'Success Rate',
           value: 80,
           unit: '%',
+          size: 'compact' as const,
           status: 'healthy' as const,
-          description: '27 of 34 builds passed',
         },
       };
 
@@ -2265,8 +2265,8 @@ function DashboardWithAgent() {
           title: 'Avg Build Time',
           value: '2m 44s',
           unit: '',
+          size: 'compact' as const,
           status: 'healthy' as const,
-          description: 'Fast CI/CD pipeline',
         },
       };
 
@@ -2280,8 +2280,8 @@ function DashboardWithAgent() {
           title: 'Builds/Day',
           value: 3,
           unit: '',
+          size: 'compact' as const,
           status: 'healthy' as const,
-          description: 'Average deployment frequency',
         },
       };
 
@@ -2295,8 +2295,8 @@ function DashboardWithAgent() {
           title: 'Pipeline Health',
           value: 'Healthy',
           unit: '',
+          size: 'compact' as const,
           status: 'healthy' as const,
-          description: 'Stable CI/CD with quick iterations',
         },
       };
 
@@ -2371,7 +2371,7 @@ function DashboardWithAgent() {
       },
     };
 
-    // CI/CD pipeline stats - 2x2 grid of small metric cards
+    // CI/CD pipeline stats - 2x2 grid of compact metric cards
     const successRateCard: A2UIComponent = {
       id: 'pipeline-success-rate',
       component: 'metric_card' as const,
@@ -2382,8 +2382,8 @@ function DashboardWithAgent() {
         title: 'Success Rate',
         value: 80,
         unit: '%',
+        size: 'compact' as const,
         status: 'healthy' as const,
-        description: '27 of 34 builds passed',
       },
     };
 
@@ -2397,8 +2397,8 @@ function DashboardWithAgent() {
         title: 'Avg Build Time',
         value: '2m 44s',
         unit: '',
+        size: 'compact' as const,
         status: 'healthy' as const,
-        description: 'Fast CI/CD pipeline',
       },
     };
 
@@ -2412,8 +2412,8 @@ function DashboardWithAgent() {
         title: 'Builds/Day',
         value: 3,
         unit: '',
+        size: 'compact' as const,
         status: 'healthy' as const,
-        description: 'Average deployment frequency',
       },
     };
 
@@ -2427,8 +2427,8 @@ function DashboardWithAgent() {
         title: 'Pipeline Health',
         value: 'Healthy',
         unit: '',
+        size: 'compact' as const,
         status: 'healthy' as const,
-        description: 'Stable CI/CD with quick iterations',
       },
     };
 
