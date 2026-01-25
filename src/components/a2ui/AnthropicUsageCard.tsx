@@ -9,7 +9,14 @@ import { useState, useEffect } from 'react';
 import { ApiTokenUsage } from '../../types/claude-usage';
 import { formatTokens } from '../../config/claude-usage.config';
 import { mcpClient } from '../../services/mcp-client';
-import { Activity, RefreshCw, Info, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Activity, RefreshCw, Info, ArrowDownToLine, ArrowUpFromLine, Clock } from 'lucide-react';
+import {
+  getCachedWidget,
+  setCachedWidget,
+  isCacheStale,
+  getCacheAge,
+  WidgetCacheEntry,
+} from '../../utils/widget-cache';
 
 // =============================================================================
 // SHARED COMPONENTS
@@ -98,30 +105,61 @@ interface AnthropicUsageCardProps {
 }
 
 export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
-  const [data, setData] = useState<ApiTokenUsage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Check cache synchronously before first render to prevent loading flash
+  const initialCache = getCachedWidget<ApiTokenUsage>('anthropic-usage', 'api-tokens');
+
+  const [data, setData] = useState<ApiTokenUsage | null>(initialCache?.data || null);
+  const [isLoading, setIsLoading] = useState(!initialCache); // Only load if no cache
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isStale, setIsStale] = useState(
+    initialCache ? isCacheStale(initialCache, 5 * 60 * 1000) : false
+  );
+  const [cachedEntry, setCachedEntry] = useState<WidgetCacheEntry | null>(
+    initialCache || null
+  );
 
   // Fetch token data from Admin API
-  const fetchData = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setIsRefreshing(true);
-    } else {
+  const fetchData = async (skipLoadingState = false) => {
+    // Only show loading state if we don't have cached data
+    if (!skipLoadingState) {
       setIsLoading(true);
     }
+    setIsRefreshing(skipLoadingState);
     setError(null);
 
     try {
       const response = await mcpClient.getApiTokens();
       if (response.hasAdminApi) {
         setData(response);
+
+        // Update cache with fresh data
+        console.log('[AnthropicUsageCard] Saving fresh data to cache');
+        setCachedWidget('anthropic-usage', 'api-tokens', response);
+
+        // Fresh data is not stale
+        setIsStale(false);
+        setCachedEntry(null);
       } else {
-        setError('Admin API not configured');
+        // Only set error if we don't have cached data to fall back on
+        if (!data) {
+          setError('Admin API not configured');
+        } else {
+          // Mark cached data as stale since API is not configured
+          setIsStale(true);
+          setCachedEntry(initialCache);
+        }
       }
     } catch (err) {
       console.error('[AnthropicUsageCard] Error fetching data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      // Only set error if we don't have cached data to fall back on
+      if (!data) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } else {
+        // Mark cached data as stale since fetch failed
+        setIsStale(true);
+        setCachedEntry(initialCache);
+      }
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -133,9 +171,15 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
     fetchData(true);
   };
 
-  // Fetch once on mount, manual refresh only
+  // Fetch on mount with caching logic
   useEffect(() => {
-    fetchData();
+    if (initialCache) {
+      console.log('[AnthropicUsageCard] Cache hit! Fetching fresh data in background...');
+      fetchData(true); // Skip loading state
+    } else {
+      console.log('[AnthropicUsageCard] Cache miss. Fetching fresh data with loading state');
+      fetchData(false); // Show loading state
+    }
   }, []);
 
   // Loading state
@@ -191,8 +235,8 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
     );
   }
 
-  // Error state (no Admin API configured)
-  if (error || !data) {
+  // Error state (no Admin API configured) - only show if we have NO cached data
+  if (!data) {
     return (
       <div
         className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm overflow-hidden ${className || ''}`}
@@ -204,7 +248,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
           </div>
           <div className="text-center py-6 text-text-muted">
             <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium mb-1">Admin API Not Configured</p>
+            <p className="text-sm font-medium mb-1">{error || 'Admin API Not Configured'}</p>
             <p className="text-xs">
               Set ANTHROPIC_ADMIN_API_KEY environment variable to enable API usage tracking.
             </p>
@@ -237,6 +281,17 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
             Admin API
           </span>
         </div>
+
+        {/* Staleness Indicator */}
+        {isStale && cachedEntry && (
+          <div className="flex items-center gap-1.5 mb-2 text-amber-600">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs">
+              Cached {Math.floor(getCacheAge(cachedEntry) / 1000 / 60)}m ago
+              {isRefreshing && ' • Updating...'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Today Section */}
