@@ -32,6 +32,7 @@ interface SpeechRecognitionErrorEvent extends Event {
 interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   lang: string;
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
@@ -132,10 +133,12 @@ export function useVoiceDictation(config: UseVoiceDictationConfig = {}): UseVoic
     // Configuration
     recognition.continuous = false;      // Auto-stop after pause
     recognition.interimResults = true;   // Get live results
+    recognition.maxAlternatives = 1;     // Reduce overhead - only need best match
     recognition.lang = language;
 
     // Handle results - fires multiple times during speech
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      console.log('[Voice] onresult fired at', Date.now());
       let interimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -160,6 +163,7 @@ export function useVoiceDictation(config: UseVoiceDictationConfig = {}): UseVoic
 
     // Speech started - user began talking
     recognition.onspeechstart = () => {
+      console.log('[Voice] Speech started');
       setVoiceState('transcribing');
     };
 
@@ -170,7 +174,9 @@ export function useVoiceDictation(config: UseVoiceDictationConfig = {}): UseVoic
 
     // Cleanup when recognition ends (auto or manual)
     recognition.onend = () => {
+      console.log('[Voice] Recognition ended');
       const finalText = finalTranscriptRef.current.trim() || transcript.trim();
+      console.log('[Voice] Final text:', finalText);
 
       // Send to chat if we have text
       if (finalText) {
@@ -186,7 +192,7 @@ export function useVoiceDictation(config: UseVoiceDictationConfig = {}): UseVoic
 
     // Error handling
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[Voice] Error:', event.error, event.message);
 
       // Don't show error for "no-speech" - that's expected if user doesn't speak
       if (event.error !== 'no-speech') {
@@ -203,8 +209,10 @@ export function useVoiceDictation(config: UseVoiceDictationConfig = {}): UseVoic
 
     // Start recognition
     try {
+      console.log('[Voice] Starting recognition at', Date.now());
       recognition.start();
       recognitionRef.current = recognition;
+      console.log('[Voice] Recognition started');
     } catch (err) {
       const errorMsg = `Failed to start speech recognition: ${err}`;
       setError(errorMsg);

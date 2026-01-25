@@ -68,7 +68,8 @@
       "Bash(./scrape.sh)",
       "Bash(npm view:*)",
       "Bash(npm root:*)",
-      "Bash(expr:*)"
+      "Bash(expr:*)",
+      "Bash(gh api:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

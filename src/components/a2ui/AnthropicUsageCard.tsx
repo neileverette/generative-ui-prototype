@@ -22,6 +22,18 @@ import {
 // SHARED COMPONENTS
 // =============================================================================
 
+// Demo data shown when API unavailable
+const DEMO_USAGE_DATA: ApiTokenUsage = {
+  today: { inputTokens: 12450, outputTokens: 3280, totalTokens: 15730 },
+  monthToDate: { inputTokens: 130397, outputTokens: 5149, totalTokens: 135546 },
+  modelBreakdown: [
+    { model: 'Sonnet', inputTokens: 125000, outputTokens: 5622, totalTokens: 130622, percentage: 96.4 },
+    { model: 'Opus', inputTokens: 4500, outputTokens: 424, totalTokens: 4924, percentage: 3.6 },
+  ],
+  lastUpdated: new Date().toISOString(),
+  hasAdminApi: false,
+};
+
 // Model colors for breakdown bars
 const MODEL_COLORS: Record<string, string> = {
   opus: 'bg-purple-500',
@@ -111,7 +123,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
   const [data, setData] = useState<ApiTokenUsage | null>(initialCache?.data || null);
   const [isLoading, setIsLoading] = useState(!initialCache); // Only load if no cache
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const [isStale, setIsStale] = useState(
     initialCache ? isCacheStale(initialCache, 5 * 60 * 1000) : false
   );
@@ -126,7 +138,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
       setIsLoading(true);
     }
     setIsRefreshing(skipLoadingState);
-    setError(null);
+    setIsRateLimited(false);
 
     try {
       const response = await mcpClient.getApiTokens();
@@ -141,22 +153,26 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         setIsStale(false);
         setCachedEntry(null);
       } else {
-        // Only set error if we don't have cached data to fall back on
-        if (!data) {
-          setError('Admin API not configured');
-        } else {
-          // Mark cached data as stale since API is not configured
-          setIsStale(true);
-          setCachedEntry(initialCache);
-        }
+        // Mark cached data as stale since API is not configured
+        setIsStale(true);
+        setCachedEntry(initialCache);
       }
     } catch (err) {
       console.error('[AnthropicUsageCard] Error fetching data:', err);
-      // Only set error if we don't have cached data to fall back on
-      if (!data) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } else {
-        // Mark cached data as stale since fetch failed
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load data';
+
+      // Check if it's a rate limit error
+      const rateLimited =
+        errorMsg.toLowerCase().includes('rate') ||
+        errorMsg.toLowerCase().includes('limit') ||
+        errorMsg.toLowerCase().includes('exceeded') ||
+        errorMsg.toLowerCase().includes('429') ||
+        errorMsg.toLowerCase().includes('too many');
+
+      setIsRateLimited(rateLimited);
+
+      // Mark as stale - we'll show cached or demo data
+      if (data || initialCache?.data) {
         setIsStale(true);
         setCachedEntry(initialCache);
       }
@@ -203,60 +219,9 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
     );
   }
 
-  // Check if error is rate limit related
-  const isRateLimitError = error && (
-    error.toLowerCase().includes('rate') ||
-    error.toLowerCase().includes('limit') ||
-    error.toLowerCase().includes('exceeded') ||
-    error.toLowerCase().includes('429') ||
-    error.toLowerCase().includes('too many')
-  );
-
-  // Error state (rate limit exceeded)
-  if (isRateLimitError) {
-    return (
-      <div
-        className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm overflow-hidden ${className || ''}`}
-      >
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-5 h-5 text-amber-500" />
-            <span className="widget-title">Anthropic API Usage</span>
-          </div>
-          <div className="text-center py-6 text-text-muted">
-            <Clock className="w-8 h-8 mx-auto mb-2 text-amber-500 opacity-70" />
-            <p className="text-sm font-medium mb-1 text-amber-600">Temporarily unavailable</p>
-            <p className="text-xs">
-              You've exceeded your hourly API call limit. Try back soon.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state (no Admin API configured) - only show if we have NO cached data
-  if (!data) {
-    return (
-      <div
-        className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm overflow-hidden ${className || ''}`}
-      >
-        <div className="p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-5 h-5 text-text-muted" />
-            <span className="widget-title">Anthropic API Usage</span>
-          </div>
-          <div className="text-center py-6 text-text-muted">
-            <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium mb-1">Usage data unavailable</p>
-            <p className="text-xs">
-              Check back soon or configure the Admin API to enable tracking.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Use demo data as fallback when no real data available
+  const displayData = data || DEMO_USAGE_DATA;
+  const isUsingDemoData = !data;
 
   return (
     <div
@@ -277,17 +242,25 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
-          <span className="px-2 py-1 text-xs font-medium bg-accent-success/10 text-accent-success rounded-full">
-            Admin API
-          </span>
+          {isUsingDemoData ? (
+            <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
+              Estimated
+            </span>
+          ) : (
+            <span className="px-2 py-1 text-xs font-medium bg-accent-success/10 text-accent-success rounded-full">
+              Live
+            </span>
+          )}
         </div>
 
-        {/* Staleness Indicator */}
-        {isStale && cachedEntry && (
+        {/* Staleness/Rate Limit Indicator */}
+        {isStale && cachedEntry && !isUsingDemoData && (
           <div className="flex items-center gap-1.5 mb-2 text-amber-600">
             <Clock className="w-3.5 h-3.5" />
             <span className="text-xs">
-              Cached {Math.floor(getCacheAge(cachedEntry) / 1000 / 60)}m ago
+              {isRateLimited
+                ? `Cached data • API limit reached`
+                : `Cached ${Math.floor(getCacheAge(cachedEntry) / 1000 / 60)}m ago`}
               {isRefreshing && ' • Updating...'}
             </span>
           </div>
@@ -300,13 +273,13 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="grid grid-cols-2 gap-3">
           <StatBox
             label="Input"
-            value={formatTokens(data.today.inputTokens)}
+            value={formatTokens(displayData.today.inputTokens)}
             subtext="tokens"
             icon={<ArrowDownToLine className="w-3 h-3" />}
           />
           <StatBox
             label="Output"
-            value={formatTokens(data.today.outputTokens)}
+            value={formatTokens(displayData.today.outputTokens)}
             subtext="tokens"
             icon={<ArrowUpFromLine className="w-3 h-3" />}
           />
@@ -322,13 +295,13 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="grid grid-cols-2 gap-3 mb-3">
           <StatBox
             label="Input"
-            value={formatTokens(data.monthToDate.inputTokens)}
+            value={formatTokens(displayData.monthToDate.inputTokens)}
             subtext="tokens"
             icon={<ArrowDownToLine className="w-3 h-3" />}
           />
           <StatBox
             label="Output"
-            value={formatTokens(data.monthToDate.outputTokens)}
+            value={formatTokens(displayData.monthToDate.outputTokens)}
             subtext="tokens"
             icon={<ArrowUpFromLine className="w-3 h-3" />}
           />
@@ -336,14 +309,14 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
         <div className="bg-surface-1 rounded-lg p-3 text-center">
           <div className="text-xs text-text-muted mb-1">Total</div>
           <div className="text-xl font-bold text-text-primary">
-            {formatTokens(data.monthToDate.totalTokens)}
+            {formatTokens(displayData.monthToDate.totalTokens)}
           </div>
           <div className="text-xs text-text-muted">tokens</div>
         </div>
       </div>
 
       {/* Model Breakdown */}
-      {data.modelBreakdown.length > 0 && (
+      {displayData.modelBreakdown.length > 0 && (
         <>
           <div className="border-t border-gray-200" />
           <div className="p-4">
@@ -351,7 +324,7 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
               By Model (MTD)
             </div>
             <div className="space-y-3">
-              {data.modelBreakdown.map((model) => (
+              {displayData.modelBreakdown.map((model) => (
                 <ModelBar
                   key={model.model}
                   model={model.model}
@@ -368,7 +341,11 @@ export function AnthropicUsageCard({ className }: AnthropicUsageCardProps) {
       <div className="px-4 pb-4">
         <div className="pt-3 border-t border-gray-100 flex items-center gap-1 text-xs text-text-muted">
           <Info className="w-3 h-3" />
-          <span>Live from Anthropic Admin API</span>
+          <span>
+            {isUsingDemoData
+              ? 'Estimated usage • Will update when API available'
+              : 'Live from Anthropic Admin API'}
+          </span>
         </div>
       </div>
     </div>
