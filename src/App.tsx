@@ -209,7 +209,7 @@ function DashboardWithAgent() {
   });
 
   // Widget loader - handles utterance routing and dynamic widget loading
-  const { processUtterance, loadOverview } = useWidgetLoader({
+  const { processUtterance } = useWidgetLoader({
     onRouteMatch: (match: RouteMatch) => {
       console.log('[WidgetLoader] Route matched:', match);
 
