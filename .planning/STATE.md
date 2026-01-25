@@ -4,8 +4,8 @@
 
 **Milestone**: v8.0 Scraper-to-EC2 Data Sync
 **Phase**: 32 of 34 (EC2 GET Endpoint)
-**Plan**: Not started
-**Status**: Ready to plan Phase 32
+**Plan**: 1/1 plans complete
+**Status**: Phase 32 complete, ready for Phase 33 (Widget Migration)
 
 ## Quick Context
 
@@ -55,12 +55,12 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 
 | Commit | Type | Description |
 |--------|------|-------------|
+| `742244b` | feat | Implement GET /api/claude/console-usage endpoint |
 | `dd77836` | chore | Document CLAUDE_SYNC_URL env var |
 | `72392c9` | feat | Integrate sync into auto-scraper |
 | `143d4db` | feat | Create EC2 sync client module |
 | `7bafdfc` | chore | Add environment variable documentation |
 | `62d8b78` | feat | Add POST endpoint with authentication and validation |
-| `783794e` | feat | Create TypeScript interfaces for Console usage data sync |
 
 ## Next Actions
 
@@ -97,6 +97,37 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 32 Complete
+- Implemented GET /api/claude/console-usage endpoint serving synced Console usage data
+- Added ConsoleUsageResponse interface with metadata (isStale, ageMinutes, source, versionInfo)
+- Three retrieval modes: latest (default), version-based (?version=N), timestamp-based (?timestamp=ISO8601)
+- Version-based: 1-based positive (1=oldest) and negative (-1=latest) indexing
+- Timestamp-based: nearest neighbor matching algorithm
+- Response includes: data freshness, staleness flag (>10min), version info (current/total/timestamp/filename)
+- Cache headers vary by data freshness: <5min=60s, 5-10min=30s, >10min=no-cache
+- Conditional request support: ETag and Last-Modified headers, 304 Not Modified responses
+- Comprehensive error handling: 404 (no data), 400 (invalid params), 500 (server errors)
+- Request logging: version served, age, staleness, filename, query params
+- Implementation: ~245 lines in server/index.ts
+- Commit: 742244b
+- Duration: 2 minutes
+- Phase 32 complete (1/1 plans): EC2 GET Endpoint
+- Ready for Phase 33 (Widget Migration)
+
+### 2026-01-25 - Phase 32 Planned
+- Created executable plan for Phase 32: EC2 GET Endpoint
+- Plan file: .planning/phases/32-ec2-get-endpoint/32-ec2-get-endpoint-PLAN.md
+- Endpoint design: GET /api/claude/console-usage with optional query parameters
+- Query parameters: version (1-based or negative index), timestamp (ISO 8601 nearest neighbor)
+- Response includes full ConsoleUsageDataSync data + metadata (staleness, version info, source)
+- Leverages existing storage functions: listVersions(), getStorageMetadata(), parseTimestampFromFilename()
+- Cache headers vary by data freshness: fresh (<5min) = 60s cache, stale (>10min) = no-cache
+- CORS configuration for frontend access
+- Comprehensive error handling: 404 (no data), 400 (invalid params), 500 (server errors)
+- Request logging for monitoring and debugging
+- 7 tasks: interface design, latest retrieval, version-based, timestamp-based, headers, logging, testing
+- Ready to execute Phase 32 (1/1 plan)
 
 ### 2026-01-25 - Phase 31 Complete
 - Implemented versioned storage layer with filesystem-based retention policies
