@@ -25,18 +25,32 @@ export function DataTable({ component, className }: DataTableProps) {
     }
   };
 
-  const getStatusColor = (value: unknown): string => {
+  const getStatusBgColor = (value: unknown): string => {
     const strValue = String(value).toLowerCase();
-    if (strValue === 'healthy' || strValue === 'ok' || strValue === 'running') {
-      return 'text-accent-success';
+    if (strValue === 'healthy' || strValue === 'ok' || strValue === 'running' || strValue === 'success') {
+      return 'bg-green-500';
     }
     if (strValue === 'warning' || strValue === 'degraded') {
-      return 'text-accent-warning';
+      return 'bg-yellow-500';
     }
     if (strValue === 'critical' || strValue === 'error' || strValue === 'failed') {
-      return 'text-accent-danger';
+      return 'bg-red-500';
     }
-    return 'text-text-primary';
+    return 'bg-gray-400';
+  };
+
+  const getStatusTextColor = (value: unknown): string => {
+    const strValue = String(value).toLowerCase();
+    if (strValue === 'healthy' || strValue === 'ok' || strValue === 'running' || strValue === 'success') {
+      return 'text-green-600';
+    }
+    if (strValue === 'warning' || strValue === 'degraded') {
+      return 'text-yellow-600';
+    }
+    if (strValue === 'critical' || strValue === 'error' || strValue === 'failed') {
+      return 'text-red-600';
+    }
+    return 'text-black';
   };
 
   return (
@@ -80,17 +94,16 @@ export function DataTable({ component, className }: DataTableProps) {
                   <td
                     key={col.key}
                     className={`px-4 py-3 text-sm ${
-                      col.type === 'status' 
-                        ? getStatusColor(row[col.key])
-                        : 'text-text-primary'
+                      col.type === 'status'
+                        ? getStatusTextColor(row[col.key])
+                        : 'text-black'
                     }`}
                   >
                     {col.type === 'status' ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          getStatusColor(row[col.key]).replace('text-', 'bg-')
+                      <span className="inline-flex items-center justify-center">
+                        <span className={`w-3 h-3 rounded-full ${
+                          getStatusBgColor(row[col.key])
                         }`} />
-                        {formatValue(row[col.key], col.type)}
                       </span>
                     ) : (
                       formatValue(row[col.key], col.type)

@@ -2195,7 +2195,7 @@ function DashboardWithAgent() {
           columns: [
             { key: 'tag', label: 'Tag' },
             { key: 'name', label: 'Name' },
-            { key: 'trigger', label: 'Trigger' },
+            { key: 'status', label: 'Status', type: 'status' },
             { key: 'date', label: 'Date & Time' },
             { key: 'summary', label: 'Summary' },
             { key: 'commits', label: 'Commits' },
@@ -2203,7 +2203,7 @@ function DashboardWithAgent() {
           rows: deployments.map((d: { tag: string; name: string; trigger?: string; date: string; summary: string; commits: { hash: string; message: string }[] }) => ({
             tag: d.tag,
             name: d.name,
-            trigger: d.trigger === 'github_actions' ? '🚀 GitHub Actions' : '🔧 Manual',
+            status: d.trigger === 'github_actions' ? 'ok' : 'failed',
             date: new Date(d.date).toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -2327,7 +2327,7 @@ function DashboardWithAgent() {
         columns: [
           { key: 'tag', label: 'Tag' },
           { key: 'name', label: 'Name' },
-          { key: 'trigger', label: 'Trigger' },
+          { key: 'status', label: 'Status', type: 'status' },
           { key: 'date', label: 'Date & Time' },
           { key: 'summary', label: 'Summary' },
           { key: 'commits', label: 'Commits' },
@@ -2335,7 +2335,7 @@ function DashboardWithAgent() {
         rows: deployments.map((d: { tag: string; name: string; trigger?: string; date: string; summary: string; commits: { hash: string; message: string }[] }) => ({
           tag: d.tag,
           name: d.name,
-          trigger: d.trigger === 'github_actions' ? '🚀 GitHub Actions' : '🔧 Manual',
+          status: d.trigger === 'github_actions' ? 'ok' : 'failed',
           date: new Date(d.date).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',

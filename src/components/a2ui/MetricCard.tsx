@@ -33,25 +33,25 @@ function StaleShimmerOverlay() {
 }
 
 const STATUS_CONFIG: Record<MetricStatus, { color: string; bgColor: string; icon: typeof CheckCircle }> = {
-  healthy: { 
-    color: 'text-accent-success', 
-    bgColor: 'bg-accent-success/10',
-    icon: CheckCircle 
+  healthy: {
+    color: 'text-green-600',
+    bgColor: 'bg-green-500/10',
+    icon: CheckCircle
   },
-  warning: { 
-    color: 'text-accent-warning', 
-    bgColor: 'bg-accent-warning/10',
-    icon: AlertTriangle 
+  warning: {
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-500/10',
+    icon: AlertTriangle
   },
-  critical: { 
-    color: 'text-accent-danger', 
-    bgColor: 'bg-accent-danger/10',
-    icon: AlertCircle 
+  critical: {
+    color: 'text-red-600',
+    bgColor: 'bg-red-500/10',
+    icon: AlertCircle
   },
-  unknown: { 
-    color: 'text-text-muted', 
+  unknown: {
+    color: 'text-text-muted',
     bgColor: 'bg-surface-3',
-    icon: HelpCircle 
+    icon: HelpCircle
   },
 };
 
@@ -100,7 +100,11 @@ export function MetricCard({ component, className }: MetricCardProps) {
 
       {/* Value */}
       <div className={`flex items-baseline gap-1.5 ${size === 'xl' ? 'mb-4 flex-1' : 'mb-2'}`}>
-        <span className={`${sizeConfig.value} font-semibold ${typeof value === 'string' ? statusConfig.color : 'text-text-primary'}`}>
+        <span className={`${sizeConfig.value} font-semibold ${
+          typeof value === 'string' && ['healthy', 'ok', 'running', 'success'].includes(String(value).toLowerCase())
+            ? statusConfig.color
+            : 'text-black'
+        }`}>
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {unit && (
