@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { mcpClient } from '../../services/mcp-client';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 interface ClaudeUsageCardComponentProps {
   component: ClaudeUsageComponent;
@@ -23,44 +23,34 @@ export function ClaudeUsageCard({
   const [planConfig, setPlanConfig] = useState<PlanConfig | null>(null);
   const [consoleUsage, setConsoleUsage] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
+  const fetchData = async () => {
+    setIsLoading(true);
     setError(null);
 
     try {
-      // For manual refresh, trigger immediate scrape. Otherwise use cached data.
-      const consolePromise = isManualRefresh
-        ? mcpClient.refreshConsoleUsage().catch(() => null)
-        : mcpClient.getConsoleUsage().catch(() => null);
-
+      // Fetch latest synced data from EC2
       const [usage, config, console] = await Promise.all([
         mcpClient.getClaudeCodeUsage(undefined, 'max5'),
         mcpClient.getClaudeConfig().catch(() => null),
-        consolePromise,
+        mcpClient.getConsoleUsage().catch(() => null),
       ]);
 
       setClaudeCode(usage);
       if (config?.plan) setPlanConfig(config.plan);
       if (console) setConsoleUsage(console);
     } catch (err) {
-      console.error('[ClaudeUsageCard] Error fetching usage:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch usage data');
+      console.error('[ClaudeUsageCard] Error fetching synced usage data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch usage data from EC2');
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(() => fetchData(true), 5 * 60 * 1000);
+    const interval = setInterval(() => fetchData(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -84,18 +74,10 @@ export function ClaudeUsageCard({
       <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
         <div className="flex items-center justify-between mb-4">
           <span className="widget-title">Claude</span>
-          <button
-            onClick={() => fetchData(true)}
-            disabled={isRefreshing}
-            className="p-1 text-text-muted hover:text-accent-primary transition-colors disabled:opacity-50"
-            title="Retry"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
         </div>
         <div className="flex items-center gap-2 text-red-600">
           <AlertCircle className="w-4 h-4" />
-          <span className="text-sm">{error || 'No usage data available'}</span>
+          <span className="text-sm">{error || 'No synced usage data available'}</span>
         </div>
       </div>
     );
@@ -110,14 +92,6 @@ export function ClaudeUsageCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="widget-title">Claude</span>
-        <button
-          onClick={() => fetchData(true)}
-          disabled={isRefreshing}
-          className="p-1 text-text-muted hover:text-accent-primary transition-colors disabled:opacity-50"
-          title="Refresh"
-        >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
       {/* Plan Info - from config file */}
