@@ -62,3 +62,82 @@ function saveCache(cache: WidgetCache): void {
     // Phase 47 will add quota management
   }
 }
+
+/**
+ * Get cached widget data for a specific widget type and cache key
+ *
+ * @param widgetType - Type of widget (e.g., 'anthropic-usage', 'aws-costs')
+ * @param cacheKey - Specific cache key for this widget (e.g., 'api-tokens', 'monthly-summary')
+ * @returns Cached entry if exists, null otherwise
+ *
+ * @example
+ * ```ts
+ * const cached = getCachedWidget<ApiTokenUsage>('anthropic-usage', 'api-tokens');
+ * if (cached) {
+ *   console.log('Cached data:', cached.data);
+ *   console.log('Age:', Date.now() - cached.timestamp);
+ * }
+ * ```
+ */
+export function getCachedWidget<T = unknown>(
+  widgetType: string,
+  cacheKey: string
+): WidgetCacheEntry<T> | null {
+  const cache = getCache();
+  const key = `${widgetType}:${cacheKey}`;
+  return (cache.entries[key] as WidgetCacheEntry<T>) || null;
+}
+
+/**
+ * Save widget data to cache
+ *
+ * @param widgetType - Type of widget (e.g., 'anthropic-usage', 'aws-costs')
+ * @param cacheKey - Specific cache key for this widget (e.g., 'api-tokens', 'monthly-summary')
+ * @param data - Data to cache (will be serialized to JSON)
+ *
+ * @example
+ * ```ts
+ * setCachedWidget('anthropic-usage', 'api-tokens', {
+ *   tokens: 150000,
+ *   limit: 200000,
+ *   resetDate: '2026-02-01'
+ * });
+ * ```
+ */
+export function setCachedWidget<T = unknown>(
+  widgetType: string,
+  cacheKey: string,
+  data: T
+): void {
+  const cache = getCache();
+  const key = `${widgetType}:${cacheKey}`;
+  cache.entries[key] = {
+    data,
+    timestamp: Date.now(),
+    version: CACHE_VERSION,
+    widgetType,
+  };
+  saveCache(cache);
+}
+
+/**
+ * Delete a specific cached widget entry
+ *
+ * @param widgetType - Type of widget
+ * @param cacheKey - Specific cache key
+ */
+export function deleteCachedWidget(widgetType: string, cacheKey: string): void {
+  const cache = getCache();
+  const key = `${widgetType}:${cacheKey}`;
+  delete cache.entries[key];
+  saveCache(cache);
+}
+
+/**
+ * Clear all widget cache entries
+ *
+ * Useful for debugging and force refresh scenarios.
+ */
+export function clearWidgetCache(): void {
+  localStorage.removeItem(CACHE_KEY);
+}
