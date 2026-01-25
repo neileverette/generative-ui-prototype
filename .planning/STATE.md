@@ -2,45 +2,45 @@
 
 ## Current Focus
 
-**Milestone**: 5 - Claude Data Hydration
-**Phase**: 16 - API Research & Strategy
-**Plan**: Not started
-**Status**: Ready to plan
+**Milestone**: All milestones complete (v1.0 - v5.0)
+**Phase**: Ready for next milestone planning
+**Plan**: N/A
+**Status**: Shipped v5.0 on 2025-01-24
 
 ## Quick Context
 
-Milestone 5 created. Goal is to replace all fake/hardcoded data in ClaudeUsageCard with real API data from Claude/Anthropic services.
+v5.0 Claude Data Hydration milestone complete. ClaudeUsageCard now displays 100% real Console usage data via AppleScript-based scraping solution.
 
-Currently using fake data (shown in magenta):
-- Current session usage and reset time
-- Weekly limits (all models + Sonnet only)
-- Plan info (name, tier, cost, billing date)
+**What shipped:**
+- AppleScript scraper (visible + silent variants)
+- Auto-refresh every 5 minutes (silent, no user interruption)
+- Real Console data: current session (72%), weekly limits (27%, 4%)
+- Plan info from configuration file
+- Stale data warnings (>10 minutes)
+- Manual refresh trigger
 
-Already using real data (from JSONL):
-- 5-hour window, today, month-to-date, model breakdown
-
-Target: Connect all data to real APIs, remove magenta placeholders.
+**Core value achieved:** Real-time visibility into Claude usage without interrupting workflow.
 
 ## Milestone Progress
 
-| Milestone | Status | Phases |
-|-----------|--------|--------|
-| 1. Landing Page Redesign | Complete | 1-3 |
-| 2. Bug Fixes - Navigation & Chat | Complete | 4-5 |
-| 3. Chat Panel Visual Enhancements | Complete | 6-9 |
-| 4. Claude Code Widget Enhancements | Complete | 10-15 |
-| 5. Claude Data Hydration | Not Started | 16-21 |
+| Milestone | Status | Phases | Shipped |
+|-----------|--------|--------|---------|
+| 1. Landing Page Redesign | Complete | 1-3 | 2025-01-23 |
+| 2. Bug Fixes - Navigation & Chat | Complete | 4-5 | 2025-01-23 |
+| 3. Chat Panel Visual Enhancements | Complete | 6-9 | 2025-01-24 |
+| 4. Claude Code Widget Enhancements | Complete | 10-15 | 2025-01-24 |
+| 5. Claude Data Hydration | Complete | 16-21 | 2025-01-24 |
 
-## Phase Status
+## Phase Status (Milestone 5)
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 16 | API Research & Strategy | Not Started |
-| 17 | API Infrastructure Setup | Not Started |
-| 18 | Current Session Data Integration | Not Started |
-| 19 | Weekly Limits Integration | Not Started |
-| 20 | Plan & Billing Info Integration | Not Started |
-| 21 | Cleanup & Testing | Not Started |
+| Phase | Name | Status | Completed |
+|-------|------|--------|-----------|
+| 16 | API Research & Strategy | Complete | 2025-01-24 |
+| 17 | API Infrastructure Setup | Complete | 2025-01-24 |
+| 18 | Current Session Data Integration | Complete | 2025-01-24 |
+| 19 | Weekly Limits Integration | Complete | 2025-01-24 |
+| 20 | Plan & Billing Info Integration | Complete | 2025-01-24 |
+| 21 | Cleanup & Testing | Complete | 2025-01-24 |
 
 ## Recent Commits
 
@@ -53,10 +53,10 @@ Target: Connect all data to real APIs, remove magenta placeholders.
 
 ## Next Actions
 
-1. Plan Phase 16: API Research & Strategy
-2. Research Anthropic API options (Admin API, Usage API)
-3. Document authentication requirements and rate limiting strategy
-4. Determine which data points need Console scraping vs API access
+1. Plan next milestone (optional - project is feature-complete)
+2. Consider UI enhancements or additional widgets
+3. Monitor scraper stability and Console UI changes
+4. Migrate to official API when/if Anthropic releases one
 
 ## Key Files
 
@@ -87,25 +87,17 @@ Target: Connect all data to real APIs, remove magenta placeholders.
 
 ## Session Log
 
-### 2025-01-24 - Milestone 5 Creation
-- Created Milestone 5: Claude Data Hydration
-- Defined 6 phases (16-21) covering API integration
-- Phase 16: API Research & Strategy (research Anthropic APIs)
-- Phase 17: API Infrastructure Setup (client, auth, error handling)
-- Phase 18: Current Session Data Integration
-- Phase 19: Weekly Limits Integration
-- Phase 20: Plan & Billing Info Integration
-- Phase 21: Cleanup & Testing
-- Created phase directories
-- Ready to begin Phase 16
-
-### 2025-01-24 - Milestone 4 Complete
-- Milestone 4 completed: Claude Code Widget Enhancements
-- ClaudeUsageCard rebuilt to match wireframe
-- Component reduced from 927 lines to 250 lines
-- Using real JSONL data for 5-hour window
-- Using fake data (magenta) for session, weekly limits, plan info
-- Next: Replace fake data with real API sources
+### 2025-01-24 - Milestone 5 Complete
+- v5.0 Claude Data Hydration shipped
+- All 6 phases (16-21) completed
+- Built AppleScript-based scraper with silent variant
+- Integrated real Console data for session and weekly limits
+- Added auto-refresh (5 min) and manual refresh
+- Removed all fake data and magenta placeholders
+- Created milestone archive: milestones/v5.0-ROADMAP.md
+- Updated MILESTONES.md with all 5 milestones
+- Updated PROJECT.md and ROADMAP.md
+- Tagged v5.0 in git
 
 ---
-*Last updated: 2025-01-24*
+*Last updated: 2025-01-24 after v5.0 milestone completion*

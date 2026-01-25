@@ -6,7 +6,7 @@
 - [x] **Milestone 2: Bug Fixes - Navigation & Chat** - Fix shortcut card clicks and chat widget results (Phases 4-5)
 - [x] **Milestone 3: Chat Panel Visual Enhancements** - Visual polish for the right-side chat panel (Phases 6-9)
 - [x] **Milestone 4: Claude Code Widget Enhancements** - Rebuild ClaudeUsageCard to match wireframe design (Phases 10-15)
-- [ ] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21)
+- [x] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21) — [Details](milestones/v5.0-ROADMAP.md)
 
 ---
 
@@ -387,148 +387,34 @@ Completed: Rebuilt ClaudeUsageCard to match wireframe with:
 
 ---
 
-## Milestone 5: Claude Data Hydration
+## Milestone 5: Claude Data Hydration (COMPLETE)
 
-### Overview
+See [milestones/v5.0-ROADMAP.md](milestones/v5.0-ROADMAP.md) for full details.
 
-Replace fake/hardcoded data in ClaudeUsageCard with real API data from Claude/Anthropic services. Currently, the card displays magenta-colored placeholders for current session, weekly limits, and plan info - all need to be connected to real data sources.
+### Summary
 
-### Domain Expertise
-
-- Anthropic API integration
-- Claude Console web scraping (if needed)
-- Authentication and rate limiting patterns
-
-### Key Changes
-
-Current data sources:
-- ✅ Real: 5-hour window, today, month-to-date, model breakdown (from JSONL)
-- ❌ Fake: Current session, weekly limits (all models, Sonnet only), plan info
-
-Target: All data from real API sources
+Replaced fake/hardcoded data in ClaudeUsageCard with real Console usage data via AppleScript-based scraping solution.
 
 ### Phases
 
-- [ ] **Phase 16: API Research & Strategy** - Research available APIs and determine best approach
-- [ ] **Phase 17: API Infrastructure Setup** - Create API client, auth, error handling
-- [ ] **Phase 18: Current Session Data Integration** - Connect current session to real-time data
-- [ ] **Phase 19: Weekly Limits Integration** - Integrate weekly limits (all models + Sonnet)
-- [ ] **Phase 20: Plan & Billing Info Integration** - Connect plan details and billing data
-- [ ] **Phase 21: Cleanup & Testing** - Remove fake data, add error handling, test edge cases
+- [x] **Phase 16: API Research & Strategy** (1/1 plan complete)
+- [x] **Phase 17: API Infrastructure Setup** (1/1 plan complete)
+- [x] **Phase 18: Current Session Data Integration** (1/1 plan complete)
+- [x] **Phase 19: Weekly Limits Integration** (1/1 plan complete)
+- [x] **Phase 20: Plan & Billing Info Integration** (1/1 plan complete)
+- [x] **Phase 21: Cleanup & Testing** (1/1 plan complete)
 
-## Phase Details (Milestone 5)
+### Result
 
-### Phase 16: API Research & Strategy
-**Goal**: Research Anthropic API options, Console scraping alternatives, and determine best approach for each data point
-**Depends on**: Milestone 4 complete
-**Research**: Likely (external API - need current docs)
-**Research topics**: Anthropic Admin API, Usage API, Console scraping options, authentication methods
-
-Requirements:
-- Identify which data points are available via official APIs
-- Determine if Console scraping is needed for unavailable data
-- Document authentication requirements
-- Plan rate limiting strategy
-- Choose approach for each data source
-
-Plans:
-- [ ] 16-01: Research API options and create integration strategy
-
-### Phase 17: API Infrastructure Setup
-**Goal**: Create API client, authentication, error handling, and rate limiting infrastructure
-**Depends on**: Phase 16
-**Research**: Unlikely (implementing established patterns)
-
-Requirements:
-- Create API client module for Anthropic services
-- Implement authentication (API keys, tokens)
-- Add error handling and retry logic
-- Implement rate limiting/throttling
-- Add TypeScript types for API responses
-
-Plans:
-- [ ] 17-01: Build API client infrastructure
-
-### Phase 18: Current Session Data Integration
-**Goal**: Connect current session usage to real-time data source
-**Depends on**: Phase 17
-**Research**: Unlikely (using established client)
-
-Requirements:
-- Fetch current session usage data
-- Calculate reset time
-- Update progress bar with real percentages
-- Remove magenta placeholder styling
-- Handle loading and error states
-
-Plans:
-- [ ] 18-01: Integrate current session data
-
-### Phase 19: Weekly Limits Integration
-**Goal**: Integrate weekly limits (all models + Sonnet only) with real data
-**Depends on**: Phase 18
-**Research**: Unlikely (similar to Phase 18)
-
-Requirements:
-- Fetch weekly limit data for all models
-- Fetch weekly limit data for Sonnet only
-- Calculate reset days
-- Update both progress bars
-- Remove magenta placeholders
-
-Plans:
-- [ ] 19-01: Integrate weekly limits data
-
-### Phase 20: Plan & Billing Info Integration
-**Goal**: Connect plan details, cost, and billing date to real source
-**Depends on**: Phase 19
-**Research**: Unlikely (similar patterns)
-
-Requirements:
-- Fetch plan name and tier
-- Fetch cost information
-- Fetch next billing date
-- Format billing date display
-- Remove magenta placeholders from plan section
-
-Plans:
-- [ ] 20-01: Integrate plan and billing data
-
-### Phase 21: Cleanup & Testing
-**Goal**: Remove fake data fallbacks, add comprehensive error handling, test edge cases
-**Depends on**: Phase 20
-**Research**: Unlikely (testing and cleanup)
-
-Requirements:
-- Remove all fake/hardcoded data
-- Remove magenta styling and "no API access" warnings
-- Add comprehensive error handling for all API calls
-- Test with API failures, network issues
-- Test with rate limiting scenarios
-- Add loading states for all data sections
-- Update error messages to be user-friendly
-
-Plans:
-- [ ] 21-01: Clean up fake data and add comprehensive testing
+ClaudeUsageCard now displays 100% real data from Claude Console with 5-minute auto-refresh and manual refresh option.
 
 ## Progress (Milestone 5)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 16. API Research & Strategy | 0/1 | Not started | - |
-| 17. API Infrastructure Setup | 0/1 | Not started | - |
-| 18. Current Session Data Integration | 0/1 | Not started | - |
-| 19. Weekly Limits Integration | 0/1 | Not started | - |
-| 20. Plan & Billing Info Integration | 0/1 | Not started | - |
-| 21. Cleanup & Testing | 0/1 | Not started | - |
-
-## Summary (Milestone 5)
-
-**Milestone Status: NOT STARTED**
-
-Goal: Hydrate ClaudeUsageCard with real API data
-- Replace current session fake data with real API
-- Replace weekly limits fake data with real API
-- Replace plan/billing fake data with real API
-- Remove all magenta placeholder styling
-- Add comprehensive error handling and loading states
+| 16. API Research & Strategy | 1/1 | Complete | 2025-01-24 |
+| 17. API Infrastructure Setup | 1/1 | Complete | 2025-01-24 |
+| 18. Current Session Data Integration | 1/1 | Complete | 2025-01-24 |
+| 19. Weekly Limits Integration | 1/1 | Complete | 2025-01-24 |
+| 20. Plan & Billing Info Integration | 1/1 | Complete | 2025-01-24 |
+| 21. Cleanup & Testing | 1/1 | Complete | 2025-01-24 |
