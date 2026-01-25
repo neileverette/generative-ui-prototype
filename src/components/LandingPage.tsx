@@ -245,7 +245,7 @@ export function LandingPage({
             icon={DollarSign}
             status={data.costs}
             statusType={data.costs.status}
-            onClick={() => onNavigate('costs')}
+            onClick={() => onNavigate('show costs')}
           />
           <NavigationCard
             title="System Metrics"
@@ -253,7 +253,7 @@ export function LandingPage({
             icon={Activity}
             status={data.systemMetrics}
             statusType={data.systemMetrics.status}
-            onClick={() => onNavigate('system-metrics')}
+            onClick={() => onNavigate('system metrics')}
           />
           <NavigationCard
             title="Automations"
@@ -261,7 +261,7 @@ export function LandingPage({
             icon={Workflow}
             status={data.automations}
             statusType={data.automations.status}
-            onClick={() => onNavigate('automations')}
+            onClick={() => onNavigate('show automations')}
           />
         </div>
 
@@ -272,7 +272,7 @@ export function LandingPage({
             icon={Container}
             status={data.applications}
             statusType={data.applications.status}
-            onClick={() => onNavigate('applications')}
+            onClick={() => onNavigate('show containers')}
           />
           <NavigationCard
             title="Deployments"
@@ -280,7 +280,7 @@ export function LandingPage({
             icon={Rocket}
             status={data.deployments}
             statusType={data.deployments.status}
-            onClick={() => onNavigate('deployments')}
+            onClick={() => onNavigate('show deployments')}
           />
           <NavigationCard
             title="AI Usage"
@@ -288,7 +288,7 @@ export function LandingPage({
             icon={Brain}
             status={data.aiUsage}
             statusType={data.aiUsage.status}
-            onClick={() => onNavigate('ai-usage')}
+            onClick={() => onNavigate('claude usage')}
           />
         </div>
       </div>

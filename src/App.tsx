@@ -29,6 +29,7 @@ function DashboardWithAgent() {
   const [lastAction, setLastAction] = useState<'system' | 'containers' | 'automations' | null>(null);
   const [statusSummary, setStatusSummary] = useState<string | null>(null);
   const [statusSummaryLoading, setStatusSummaryLoading] = useState(true);
+  const [pendingRoute, setPendingRoute] = useState<RouteMatch | null>(null);
   const isResizing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -213,12 +214,19 @@ function DashboardWithAgent() {
     onRouteMatch: (match: RouteMatch) => {
       console.log('[WidgetLoader] Route matched:', match);
 
-      // For now, just set the view based on the route
-      // In the next phase, we'll actually load the widgets
+      // Clear previous widgets before loading new ones
+      setDashboardState({
+        components: [],
+        lastUpdated: new Date().toISOString(),
+      });
+
+      // Route to view
       if (match.view === 'landing') {
         setCurrentView('landing');
       } else {
-        setCurrentView('home');
+        // Set pending route to trigger loading
+        setPendingRoute(match);
+        setCurrentView('loading');
       }
     },
     onRouteNotFound: (utterance: string) => {
@@ -261,30 +269,18 @@ function DashboardWithAgent() {
   }, [appendMessage]);
 
   // Handler for navigation from landing page
-  const handleNavigate = useCallback((destination: string) => {
-    console.log('[handleNavigate] Navigating to:', destination);
-    if (destination === 'back') {
+  const handleNavigate = useCallback((utterance: string) => {
+    console.log('[handleNavigate] Processing utterance:', utterance);
+
+    // Special case: back navigation
+    if (utterance === 'back') {
       processUtterance('home');
       return;
     }
 
-    // Use the routing system to determine which widgets to load
-    // Map destination names to utterances that the router understands
-    const destinationUtterances: Record<string, string> = {
-      'costs': 'costs',
-      'system-metrics': 'system metrics',
-      'automations': 'automations',
-      'applications': 'containers',
-      'deployments': 'deployments',
-      'ai-usage': 'ai usage',
-    };
-
-    const utterance = destinationUtterances[destination];
-    if (utterance) {
-      processUtterance(utterance);
-    } else {
-      console.error('[handleNavigate] No utterance mapping for destination:', destination);
-    }
+    // Pass the utterance directly to the routing system
+    // Navigation cards now send utterances that match route table patterns
+    processUtterance(utterance);
   }, [processUtterance]);
 
   // Handler for sending messages from landing page
@@ -2459,6 +2455,45 @@ function DashboardWithAgent() {
     });
     setCurrentView('home');
   }, []);
+
+  // Effect to call route handlers when a route is matched
+  useEffect(() => {
+    if (!pendingRoute) return;
+
+    const loadWidgets = async () => {
+      console.log(`[WidgetLoader] Loading widgets for route: ${pendingRoute.routeId}`);
+
+      // Call the appropriate handler based on route ID
+      switch (pendingRoute.routeId) {
+        case 'systemMetrics':
+          await handleFetchSystemInfrastructure();
+          break;
+        case 'containers':
+          await handleFetchContainersList();
+          break;
+        case 'automations':
+          await handleFetchAutomations();
+          break;
+        case 'costs':
+          await handleFetchCosts();
+          break;
+        case 'deployments':
+          await handleFetchDeployments();
+          break;
+        case 'aiUsage':
+          await handleShowClaudeUsage();
+          break;
+        default:
+          console.warn(`[WidgetLoader] No handler found for route: ${pendingRoute.routeId}`);
+          setCurrentView('home');
+      }
+
+      // Clear pending route after processing
+      setPendingRoute(null);
+    };
+
+    loadWidgets();
+  }, [pendingRoute, handleFetchSystemInfrastructure, handleFetchContainersList, handleFetchAutomations, handleFetchCosts, handleFetchDeployments, handleShowClaudeUsage]);
 
   // Define shortcuts for the welcome screen (2 rows x 3 columns)
   // Row 1: System & Infrastructure, Containers, Automations
