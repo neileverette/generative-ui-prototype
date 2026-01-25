@@ -141,3 +141,102 @@ export function deleteCachedWidget(widgetType: string, cacheKey: string): void {
 export function clearWidgetCache(): void {
   localStorage.removeItem(CACHE_KEY);
 }
+
+/**
+ * Check if a cache entry is stale (older than specified age)
+ *
+ * @param entry - Cache entry to check
+ * @param maxAgeMs - Maximum age in milliseconds
+ * @returns true if entry is older than maxAgeMs
+ *
+ * @example
+ * ```ts
+ * const entry = getCachedWidget('anthropic-usage', 'api-tokens');
+ * if (entry && isCacheStale(entry, 5 * 60 * 1000)) {
+ *   console.log('Cache is older than 5 minutes');
+ * }
+ * ```
+ */
+export function isCacheStale(entry: WidgetCacheEntry, maxAgeMs: number): boolean {
+  return Date.now() - entry.timestamp > maxAgeMs;
+}
+
+/**
+ * Get the age of a cache entry in milliseconds
+ *
+ * @param entry - Cache entry to check
+ * @returns Age in milliseconds
+ *
+ * @example
+ * ```ts
+ * const entry = getCachedWidget('anthropic-usage', 'api-tokens');
+ * if (entry) {
+ *   const ageMinutes = Math.floor(getCacheAge(entry) / 1000 / 60);
+ *   console.log(`Updated ${ageMinutes} minutes ago`);
+ * }
+ * ```
+ */
+export function getCacheAge(entry: WidgetCacheEntry): number {
+  return Date.now() - entry.timestamp;
+}
+
+/**
+ * Remove stale cache entries (older than specified hours)
+ *
+ * Follows the insights-cache.ts pattern for automatic cache cleanup.
+ * Should be called on app startup to prevent cache bloat.
+ *
+ * @param maxAgeHours - Maximum age in hours (default: 24)
+ *
+ * @example
+ * ```ts
+ * // In app initialization
+ * pruneStaleWidgetCache(24); // Remove entries older than 24 hours
+ * ```
+ */
+export function pruneStaleWidgetCache(maxAgeHours: number = 24): void {
+  const cache = getCache();
+  const maxAge = maxAgeHours * 60 * 60 * 1000;
+  const now = Date.now();
+
+  let pruned = false;
+  for (const key of Object.keys(cache.entries)) {
+    if (now - cache.entries[key].timestamp > maxAge) {
+      delete cache.entries[key];
+      pruned = true;
+    }
+  }
+
+  if (pruned) {
+    saveCache(cache);
+  }
+}
+
+/**
+ * Clear all cache entries for a specific widget type
+ *
+ * Useful for selective invalidation when a widget's data structure changes.
+ *
+ * @param widgetType - Type of widget to clear (e.g., 'aws-costs')
+ *
+ * @example
+ * ```ts
+ * // Force refresh all AWS cost widget cache entries
+ * clearWidgetCacheByType('aws-costs');
+ * ```
+ */
+export function clearWidgetCacheByType(widgetType: string): void {
+  const cache = getCache();
+  let cleared = false;
+
+  for (const key of Object.keys(cache.entries)) {
+    if (key.startsWith(`${widgetType}:`)) {
+      delete cache.entries[key];
+      cleared = true;
+    }
+  }
+
+  if (cleared) {
+    saveCache(cache);
+  }
+}
