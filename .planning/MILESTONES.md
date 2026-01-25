@@ -1,5 +1,26 @@
 # Project Milestones: Console Landing Page
 
+## v10.0 Widget Data Caching (In Progress)
+
+**Goal:** Browser-side caching layer for instant widget loading with background updates
+
+**Phases planned:** 42-48 (7 phases)
+
+**Key objectives:**
+- Design and implement cache storage architecture (localStorage or IndexedDB)
+- Add cache hydration to widgets for instant display
+- Background fetch system with deduplication
+- Smooth animations for cached-to-fresh data transitions
+- Smart cache invalidation with staleness warnings
+- Multi-widget orchestration with priorities and size limits
+- Performance testing and edge case handling
+
+**Current status:** Milestone created, ready to plan Phase 42
+
+**Started:** 2026-01-25
+
+---
+
 ## v9.0 Dynamic Widget Loading & Utterance Routing (In Progress)
 
 **Goal:** Build chat-driven widget loading system where utterances control UI state and widget composition

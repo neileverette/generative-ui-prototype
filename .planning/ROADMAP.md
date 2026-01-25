@@ -11,6 +11,7 @@
 - [x] **Milestone 7: Voice UI Restoration** - Restore voice input button as persistent floating element (Phase 28)
 - [ ] **Milestone 8: Scraper-to-EC2 Data Sync** - Decouple data collection from serving by syncing to EC2 (Phases 29-34)
 - [ ] **Milestone 9: Dynamic Widget Loading & Utterance Routing** - Chat-driven widget loading system with groups and shortcuts (Phases 35-41)
+- [ ] **Milestone 10: Widget Data Caching** - Browser-side caching layer for instant widget loading with background updates (Phases 42-48)
 
 ---
 
@@ -778,7 +779,7 @@ Requirements:
 - Optional: Circuit breaker pattern for repeated failures
 
 Plans:
-- [ ] 34-01: TBD (run /gsd:plan-phase 34 to break down)
+- [ ] 34-01: Error Handling & Fallbacks implementation (7 tasks: health check, sync retry, widget retry, error responses, storage resilience, circuit breaker, logging)
 
 ## Progress (Milestone 8)
 
@@ -786,10 +787,10 @@ Plans:
 |-------|----------------|--------|-----------|
 | 29. EC2 API Endpoint | 1/1 | Complete | 2026-01-25 |
 | 30. Data Sync Client | 1/1 | Complete | 2026-01-25 |
-| 31. EC2 Data Storage | 0/? | Not started | - |
-| 32. EC2 GET Endpoint | 0/? | Not started | - |
-| 33. Widget Migration | 0/? | Not started | - |
-| 34. Error Handling & Fallbacks | 0/? | Not started | - |
+| 31. EC2 Data Storage | 1/1 | Complete | 2026-01-25 |
+| 32. EC2 GET Endpoint | 1/1 | Complete | 2026-01-25 |
+| 33. Widget Migration | 1/1 | Complete | 2026-01-25 |
+| 34. Error Handling & Fallbacks | 1/1 | Planned | - |
 
 ---
 
@@ -960,3 +961,182 @@ Plans:
 | 39. Shortcut Group UI Integration | 0/? | Not started | - |
 | 40. Chat-to-Routing Integration | 0/? | Not started | - |
 | 41. Testing & Edge Cases | 0/? | Not started | - |
+
+---
+
+## Milestone 10: Widget Data Caching
+
+### Overview
+
+Implement browser-side caching to eliminate loading delays and provide instant widget rendering. Cache scraped data locally, display cached content immediately, then fetch and update with fresh data in the background. This creates a smooth, app-like experience where widgets appear instantly on page load.
+
+### Domain Expertise
+
+None - Browser storage APIs (localStorage/IndexedDB), React state management, animation patterns
+
+### Milestone Goal
+
+Transform widget loading from network-dependent to instant by caching data in browser storage. Widgets display cached data immediately on render, then smoothly transition to fresh data when background fetching completes.
+
+### Phases
+
+- [ ] **Phase 42: Cache Storage Architecture** - Design and implement browser storage layer for widget data
+- [ ] **Phase 43: Widget Cache Hydration Layer** - Add cache reading to widgets, display cached data first
+- [ ] **Phase 44: Background Fetch System** - Implement background fetching that updates cache and widgets
+- [ ] **Phase 45: Smooth Update Transitions** - Add animations for cached-to-fresh data transitions
+- [ ] **Phase 46: Cache Invalidation Strategy** - Smart expiration, staleness warnings, force refresh
+- [ ] **Phase 47: Multi-Widget Cache Orchestration** - Coordinate caching across widgets, prioritization, size limits
+- [ ] **Phase 48: Testing & Cache Performance** - Test hit rates, measure improvements, handle edge cases
+
+## Phase Details (Milestone 10)
+
+### Phase 42: Cache Storage Architecture
+
+**Goal**: Design and implement browser storage layer for widget data (localStorage or IndexedDB)
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (standard browser storage APIs)
+
+Requirements:
+- Choose storage strategy: localStorage (simple, 5-10MB) vs IndexedDB (complex, larger capacity)
+- Design cache key structure (widget-type:version:timestamp)
+- Create storage abstraction layer (get, set, delete, clear operations)
+- Version cache entries to handle schema changes
+- Add cache metadata (timestamp, version, data hash)
+- Error handling for quota exceeded, storage unavailable
+- TypeScript interfaces for cache entries
+
+Plans:
+- [ ] 42-01: TBD (run /gsd:plan-phase 42 to break down)
+
+### Phase 43: Widget Cache Hydration Layer
+
+**Goal**: Add cache reading logic to widgets - load cached data first, display immediately
+**Depends on**: Phase 42
+**Research**: Unlikely (React lifecycle patterns)
+
+Requirements:
+- Update widget components to check cache on mount
+- Load and display cached data immediately (before API fetch)
+- Show cache metadata (age, staleness indicator)
+- Handle cache miss gracefully (fall back to loading state)
+- Preserve existing error handling
+- Add "cached" visual indicator (subtle badge or timestamp)
+- Handle cache version mismatches (ignore stale schemas)
+
+Plans:
+- [ ] 43-01: TBD (run /gsd:plan-phase 43 to break down)
+
+### Phase 44: Background Fetch System
+
+**Goal**: Implement background data fetching that updates cache and widgets after initial render
+**Depends on**: Phase 43
+**Research**: Unlikely (fetch patterns)
+
+Requirements:
+- After displaying cached data, trigger background fetch
+- Update cache on successful fetch
+- Update widget state with fresh data
+- Handle fetch errors without disrupting cached display
+- Implement fetch deduplication (don't fetch if already in progress)
+- Add fetch priority queue (critical widgets first)
+- Log cache hits vs misses for monitoring
+
+Plans:
+- [ ] 44-01: TBD (run /gsd:plan-phase 44 to break down)
+
+### Phase 45: Smooth Update Transitions
+
+**Goal**: Add smooth animations when updating from cached to fresh data
+**Depends on**: Phase 44
+**Research**: Unlikely (CSS transitions, React animation patterns)
+
+Requirements:
+- Fade or slide transition when replacing cached with fresh data
+- Highlight changed values (flash yellow briefly)
+- Avoid jarring layout shifts (skeleton matching)
+- Optional: Stagger updates for multiple widgets (avoid simultaneous flashing)
+- Respect prefers-reduced-motion for accessibility
+- Configurable animation duration and easing
+- Visual feedback for "data refreshed" state
+
+Plans:
+- [ ] 45-01: TBD (run /gsd:plan-phase 45 to break down)
+
+### Phase 46: Cache Invalidation Strategy
+
+**Goal**: Implement smart cache expiration - stale data warnings, time-based invalidation, force refresh
+**Depends on**: Phase 45
+**Research**: Unlikely (cache invalidation patterns)
+
+Requirements:
+- Define staleness thresholds (e.g., 5 min fresh, 15 min stale, 1 hour expired)
+- Visual indicators for stale data (orange badge, timestamp warning)
+- Auto-invalidate expired cache entries
+- Manual force refresh button (bypass cache, fetch fresh)
+- Clear all cache option in settings/debug menu
+- Cache warmup on app start (pre-fetch critical widgets)
+- Handle clock skew and timezone issues
+
+Plans:
+- [ ] 46-01: TBD (run /gsd:plan-phase 46 to break down)
+
+### Phase 47: Multi-Widget Cache Orchestration
+
+**Goal**: Coordinate caching across all widgets, prioritize critical widgets, handle cache size limits
+**Depends on**: Phase 46
+**Research**: Unlikely (cache coordination patterns)
+
+Requirements:
+- Cache priority levels (critical, normal, low)
+- Critical widgets cached first and refreshed first
+- Implement LRU (Least Recently Used) eviction when quota reached
+- Track total cache size and widget-level sizes
+- Warn before hitting storage quota
+- Batch cache operations (write multiple widgets in one transaction)
+- Cache analytics (hit rate, eviction rate, storage usage)
+
+Plans:
+- [ ] 47-01: TBD (run /gsd:plan-phase 47 to break down)
+
+### Phase 48: Testing & Cache Performance
+
+**Goal**: Test cache hit rates, measure perceived load time improvements, handle edge cases
+**Depends on**: Phase 47
+**Research**: Unlikely (standard testing practices)
+
+Testing needed:
+- Cache hit rate (target 80%+ on repeat visits)
+- Perceived load time improvement (measure first paint with/without cache)
+- Storage quota handling (simulate quota exceeded)
+- Cache corruption recovery (invalid JSON, schema mismatch)
+- Network offline mode (cached data only)
+- Concurrent tab updates (cache sync across tabs)
+- Cache poisoning prevention (validate data signatures)
+
+Edge cases:
+- First visit (cold cache)
+- Cache disabled (private browsing)
+- Very stale cache (1 week old)
+- Rapid page refreshes (cache thrashing)
+- Widget removed from page (orphaned cache entries)
+
+Performance benchmarks:
+- Time to first widget render (cached vs uncached)
+- Background fetch impact on UI responsiveness
+- Cache read/write performance at scale
+- Memory usage with full cache
+
+Plans:
+- [ ] 48-01: TBD (run /gsd:plan-phase 48 to break down)
+
+## Progress (Milestone 10)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 42. Cache Storage Architecture | 0/? | Not started | - |
+| 43. Widget Cache Hydration Layer | 0/? | Not started | - |
+| 44. Background Fetch System | 0/? | Not started | - |
+| 45. Smooth Update Transitions | 0/? | Not started | - |
+| 46. Cache Invalidation Strategy | 0/? | Not started | - |
+| 47. Multi-Widget Cache Orchestration | 0/? | Not started | - |
+| 48. Testing & Cache Performance | 0/? | Not started | - |
