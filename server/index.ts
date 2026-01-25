@@ -2046,6 +2046,7 @@ app.get('/api/claude-usage/admin-api-status', async (_req, res) => {
 // =============================================================================
 
 import fs from 'fs';
+import { initializeStorage, saveVersion, cleanupOldVersions } from './console-storage.js';
 
 const CONSOLE_USAGE_FILE = path.join(__dirname, 'claude-scraper/usage-data.json');
 const CONSOLE_USAGE_SYNCED_FILE = path.join(__dirname, 'claude-scraper/console-usage-synced.json');
@@ -2270,11 +2271,12 @@ app.post('/api/claude/console-usage', async (req, res) => {
       } as SyncResponse);
     }
 
-    // Save validated data to synced file
+    // Save versioned data and update latest symlink
+    let savedFilepath: string;
     try {
-      fs.writeFileSync(CONSOLE_USAGE_SYNCED_FILE, JSON.stringify(data, null, 2));
+      savedFilepath = await saveVersion(data);
     } catch (writeError) {
-      console.error('[Console Sync] Filesystem error:', writeError);
+      console.error('[Console Sync] Storage error:', writeError);
       return res.status(500).json({
         success: false,
         message: 'Failed to save synced data',
@@ -2282,13 +2284,20 @@ app.post('/api/claude/console-usage', async (req, res) => {
       } as SyncResponse);
     }
 
+    // Trigger cleanup asynchronously (non-blocking)
+    cleanupOldVersions().catch(err => {
+      console.error('[Console Storage] Cleanup failed:', err);
+      // Don't fail the request if cleanup fails
+    });
+
     // Calculate data freshness
     const ageMinutes = Math.round((Date.now() - lastUpdatedDate.getTime()) / 1000 / 60);
 
     console.log(
       `[Console Sync] Data synced successfully (age: ${ageMinutes}min, ` +
       `partial: ${data.isPartial || false}, ` +
-      `sections: ${data.currentSession ? 'session' : ''}${data.currentSession && data.weeklyLimits ? '+' : ''}${data.weeklyLimits ? 'limits' : ''})`
+      `sections: ${data.currentSession ? 'session' : ''}${data.currentSession && data.weeklyLimits ? '+' : ''}${data.weeklyLimits ? 'limits' : ''}, ` +
+      `saved: ${path.basename(savedFilepath)})`
     );
 
     res.json({
@@ -2310,6 +2319,15 @@ app.post('/api/claude/console-usage', async (req, res) => {
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
+
+// Initialize Console usage storage layer
+try {
+  initializeStorage();
+  console.log('[Console Storage] Initialized with versioning and retention policies');
+} catch (error) {
+  console.error('[Console Storage] Failed to initialize:', error);
+  // Non-fatal - server can continue but sync will fail
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

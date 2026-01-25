@@ -28,3 +28,12 @@ export interface SyncResponse {
   message: string;
   timestamp: string; // ISO 8601 timestamp
 }
+
+export interface StorageMetadata {
+  versionCount: number;
+  oldestTimestamp: string | null;
+  newestTimestamp: string | null;
+  lastCleanup: string | null;
+  totalVersionsCreated: number;
+  totalVersionsDeleted: number;
+}
