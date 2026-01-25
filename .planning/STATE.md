@@ -4,8 +4,8 @@
 
 **Milestone**: v6.0 Claude Scraper Service
 **Phase**: 23 of 27 (Error Handling & Retry Logic)
-**Plan**: 23-01 Complete
-**Status**: Phase 23 Plan 1 Complete, Ready for 23-02 or Phase 24
+**Plan**: 23-02 Complete
+**Status**: Phase 23 Complete (2/2 plans), Ready for Phase 24
 
 ## Quick Context
 
@@ -42,7 +42,7 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
 | 22 | Session Management & Authentication | Complete (2/2 plans) | 2026-01-25 |
-| 23 | Error Handling & Retry Logic | In Progress (1/? plans) | - |
+| 23 | Error Handling & Retry Logic | Complete (2/2 plans) | 2026-01-25 |
 | 24 | Data Extraction Enhancement | Not started | - |
 | 25 | Monitoring & Health Checks | Not started | - |
 | 26 | Rate Limiting & Throttling | Not started | - |
@@ -52,6 +52,8 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 
 | Commit | Type | Description |
 |--------|------|-------------|
+| `7658d8b` | feat | Update auto-scraper to handle partial data results |
+| `7bf7500` | feat | Implement section-level error handling with partial data extraction |
 | `f84e56b` | feat | Integrate retry strategy into auto-scraper |
 | `3498cf0` | feat | Create retry strategy module with exponential backoff |
 | `22d502a` | feat | Integrate session validation into scraper startup |
@@ -92,6 +94,19 @@ Starting v6.0 Claude Scraper Service milestone. Building on the v5.0 scraper fou
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 23 Complete
+- Implemented graceful degradation for partial data extraction
+- Modified ConsoleUsageData interface with optional sections (currentSession?, weeklyLimits?)
+- Added extractionErrors field to document missing sections and isPartial flag
+- Split extraction into three independent try/catch blocks with 5s timeouts each
+- Each section (currentSession, allModels, sonnetOnly) extracts independently
+- Saves partial data if at least 1 section succeeds, only fails if all sections fail
+- Auto-scraper treats partial success as success (resets retry state and circuit breaker)
+- Logs show completeness: "Scrape completed with partial data (2/3 sections). Missing: X"
+- Verbose mode shows extractionErrors details for debugging
+- Phase 23 complete (2/2 plans): Error Handling & Retry Logic
+- Commits: 7bf7500, 7658d8b
 
 ### 2026-01-24 - Phase 23 Plan 1 Complete
 - Implemented retry strategy with exponential backoff and circuit breaker pattern
