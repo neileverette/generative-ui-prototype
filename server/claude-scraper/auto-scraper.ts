@@ -9,6 +9,7 @@ import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { promisify } from 'util';
+import { RetryStrategy, ErrorCategory } from './retry-strategy.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -17,15 +18,31 @@ const __dirname = path.dirname(__filename);
 const SCRAPE_SCRIPT = path.join(__dirname, 'scrape-silent.sh');
 const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-let consecutiveErrors = 0;
-const MAX_ERRORS = 3;
+// Initialize retry strategy with defaults
+const retryStrategy = new RetryStrategy();
 let lastSuccessfulValidation: Date | null = null;
+let retryTimeoutId: NodeJS.Timeout | null = null;
 
 // Check for verbose flag
 const VERBOSE = process.argv.includes('--verbose');
 
 async function runScraper(): Promise<void> {
   try {
+    // Check if circuit breaker is open
+    if (retryStrategy.isCircuitOpen()) {
+      const circuitState = retryStrategy.getCircuitState();
+      console.log(`[Auto-Scraper] Circuit breaker is ${circuitState}. Skipping scrape attempt.`);
+      if (VERBOSE) {
+        console.log('[Auto-Scraper] Waiting for circuit to transition to HALF_OPEN state...');
+      }
+      return;
+    }
+
+    const circuitState = retryStrategy.getCircuitState();
+    if (VERBOSE && circuitState !== 'CLOSED') {
+      console.log(`[Auto-Scraper] Circuit state: ${circuitState}`);
+    }
+
     console.log(`[Auto-Scraper] Running scraper at ${new Date().toLocaleTimeString()}...`);
 
     if (VERBOSE && lastSuccessfulValidation) {
@@ -38,28 +55,39 @@ async function runScraper(): Promise<void> {
     if (stdout) console.log(stdout.trim());
     if (stderr) console.error('[Auto-Scraper] stderr:', stderr.trim());
 
-    consecutiveErrors = 0; // Reset error counter on success
-    lastSuccessfulValidation = new Date(); // Track successful validation
+    // Success! Record in retry strategy and circuit breaker
+    retryStrategy.reset();
+    retryStrategy.recordSuccess();
+    lastSuccessfulValidation = new Date();
+
+    if (VERBOSE) {
+      const newCircuitState = retryStrategy.getCircuitState();
+      if (newCircuitState !== circuitState) {
+        console.log(`[Auto-Scraper] Circuit state transition: ${circuitState} → ${newCircuitState}`);
+      }
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    // Categorize the error type
-    let errorCategory = 'UNKNOWN';
+    // Classify error using RetryStrategy
+    const errorCategory = RetryStrategy.classifyError(errorMessage);
+
+    // Map ErrorCategory enum to action messages
     let specificAction = 'Check logs and retry manually';
 
-    if (errorMessage.includes('SESSION_EXPIRED')) {
-      errorCategory = 'SESSION_EXPIRED';
-      specificAction = 'Run: npx tsx server/claude-scraper/login.ts';
-    } else if (errorMessage.includes('NETWORK_ERROR')) {
-      errorCategory = 'NETWORK_ERROR';
-      specificAction = 'Check network connection and wait 5 minutes for retry';
-    } else if (errorMessage.includes('CONTEXT_CORRUPTED')) {
-      errorCategory = 'CONTEXT_CORRUPTED';
-      specificAction = 'Delete server/claude-scraper/.session/ and run login.ts';
-    } else if (errorMessage.includes('Session validation failed')) {
-      // Legacy error message format
-      errorCategory = 'SESSION_EXPIRED';
-      specificAction = 'Run: npx tsx server/claude-scraper/login.ts';
+    switch (errorCategory) {
+      case ErrorCategory.SESSION_EXPIRED:
+        specificAction = 'Run: npx tsx server/claude-scraper/login.ts';
+        break;
+      case ErrorCategory.NETWORK_ERROR:
+        specificAction = 'Check network connection. Auto-retry with exponential backoff.';
+        break;
+      case ErrorCategory.CONTEXT_CORRUPTED:
+        specificAction = 'Delete server/claude-scraper/.session/ and run login.ts';
+        break;
+      case ErrorCategory.UNKNOWN:
+        specificAction = 'Check logs and retry manually';
+        break;
     }
 
     // Log session age for debugging
@@ -69,22 +97,59 @@ async function runScraper(): Promise<void> {
     }
 
     // For session-related errors, exit immediately (no retry)
-    if (errorCategory === 'SESSION_EXPIRED' || errorCategory === 'CONTEXT_CORRUPTED') {
+    if (errorCategory === ErrorCategory.SESSION_EXPIRED ||
+        errorCategory === ErrorCategory.CONTEXT_CORRUPTED) {
       console.error(`[Auto-Scraper] ${errorCategory}: ${specificAction}`);
       console.error('[Auto-Scraper] Stopping auto-scraper. Restart after fixing the issue.');
       process.exit(1);
     }
 
-    // For other errors, use existing retry logic
-    consecutiveErrors++;
-    console.error(`[Auto-Scraper] ${errorCategory} (${consecutiveErrors}/${MAX_ERRORS}):`, errorMessage);
+    // Record failure in circuit breaker
+    retryStrategy.recordFailure();
+    retryStrategy.recordAttempt();
 
-    if (consecutiveErrors >= MAX_ERRORS) {
-      console.error(`[Auto-Scraper] Stopped after ${MAX_ERRORS} consecutive failures.`);
-      console.error(`[Auto-Scraper] Last error category: ${errorCategory}`);
-      console.error(`[Auto-Scraper] Action required: ${specificAction}`);
-      process.exit(1);
+    const attemptNumber = retryStrategy.getAttemptCount();
+    const maxAttempts = retryStrategy.getMaxAttempts();
+
+    // Check if we should retry
+    if (!retryStrategy.shouldRetry(errorCategory, attemptNumber)) {
+      const circuitState = retryStrategy.getCircuitState();
+
+      if (circuitState === 'OPEN') {
+        console.error(`[Auto-Scraper] Circuit breaker OPEN after ${attemptNumber} attempts.`);
+        console.error('[Auto-Scraper] Scraper will pause retries for 60s before testing recovery.');
+        console.error(`[Auto-Scraper] Last error category: ${errorCategory}`);
+        console.error(`[Auto-Scraper] Action: ${specificAction}`);
+        // Don't exit - let circuit breaker handle recovery
+        return;
+      } else {
+        console.error(`[Auto-Scraper] Stopped after ${maxAttempts} consecutive failures.`);
+        console.error(`[Auto-Scraper] Last error category: ${errorCategory}`);
+        console.error(`[Auto-Scraper] Action required: ${specificAction}`);
+        process.exit(1);
+      }
     }
+
+    // Calculate backoff delay for retry
+    const delayMs = retryStrategy.calculateDelay(attemptNumber);
+    const delaySeconds = Math.floor(delayMs / 1000);
+
+    console.error(`[Auto-Scraper] ${errorCategory} (attempt ${attemptNumber}/${maxAttempts}):`, errorMessage);
+    console.error(`[Auto-Scraper] Recoverable error. Retrying in ${delaySeconds}s...`);
+
+    if (VERBOSE) {
+      console.error(`[Auto-Scraper] Exponential backoff: ${delayMs}ms (base: 30s, max: 5min)`);
+    }
+
+    // Schedule immediate retry after backoff (not next 5-min interval)
+    if (retryTimeoutId) {
+      clearTimeout(retryTimeoutId);
+    }
+
+    retryTimeoutId = setTimeout(() => {
+      console.log('[Auto-Scraper] Retry attempt starting...');
+      runScraper();
+    }, delayMs);
   }
 }
 
