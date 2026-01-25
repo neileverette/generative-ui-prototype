@@ -88,7 +88,7 @@ export function ClaudeUsageCard({
 
     try {
       // Fetch latest synced data from EC2
-      const [usage, config, console] = await Promise.all([
+      const [usage, config, consoleData] = await Promise.all([
         mcpClient.getClaudeCodeUsage(undefined, 'max5'),
         mcpClient.getClaudeConfig().catch(() => null),
         mcpClient.getConsoleUsage().catch(() => null),
@@ -96,14 +96,14 @@ export function ClaudeUsageCard({
 
       setClaudeCode(usage);
       if (config?.plan) setPlanConfig(config.plan);
-      if (console) setConsoleUsage(console);
+      if (consoleData) setConsoleUsage(consoleData);
 
       // Update cache with fresh data
       console.log('[ClaudeUsageCard] Saving fresh data to cache');
       setCachedWidget('claude-usage', 'console', {
         claudeCode: usage,
         planConfig: config?.plan || null,
-        consoleUsage: console,
+        consoleUsage: consoleData,
       });
 
       // Fresh data is not stale
