@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { mcpClient } from '../../services/mcp-client';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Clock } from 'lucide-react';
 import {
   getCachedWidget,
   setCachedWidget,
@@ -165,6 +165,17 @@ export function ClaudeUsageCard({
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
+
+      {/* Staleness Indicator */}
+      {isStale && cachedEntry && (
+        <div className="flex items-center gap-1.5 mb-2 text-amber-600">
+          <Clock className="w-3.5 h-3.5" />
+          <span className="text-xs">
+            Cached {Math.floor(getCacheAge(cachedEntry) / 1000 / 60)}m ago
+            {isRefreshing && ' • Updating...'}
+          </span>
+        </div>
+      )}
 
       {/* Plan Info - from config file */}
       <div className="mb-4 space-y-0.5">
