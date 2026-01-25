@@ -12,7 +12,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { RetryStrategy, ErrorCategory } from './retry-strategy.js';
 import type { ConsoleUsageData } from './scrape.js';
-import { syncToEC2 } from './sync-client.js';
+import { syncWithRetry } from './sync-client.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -104,10 +104,10 @@ async function runScraper(): Promise<void> {
       }
     }
 
-    // Sync to EC2 (continue scraper operation even if sync fails)
+    // Sync to EC2 with retry logic (continue scraper operation even if all retries fail)
     if (usageData) {
       try {
-        const syncResponse = await syncToEC2(usageData);
+        const syncResponse = await syncWithRetry(usageData, VERBOSE);
         if (syncResponse.success) {
           console.log(`[Auto-Scraper] Synced to EC2 at ${syncResponse.timestamp}`);
           if (VERBOSE) {
@@ -119,7 +119,7 @@ async function runScraper(): Promise<void> {
       } catch (syncError) {
         // Log but don't crash - scraper continues regardless
         const syncErrorMsg = syncError instanceof Error ? syncError.message : String(syncError);
-        console.warn(`[Auto-Scraper] EC2 sync error: ${syncErrorMsg}`);
+        console.warn(`[Auto-Scraper] EC2 sync error after retries: ${syncErrorMsg}`);
         if (VERBOSE) {
           console.warn('[Auto-Scraper] Scraper will continue despite sync failure');
         }
