@@ -2,10 +2,10 @@
 
 ## Current Focus
 
-**Milestone**: v9.0 Dynamic Widget Loading & Utterance Routing
-**Phase**: 35 of 41 (Utterance-to-Widget Routing System)
+**Milestone**: v8.0 Scraper-to-EC2 Data Sync
+**Phase**: 32 of 34 (EC2 GET Endpoint)
 **Plan**: Not started
-**Status**: Ready to plan Phase 35
+**Status**: Ready to plan Phase 32
 
 ## Quick Context
 
@@ -97,6 +97,24 @@ Starting v9.0 Dynamic Widget Loading & Utterance Routing milestone. Building a c
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 31 Complete
+- Implemented versioned storage layer with filesystem-based retention policies
+- Created console-storage.ts module (318 lines) with init/save/cleanup/metadata functions
+- Storage architecture: `console-usage-history/` directory with timestamped JSON files
+- File naming: YYYY-MM-DDTHH-mm-ss-{uuid}.json for easy sorting and querying
+- Retention policy: Keep 100 versions OR 7 days (whichever is larger)
+- Automatic async cleanup runs after each write without blocking sync operations
+- Metadata tracking: version counts, timestamps, cleanup stats in _metadata.json
+- Backward compatibility: console-usage-synced.json updated on each write
+- Updated POST endpoint to use saveVersion() instead of fs.writeFileSync
+- Enhanced logging includes saved version filename for debugging
+- Added StorageMetadata interface to claude-console-sync-types.ts
+- Fixed pre-existing TypeScript scope error in auto-scraper.ts (usageData variable)
+- Server startup initializes storage directory and metadata automatically
+- Phase 31 complete (1/1 plans): EC2 Data Storage
+- Commits: 0b451ce (bugfix), 0188098 (feature)
+- Ready for Phase 32 (EC2 GET Endpoint)
 
 ### 2026-01-25 - Milestone 9 Created
 - Created v9.0 Dynamic Widget Loading & Utterance Routing milestone
