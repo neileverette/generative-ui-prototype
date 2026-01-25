@@ -819,7 +819,7 @@ Transform the widget display from static to dynamic, where user utterances (chat
 - [ ] **Phase 37: Initial Load with Invisible Utterance** - Implement auto-invocation of "overview" group on page load
 - [ ] **Phase 38: Dynamic Widget Loader** - Load/unload widgets based on active utterance, clear previous widgets
 - [ ] **Phase 39: Shortcut Group UI Integration** - Connect UI shortcuts/buttons to trigger specific widget groups
-- [ ] **Phase 40: Chat-to-Routing Integration** - Wire chat input to routing system, replace existing chat-to-widget logic
+- [x] **Phase 40: Chat-to-Routing Integration** - Wire chat input to routing system, replace existing chat-to-widget logic
 - [ ] **Phase 41: Testing & Edge Cases** - Handle multiple utterances, concurrent loads, error states
 
 ## Phase Details (Milestone 9)
@@ -926,7 +926,7 @@ Requirements:
 - Preserve chat history and context
 
 Plans:
-- [ ] 40-01: TBD (run /gsd:plan-phase 40 to break down)
+- [x] 40-01: Chat-to-Routing Integration — Complete (2026-01-25)
 
 ### Phase 41: Testing & Edge Cases
 

@@ -2,14 +2,14 @@
 
 ## Current Focus
 
-**Milestone**: v10.0 Widget Data Caching
-**Phase**: 43 of 48 (Widget Cache Hydration Layer)
-**Plan**: 0/1 plans complete
-**Status**: Phase 43 planned, ready for execution
+**Milestone**: v9.0 Dynamic Widget Loading & Utterance Routing
+**Phase**: 40 of 41 (Chat-to-Routing Integration)
+**Plan**: 1/1 plans complete
+**Status**: Phase 40 complete, Milestone 9 nearly complete
 
 ## Quick Context
 
-Starting v10.0 Widget Data Caching milestone. Building browser-side caching layer to eliminate loading delays and provide instant widget rendering with smooth background updates.
+Completed Phase 40: Chat-to-Routing Integration. Chat input now routes through utterance-router first, loading widgets immediately for matching patterns and falling back to CopilotKit for conversational queries. All route handlers working correctly with proper view transitions.
 
 **Core Concept:**
 - Cache widget data in browser storage (localStorage or IndexedDB)
@@ -101,6 +101,25 @@ Starting v10.0 Widget Data Caching milestone. Building browser-side caching laye
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 40 Complete
+- Successfully implemented chat-to-routing integration with immediate widget loading
+- Task 1: Restructured hook order - moved useWidgetLoader before handlers for processUtterance availability
+- Task 2: Updated handleSendMessage and handleVoiceTranscriptComplete to route through processUtterance()
+- Task 3: Added isWidgetTypeLoaded() helper for duplicate detection across 6 CopilotKit actions
+- Fixed white box overlay issue - removed premature setCurrentView('loading') from onLoadStart
+- Fixed CopilotKit UI overlays - added CSS rules to hide window/popup/modal elements
+- Fixed route handlers - added missing setCurrentView('home') to 4 handler functions
+- Fixed "back" navigation - removed special case, now routes through utterance router
+- Routing flow: message → processUtterance() → confidence >= 40% loads widgets | < 40% falls back to chat
+- Deduplication: Actions check isWidgetTypeLoaded() and return early if widgets present
+- Verified functionality: costs, system metrics, automations, containers, deployments, back all working
+- Phase 40 complete (1/1 plans): Chat-to-Routing Integration
+- Files modified: App.tsx (routing + handlers + deduplication), index.css (overlay fixes)
+- Commits: [pending]
+- Duration: ~45 minutes
+- Issues resolved: 3 (white overlay, route display, navigation)
+- Ready for Phase 41 (final Milestone 9 phase)
 
 ### 2026-01-25 - Phase 42 Complete
 - Implemented browser-side widget cache using localStorage

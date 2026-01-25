@@ -263,14 +263,8 @@ function DashboardWithAgent() {
   const handleNavigate = useCallback((utterance: string) => {
     console.log('[handleNavigate] Processing utterance:', utterance);
 
-    // Special case: back navigation
-    if (utterance === 'back') {
-      processUtterance('home');
-      return;
-    }
-
     // Pass the utterance directly to the routing system
-    // Navigation cards now send utterances that match route table patterns
+    // "back" is already a keyword in the overview route config
     processUtterance(utterance);
   }, [processUtterance]);
 
@@ -1693,6 +1687,7 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: `Showing ${containersData.count} containers. Loading AI insights...`,
       });
+      setCurrentView('home');
       setLastAction('containers');
 
       // Fetch AI interpretations for containers in background (always use 1h to avoid LangFlow timeouts)
@@ -1835,6 +1830,7 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: `Showing system infrastructure metrics. Loading AI insights...`,
       });
+      setCurrentView('home');
       setLastAction('system');
 
       // Fetch AI interpretations in background (always use 1h to avoid LangFlow timeouts)
@@ -2164,6 +2160,7 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: `Showing ${newComponents.length} automation workflows`,
       });
+      setCurrentView('home');
       setLastAction('automations');
     } catch (error) {
       console.error('Failed to fetch automations:', error);
@@ -2312,6 +2309,7 @@ function DashboardWithAgent() {
       lastUpdated: new Date().toISOString(),
       agentMessage: `Showing ${deploymentsData.totalDeployments} deployments for ${deploymentsData.container} (${githubActionsCount} automated, ${manualCount} manual)`,
     });
+    setCurrentView('home');
   }, []);
 
   // Handler for Costs

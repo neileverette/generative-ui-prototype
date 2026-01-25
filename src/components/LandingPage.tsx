@@ -45,6 +45,7 @@ interface DashboardData {
   alertCount: number;
   uptimePercent: number;
   systemUptime: string;
+  availabilityPercent: number;
   memoryPercent: number;
   automationHours: number;
   automationExecutions: number;
@@ -63,6 +64,7 @@ const DEFAULT_DATA: DashboardData = {
   alertCount: 0,
   uptimePercent: 100,
   systemUptime: '0h 0m',
+  availabilityPercent: 0,
   memoryPercent: 0,
   automationHours: 0,
   automationExecutions: 0,
@@ -115,14 +117,19 @@ export function LandingPage({
 
         // Process system metrics
         if (!systemData.error && systemData.metrics) {
-          const uptime = systemData.metrics.find((m: { name: string }) => m.name === 'system_uptime');
-          const memory = systemData.metrics.find((m: { name: string }) => m.name === 'memory');
+          const uptime = systemData.metrics.find((m: { metric: string }) => m.metric === 'system_uptime');
+          const memory = systemData.metrics.find((m: { metric: string }) => m.metric === 'memory_used_percent');
 
           if (uptime && uptime.currentValue) {
             const seconds = uptime.currentValue;
             const hours = Math.floor(seconds / 3600);
             const mins = Math.floor((seconds % 3600) / 60);
             newData.systemUptime = `${hours}h ${mins}m`;
+
+            // Calculate availability as percentage of 30 days
+            const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+            const availability = Math.min((seconds / thirtyDaysInSeconds) * 100, 100);
+            newData.availabilityPercent = parseFloat(availability.toFixed(2));
           }
 
           if (memory && memory.currentValue !== undefined) {
@@ -199,7 +206,7 @@ export function LandingPage({
         />
 
         {/* System Metrics Row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {/* System Uptime Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
             <div className="flex items-center justify-between">
@@ -209,8 +216,23 @@ export function LandingPage({
                 </div>
                 <span className="text-4xl font-bold text-text-primary">{data.systemUptime}</span>
               </div>
-              <span className="text-sm text-green-600 text-right max-w-[180px]">
-                System uptime is stable with no reported issues.
+              <span className="text-sm text-green-600 text-right max-w-[120px]">
+                Stable, no issues.
+              </span>
+            </div>
+          </div>
+
+          {/* Availability Card */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="widget-title">Availability</span>
+                </div>
+                <span className="text-4xl font-bold text-text-primary">{data.availabilityPercent}%</span>
+              </div>
+              <span className={`text-sm text-right max-w-[120px] ${data.availabilityPercent >= 99 ? 'text-green-600' : data.availabilityPercent >= 95 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {data.availabilityPercent >= 99 ? 'Excellent' : data.availabilityPercent >= 95 ? 'Good' : 'Needs attention'}
               </span>
             </div>
           </div>
@@ -224,8 +246,8 @@ export function LandingPage({
                 </div>
                 <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
               </div>
-              <span className="text-sm text-text-muted text-right max-w-[180px]">
-                Memory usage is currently unavailable for reporting.
+              <span className={`text-sm text-right max-w-[120px] ${data.memoryPercent < 80 ? 'text-green-600' : data.memoryPercent < 95 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {data.memoryPercent < 80 ? 'Healthy' : data.memoryPercent < 95 ? 'Elevated' : 'Critical'}
               </span>
             </div>
           </div>

@@ -278,12 +278,31 @@ async function fetchAllUsageReportPages(
   return { data: allData, has_more: false, next_page: null };
 }
 
+// =============================================================================
+// CACHING
+// =============================================================================
+
+interface CachedData {
+  data: TokenUsageData;
+  timestamp: number;
+}
+
+let tokenUsageCache: CachedData | null = null;
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 /**
  * Get token usage data from Anthropic Admin API
  *
  * Returns today's tokens and month-to-date tokens with model breakdown.
+ * Results are cached for 30 minutes to prevent rate limiting.
  */
 export async function getAnthropicTokenUsage(apiKey: string): Promise<TokenUsageData> {
+  // Check cache first
+  if (tokenUsageCache && Date.now() - tokenUsageCache.timestamp < CACHE_TTL_MS) {
+    console.log('[Admin API] Returning cached data');
+    return tokenUsageCache.data;
+  }
+
   // Fetch today's usage
   const todayRange = getTodayRange();
   const todayResponse = await fetchAllUsageReportPages(apiKey, {
@@ -309,12 +328,20 @@ export async function getAnthropicTokenUsage(apiKey: string): Promise<TokenUsage
   // Get model breakdown from month data
   const modelBreakdown = getModelBreakdown(monthResponse, monthTokens.totalTokens);
 
-  return {
+  const result: TokenUsageData = {
     today: todayTokens,
     monthToDate: monthTokens,
     modelBreakdown,
     lastUpdated: new Date().toISOString(),
   };
+
+  // Cache the result
+  tokenUsageCache = {
+    data: result,
+    timestamp: Date.now(),
+  };
+
+  return result;
 }
 
 /**

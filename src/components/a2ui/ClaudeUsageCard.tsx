@@ -34,10 +34,11 @@ export function ClaudeUsageCard({
   const [error, setError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
   const [cachedEntry, setCachedEntry] = useState<WidgetCacheEntry | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    setError(null);
+    setRefreshError(null);
 
     try {
       // Trigger immediate scrape
@@ -51,14 +52,21 @@ export function ClaudeUsageCard({
       await fetchData();
     } catch (err) {
       console.error('[ClaudeUsageCard] Error triggering refresh:', err);
-      setError(err instanceof Error ? err.message : 'Failed to trigger refresh');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to refresh';
+      setRefreshError(errorMsg);
+
+      // Clear error after 5 seconds
+      setTimeout(() => setRefreshError(null), 5000);
     } finally {
       setIsRefreshing(false);
     }
   };
 
   const fetchData = async () => {
-    setIsLoading(true);
+    // Only show loading state if we don't have cached data
+    if (!claudeCode) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -82,9 +90,13 @@ export function ClaudeUsageCard({
 
       // Fresh data is not stale
       setIsStale(false);
+      setCachedEntry(null);
     } catch (err) {
       console.error('[ClaudeUsageCard] Error fetching synced usage data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch usage data from EC2');
+      // Only set error if we don't have cached data to fall back on
+      if (!claudeCode) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch usage data from EC2');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -174,6 +186,14 @@ export function ClaudeUsageCard({
             Cached {Math.floor(getCacheAge(cachedEntry) / 1000 / 60)}m ago
             {isRefreshing && ' • Updating...'}
           </span>
+        </div>
+      )}
+
+      {/* Refresh Error Toast */}
+      {refreshError && (
+        <div className="flex items-center gap-1.5 mb-2 px-2 py-1.5 bg-red-50 border border-red-200 rounded text-red-700">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="text-xs">{refreshError}</span>
         </div>
       )}
 
