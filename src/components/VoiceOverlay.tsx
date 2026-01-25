@@ -41,17 +41,18 @@ export function VoiceOverlay({ voiceState, transcript }: VoiceOverlayProps) {
             {[0, 100, 200, 300, 400, 500, 600].map((delay, i) => (
               <div
                 key={i}
-                className="w-1.5 bg-accent-primary rounded-full animate-wave"
+                className="w-1.5 rounded-full animate-wave"
                 style={{
                   animationDelay: `${delay}ms`,
                   height: [32, 64, 48, 80, 40, 64, 48][i],
+                  background: 'linear-gradient(180deg, #a5b4fc 0%, #c7d2fe 50%, #e0e7ff 100%)',
                 }}
               />
             ))}
           </div>
 
           {/* Helper Text */}
-          <p className="text-lg text-text-secondary text-center max-w-md">
+          <p className="text-lg text-white/80 text-center max-w-md">
             Listening... Try giving a command like "what's my CPU usage"
           </p>
         </div>
