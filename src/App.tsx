@@ -1334,14 +1334,14 @@ function DashboardWithAgent() {
             id: 'aws-cost-error',
             component: 'metric_card' as const,
             source: 'error',
-            priority: 'high',
+            priority: 'low',
             timestamp: new Date().toISOString(),
             props: {
               title: 'AWS Costs',
-              value: 'Not Configured',
+              value: 'Unavailable',
               size: 'large' as const,
-              status: 'critical' as const,
-              description: data.aws?.error || 'AWS Cost Explorer not configured',
+              status: 'unknown' as const,
+              description: 'Cost data is temporarily unavailable. Check back soon.',
             },
           };
           components.push(errorCard);
@@ -1352,13 +1352,13 @@ function DashboardWithAgent() {
           lastUpdated: new Date().toISOString(),
           agentMessage: data.aws && !data.aws.error
             ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
-            : 'Unable to fetch AWS costs',
+            : 'AWS cost data is currently unavailable',
         });
         setCurrentView('home');
 
         return data.aws && !data.aws.error
           ? `Showing AWS costs: $${data.aws.totalCost.toFixed(2)} for current billing period`
-          : 'Unable to fetch AWS costs - check configuration';
+          : 'AWS cost data is currently unavailable';
       } catch (error) {
         return `Failed to fetch costs: ${error}`;
       }
@@ -2521,14 +2521,14 @@ function DashboardWithAgent() {
           id: 'aws-cost-error',
           component: 'metric_card' as const,
           source: 'error',
-          priority: 'high',
+          priority: 'low',
           timestamp: new Date().toISOString(),
           props: {
             title: 'AWS Costs',
-            value: 'Not Configured',
+            value: 'Unavailable',
             size: 'large' as const,
-            status: 'critical' as const,
-            description: data.aws?.error || 'AWS Cost Explorer not configured',
+            status: 'unknown' as const,
+            description: 'Cost data is temporarily unavailable. Check back soon.',
           },
         };
         components.push(errorCard);
@@ -2539,7 +2539,7 @@ function DashboardWithAgent() {
         lastUpdated: new Date().toISOString(),
         agentMessage: data.aws && !data.aws.error
           ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
-          : 'Unable to fetch AWS costs',
+          : 'AWS cost data is currently unavailable',
       });
       setCurrentView('home');
     } catch (error) {
