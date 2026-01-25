@@ -3,6 +3,13 @@ import { ClaudeUsageComponent } from '../../types/a2ui';
 import { ClaudeCodeUsage } from '../../types/claude-usage';
 import { mcpClient } from '../../services/mcp-client';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  getCachedWidget,
+  setCachedWidget,
+  isCacheStale,
+  getCacheAge,
+  WidgetCacheEntry,
+} from '../../utils/widget-cache';
 
 interface ClaudeUsageCardComponentProps {
   component: ClaudeUsageComponent;
@@ -25,6 +32,8 @@ export function ClaudeUsageCard({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isStale, setIsStale] = useState(false);
+  const [cachedEntry, setCachedEntry] = useState<WidgetCacheEntry | null>(null);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -63,6 +72,16 @@ export function ClaudeUsageCard({
       setClaudeCode(usage);
       if (config?.plan) setPlanConfig(config.plan);
       if (console) setConsoleUsage(console);
+
+      // Update cache with fresh data
+      setCachedWidget('claude-usage', 'console', {
+        claudeCode: usage,
+        planConfig: config?.plan || null,
+        consoleUsage: console,
+      });
+
+      // Fresh data is not stale
+      setIsStale(false);
     } catch (err) {
       console.error('[ClaudeUsageCard] Error fetching synced usage data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch usage data from EC2');
@@ -72,7 +91,29 @@ export function ClaudeUsageCard({
   };
 
   useEffect(() => {
+    // Check cache first before fetching
+    const cached = getCachedWidget<{
+      claudeCode: ClaudeCodeUsage;
+      planConfig: PlanConfig | null;
+      consoleUsage: any | null;
+    }>('claude-usage', 'console');
+
+    if (cached) {
+      // Display cached data immediately
+      setClaudeCode(cached.data.claudeCode);
+      if (cached.data.planConfig) setPlanConfig(cached.data.planConfig);
+      if (cached.data.consoleUsage) setConsoleUsage(cached.data.consoleUsage);
+      setIsLoading(false);
+
+      // Check if cache is stale (>5 minutes)
+      const stale = isCacheStale(cached, 5 * 60 * 1000);
+      setIsStale(stale);
+      setCachedEntry(cached);
+    }
+
+    // Fetch fresh data in background
     fetchData();
+
     const interval = setInterval(() => fetchData(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
