@@ -1262,7 +1262,7 @@ function DashboardWithAgent() {
         const components: A2UIComponent[] = [];
 
         // Check if AWS data is available
-        if (data.aws && !data.aws.error) {
+        if (data.aws && typeof data.aws.totalCost === 'number') {
           // Main cost metric card - 2 columns wide
           const costCard: A2UIComponent = {
             id: 'aws-total-cost',
@@ -1405,13 +1405,13 @@ function DashboardWithAgent() {
         setDashboardState({
           components,
           lastUpdated: new Date().toISOString(),
-          agentMessage: data.aws && !data.aws.error
+          agentMessage: data.aws && typeof data.aws.totalCost === 'number'
             ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
             : `AWS costs: $847.23 (Demo data)`,
         });
         setCurrentView('home');
 
-        return data.aws && !data.aws.error
+        return data.aws && typeof data.aws.totalCost === 'number'
           ? `Showing AWS costs: $${data.aws.totalCost.toFixed(2)} for current billing period`
           : `Showing AWS costs: $847.23 (Demo data)`;
       } catch (error) {
@@ -2578,8 +2578,8 @@ function DashboardWithAgent() {
 
       const components: A2UIComponent[] = [];
 
-      // Check if AWS data is available
-      if (data.aws && !data.aws.error) {
+      // Check if AWS data is available - just check for data.aws with totalCost
+      if (data.aws && typeof data.aws.totalCost === 'number') {
         // Main cost metric card - 2 columns wide
         const costCard: A2UIComponent = {
           id: 'aws-total-cost',
@@ -2722,7 +2722,7 @@ function DashboardWithAgent() {
       setDashboardState({
         components,
         lastUpdated: new Date().toISOString(),
-        agentMessage: data.aws && !data.aws.error
+        agentMessage: data.aws && typeof data.aws.totalCost === 'number'
           ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
           : `AWS costs: $847.23 (Demo data)`,
       });
