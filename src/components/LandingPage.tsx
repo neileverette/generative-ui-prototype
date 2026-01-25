@@ -126,9 +126,12 @@ export function LandingPage({
             const mins = Math.floor((seconds % 3600) / 60);
             newData.systemUptime = `${hours}h ${mins}m`;
 
-            // Calculate availability as percentage of 30 days
+            // Calculate availability: assume 5 min downtime per reboot in 30-day window
             const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-            const availability = Math.min((seconds / thirtyDaysInSeconds) * 100, 100);
+            const estimatedRebootDowntime = 5 * 60; // 5 minutes per reboot
+            const rebootsInPeriod = seconds >= thirtyDaysInSeconds ? 0 : 1;
+            const totalDowntime = rebootsInPeriod * estimatedRebootDowntime;
+            const availability = 100 - (totalDowntime / thirtyDaysInSeconds) * 100;
             newData.availabilityPercent = parseFloat(availability.toFixed(2));
           }
 
