@@ -10,6 +10,8 @@ import { TextMessage, MessageRole } from '@copilotkit/runtime-client-gql';
 import { Server, Container, Workflow, ArrowLeft, Rocket, DollarSign, Activity } from 'lucide-react';
 import deploymentsData from './data/deployments.json';
 import { useVoiceDictation } from './hooks/useVoiceDictation';
+import { VoiceButton } from './components/VoiceButton';
+import { VoiceOverlay } from './components/VoiceOverlay';
 import { mcpClient } from './services/mcp-client';
 import { getCachedInsight, setCachedInsight } from './utils/insights-cache';
 
@@ -2521,13 +2523,6 @@ function DashboardWithAgent() {
             onNavigate={handleNavigate}
             onSendMessage={handleSendMessage}
             timeWindow={timeWindow}
-            voiceInput={{
-              voiceState,
-              transcript,
-              onStartListening: startListening,
-              onStopListening: stopListening,
-              isSupported: isVoiceSupported,
-            }}
           />
         </main>
 
@@ -2588,6 +2583,29 @@ function DashboardWithAgent() {
             </div>
           </div>
         </div>
+
+        {/* Floating Voice UI - Always visible, positioned above all elements */}
+        {isVoiceSupported && (
+          <>
+            {/* Voice Overlay - Shows when voice is active */}
+            {voiceState !== 'idle' && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm pointer-events-none">
+                <div className="pointer-events-auto">
+                  <VoiceOverlay voiceState={voiceState} transcript={transcript} />
+                </div>
+              </div>
+            )}
+
+            {/* Voice Button - Always visible at bottom center */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+              <VoiceButton
+                voiceState={voiceState}
+                onStart={startListening}
+                onStop={stopListening}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

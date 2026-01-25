@@ -8,6 +8,7 @@
 - [x] **Milestone 4: Claude Code Widget Enhancements** - Rebuild ClaudeUsageCard to match wireframe design (Phases 10-15)
 - [x] **Milestone 5: Claude Data Hydration** - Replace fake data with real API data from Claude/Anthropic (Phases 16-21) — [Details](milestones/v5.0-ROADMAP.md)
 - [ ] **Milestone 6: Claude Scraper Service** - Improve reliability, error handling, and expand scraper capabilities (Phases 22-27)
+- [x] **Milestone 7: Voice UI Restoration** - Restore voice input button as persistent floating element (Phase 28)
 
 ---
 
@@ -585,3 +586,55 @@ Plans:
 | 25. Monitoring & Health Checks | 0/? | Not started | - |
 | 26. Rate Limiting & Throttling | 0/? | Not started | - |
 | 27. Testing & Documentation | 0/? | Not started | - |
+
+---
+
+## Milestone 7: Voice UI Restoration (COMPLETE)
+
+### Overview
+
+Restore the voice input button that disappeared after the landing page redesign. The voice button should be a persistent floating element positioned above all other UI elements, visible on every page load.
+
+### Domain Expertise
+
+None - React component refactoring and CSS positioning
+
+### Phases
+
+- [x] **Phase 28: Voice UI Architecture** - Move voice button from conditional rendering to persistent floating element
+
+## Phase Details (Milestone 7)
+
+### Phase 28: Voice UI Architecture
+**Goal**: Make voice button a persistent floating element visible on all views
+**Depends on**: Nothing (can start immediately)
+**Research**: Unlikely (standard React patterns and CSS positioning)
+
+Requirements:
+- Remove voice UI from DashboardCanvas component
+- Add floating voice button to App.tsx positioned absolutely
+- Position at bottom center (fixed position)
+- High z-index to stay above all elements
+- Show overlay when voice is active
+- Visible on all views (landing, home, commands, loading)
+
+Plans:
+- [x] 28-01: Refactor voice UI to floating architecture
+
+## Progress (Milestone 7)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 28. Voice UI Architecture | 1/1 | Complete | 2025-01-24 |
+
+## Summary (Milestone 7)
+
+**Milestone Status: COMPLETE**
+
+Voice button is now a persistent floating element:
+- Removed voice UI from DashboardCanvas props and rendering
+- Added VoiceButton and VoiceOverlay as floating elements in App.tsx
+- Positioned at bottom center with `fixed bottom-8 left-1/2 -translate-x-1/2`
+- z-index: 50 to appear above all other content
+- Voice overlay shows with backdrop blur when voice is active
+- Works on all views: landing page, home, commands, and loading states

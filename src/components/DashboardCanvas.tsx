@@ -8,9 +8,6 @@ import { ProgressBar } from './a2ui/ProgressBar';
 import { ECRSummaryCard } from './a2ui/ECRSummaryCard';
 import { ClaudeUsageCard } from './a2ui/ClaudeUsageCard';
 import { AnthropicUsageCard } from './a2ui/AnthropicUsageCard';
-import { VoiceOverlay } from './VoiceOverlay';
-import { VoiceButton } from './VoiceButton';
-import { VoiceState } from '../hooks/useVoiceDictation';
 import { LandingPage } from './LandingPage';
 
 // Main Icon with optional gradient
@@ -49,14 +46,6 @@ interface CommandAction {
   label: string;
 }
 
-interface VoiceInputProps {
-  voiceState: VoiceState;
-  transcript: string;
-  onStartListening: () => void;
-  onStopListening: () => void;
-  isSupported: boolean;
-}
-
 interface DashboardCanvasProps {
   state: DashboardState;
   shortcuts?: ShortcutAction[];
@@ -64,7 +53,6 @@ interface DashboardCanvasProps {
   onBack?: () => void;
   commands?: CommandAction[];
   onCommandClick?: (query: string) => void;
-  voiceInput?: VoiceInputProps;
   statusSummary?: string | null;
   statusSummaryLoading?: boolean;
   onNavigate?: (destination: string) => void;
@@ -122,11 +110,8 @@ const DEFAULT_COMMANDS: CommandAction[] = [
   { id: 'last-deployment', label: 'When was my last deployment?' },
 ];
 
-export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, voiceInput, statusSummary, statusSummaryLoading, onNavigate, onSendMessage, timeWindow }: DashboardCanvasProps) {
+export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack, commands = DEFAULT_COMMANDS, onCommandClick, statusSummary, statusSummaryLoading, onNavigate, onSendMessage, timeWindow }: DashboardCanvasProps) {
   const { components, lastUpdated, agentMessage } = state;
-
-  // Determine if voice is active (listening or transcribing)
-  const isVoiceActive = voiceInput && voiceInput.voiceState !== 'idle';
 
   // Landing page view - new mockup design
   if (currentView === 'landing') {
@@ -220,15 +205,10 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
           )}
         </p>
 
-        {/* Voice Content Area - switches between cards and voice overlay */}
-        <div className="relative w-full max-w-4xl min-h-[200px] flex flex-col items-center justify-center">
-          {/* Shortcut Cards - 2 rows x 3 columns, Fade out during voice input */}
-          {shortcuts && shortcuts.length > 0 && (
-            <div
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full transition-all duration-300 ${
-                isVoiceActive ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'
-              }`}
-            >
+        {/* Shortcut Cards - 2 rows x 3 columns */}
+        {shortcuts && shortcuts.length > 0 && (
+          <div className="w-full max-w-4xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
               {shortcuts.map((shortcut) => (
                 <button
                   key={shortcut.id}
@@ -249,31 +229,6 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
                 </button>
               ))}
             </div>
-          )}
-
-          {/* Voice Overlay - Fade in during voice input */}
-          {voiceInput && (
-            <div
-              className={`w-full transition-all duration-300 ${
-                isVoiceActive ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'
-              }`}
-            >
-              <VoiceOverlay
-                voiceState={voiceInput.voiceState}
-                transcript={voiceInput.transcript}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Voice Button - Always visible, centered below content */}
-        {voiceInput && voiceInput.isSupported && (
-          <div className="mt-8">
-            <VoiceButton
-              voiceState={voiceInput.voiceState}
-              onStart={voiceInput.onStartListening}
-              onStop={voiceInput.onStopListening}
-            />
           </div>
         )}
       </div>
