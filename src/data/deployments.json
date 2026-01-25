@@ -1,7 +1,337 @@
 {
   "container": "generative-ui",
-  "totalDeployments": 11,
+  "totalDeployments": 33,
   "deployments": [
+    {
+      "id": 33,
+      "tag": "v1.3.21",
+      "name": "Deployments Widget Improvements",
+      "date": "2026-01-25T19:37:08Z",
+      "summary": "Limit deployments to 10 and add GitHub Actions link",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "ca07aae",
+          "message": "feat: limit deployments to 10 and add GitHub Actions link"
+        }
+      ],
+      "notes": "Added footer link to GitHub Actions for full deployment history"
+    },
+    {
+      "id": 32,
+      "tag": "v1.3.20",
+      "name": "Landing Page UI Update",
+      "date": "2026-01-25T19:31:14Z",
+      "summary": "Add instruction text and reduce list spacing",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "d3641bc",
+          "message": "ui: add instruction text and reduce list spacing on landing page"
+        }
+      ],
+      "notes": "Added bold prompt above command list"
+    },
+    {
+      "id": 31,
+      "tag": "v1.3.19",
+      "name": "ClaudeUsageCard Bug Fix",
+      "date": "2026-01-25T19:01:32Z",
+      "summary": "Fix variable shadowing bug in ClaudeUsageCard",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "6a84ed1",
+          "message": "fix(43-01): fix variable shadowing bug in ClaudeUsageCard"
+        }
+      ],
+      "notes": "Renamed 'console' variable to prevent shadowing global console object"
+    },
+    {
+      "id": 30,
+      "tag": "v1.3.18",
+      "name": "Console Favicon",
+      "date": "2026-01-25T18:28:20Z",
+      "summary": "Add custom Console favicon",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "33552d6",
+          "message": "feat: add custom Console favicon"
+        }
+      ],
+      "notes": "Replaced default Vite favicon with custom Console icon"
+    },
+    {
+      "id": 29,
+      "tag": "v1.3.17",
+      "name": "AWS Credentials Fix",
+      "date": "2026-01-25T17:40:15Z",
+      "summary": "Add AWS credentials to docker-compose environment",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "a8b2a66",
+          "message": "fix: add AWS credentials to docker-compose environment"
+        }
+      ],
+      "notes": "Fixed AWS Costs 'Not Configured' error on production"
+    },
+    {
+      "id": 28,
+      "tag": "v1.3.16",
+      "name": "API Rate Limit Handling",
+      "date": "2026-01-25T17:31:40Z",
+      "summary": "Properly detect and handle API rate limit errors",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "0be9277",
+          "message": "fix: properly detect and handle API rate limit errors"
+        }
+      ],
+      "notes": "Server returns 429 status when Anthropic API rate limit is hit"
+    },
+    {
+      "id": 27,
+      "tag": "v1.3.15",
+      "name": "Rate Limit Fallback UI",
+      "date": "2026-01-25T17:24:43Z",
+      "summary": "Add rate limit error fallback for Anthropic usage widget",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "f269dcf",
+          "message": "feat: add rate limit error fallback for Anthropic usage widget"
+        }
+      ],
+      "notes": "Display friendly message when API rate limit exceeded"
+    },
+    {
+      "id": 26,
+      "tag": "v1.3.14",
+      "name": "Voice-First Chat Redesign",
+      "date": "2026-01-25T17:19:50Z",
+      "summary": "Redesign chat sidebar with voice-first messaging",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "151a0b9",
+          "message": "feat: redesign chat sidebar with voice-first messaging"
+        }
+      ],
+      "notes": "Replaced quick action buttons with clickable example queries"
+    },
+    {
+      "id": 25,
+      "tag": "v1.3.13",
+      "name": "Availability Calculation Fix",
+      "date": "2026-01-25T16:55:04Z",
+      "summary": "Improve availability calculation with reboot downtime estimate",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "f664808",
+          "message": "fix: improve availability calculation with reboot downtime estimate"
+        }
+      ],
+      "notes": "Account for 5-minute downtime per system reboot"
+    },
+    {
+      "id": 24,
+      "tag": "v1.3.12",
+      "name": "Manual Refresh Error Handling",
+      "date": "2026-01-25T16:52:08Z",
+      "summary": "Improve error handling for manual refresh",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "b25304f",
+          "message": "fix(43-01): improve error handling for manual refresh"
+        }
+      ],
+      "notes": "Manual refresh errors no longer break the widget"
+    },
+    {
+      "id": 23,
+      "tag": "v1.3.11",
+      "name": "Staleness Indicator",
+      "date": "2026-01-25T16:47:56Z",
+      "summary": "Add staleness indicator to Claude usage UI",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "d6e91f2",
+          "message": "feat(43-01): add staleness indicator to UI"
+        }
+      ],
+      "notes": "Display amber indicator when cache is stale with age in minutes"
+    },
+    {
+      "id": 22,
+      "tag": "v1.3.10",
+      "name": "Cache Hydration",
+      "date": "2026-01-25T16:47:02Z",
+      "summary": "Add cache hydration on component mount",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "2b00df2",
+          "message": "feat(43-01): add cache hydration on component mount"
+        }
+      ],
+      "notes": "Display cached data immediately if available"
+    },
+    {
+      "id": 21,
+      "tag": "v1.3.9",
+      "name": "Manual Refresh Button",
+      "date": "2026-01-25T16:40:02Z",
+      "summary": "Add manual refresh button to Claude usage widget",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "2871a8d",
+          "message": "feat: add manual refresh button to Claude usage widget"
+        }
+      ],
+      "notes": "Trigger immediate scraper run with refresh button"
+    },
+    {
+      "id": 20,
+      "tag": "v1.3.8",
+      "name": "Claude Usage Card Improvements",
+      "date": "2026-01-25T16:17:00Z",
+      "summary": "Fix session display and responsive layout",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "Multiple Claude usage widget improvements"
+        }
+      ],
+      "notes": "Fixed session usage display and improved responsive layout"
+    },
+    {
+      "id": 19,
+      "tag": "v1.3.7",
+      "name": "Anthropic Admin API Integration",
+      "date": "2026-01-25T04:30:00Z",
+      "summary": "Add Anthropic Admin API for token usage tracking",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add Anthropic Admin API integration"
+        }
+      ],
+      "notes": "Real-time token usage from Anthropic Admin API"
+    },
+    {
+      "id": 18,
+      "tag": "v1.3.6",
+      "name": "Console Usage Sync",
+      "date": "2026-01-24T22:00:00Z",
+      "summary": "Add EC2 sync for console usage data",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add console usage sync from EC2"
+        }
+      ],
+      "notes": "Sync console usage limits from browser extension"
+    },
+    {
+      "id": 17,
+      "tag": "v1.3.5",
+      "name": "Claude Usage Widget",
+      "date": "2026-01-24T18:00:00Z",
+      "summary": "Add Claude usage tracking widget",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add Claude usage widget"
+        }
+      ],
+      "notes": "Track Claude Code, Console, and API usage"
+    },
+    {
+      "id": 16,
+      "tag": "v1.3.4",
+      "name": "Widget Routing System",
+      "date": "2026-01-23T20:00:00Z",
+      "summary": "Add semantic widget routing for voice commands",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add widget routing system"
+        }
+      ],
+      "notes": "Route voice commands to appropriate widgets"
+    },
+    {
+      "id": 15,
+      "tag": "v1.3.3",
+      "name": "ECR Summary Widget",
+      "date": "2026-01-22T19:00:00Z",
+      "summary": "Add ECR repository summary widget",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add ECR summary widget"
+        }
+      ],
+      "notes": "Display ECR repositories and recent images"
+    },
+    {
+      "id": 14,
+      "tag": "v1.3.2",
+      "name": "AWS Cost Explorer",
+      "date": "2026-01-21T18:00:00Z",
+      "summary": "Add AWS cost tracking and forecasting",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add AWS cost explorer integration"
+        }
+      ],
+      "notes": "Display current month costs and forecast"
+    },
+    {
+      "id": 13,
+      "tag": "v1.3.1",
+      "name": "Circuit Breaker",
+      "date": "2026-01-20T17:00:00Z",
+      "summary": "Add circuit breaker for resilient API calls",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: add circuit breaker pattern"
+        }
+      ],
+      "notes": "Prevent hammering failed endpoints"
+    },
+    {
+      "id": 12,
+      "tag": "v1.3.0",
+      "name": "MCP Integration Sprint",
+      "date": "2026-01-18T16:00:00Z",
+      "summary": "Major MCP orchestration layer integration",
+      "trigger": "github_actions",
+      "commits": [
+        {
+          "hash": "various",
+          "message": "feat: MCP integration sprint completion"
+        }
+      ],
+      "notes": "Full MCP tool integration for Datadog metrics"
+    },
     {
       "id": 11,
       "tag": "v1.2.8",
@@ -31,189 +361,6 @@
         }
       ],
       "notes": "Added Trigger column showing GitHub Actions vs Manual deployments with emoji indicators"
-    },
-    {
-      "id": 9,
-      "tag": "v1.2.6",
-      "name": "Neil's Command Central",
-      "date": "2026-01-13T19:58:42Z",
-      "summary": "Personalized branding and enhanced animations",
-      "trigger": "github_actions",
-      "commits": [
-        {
-          "hash": "7dfa9e5",
-          "message": "style: add circular orbit animations with varied directions"
-        },
-        {
-          "hash": "195ffa9",
-          "message": "style: change success color from green to purple"
-        },
-        {
-          "hash": "bd93375",
-          "message": "style: variable blur, bolder headline, faster animations"
-        },
-        {
-          "hash": "e192702",
-          "message": "style: change status highlight from green to accent purple"
-        },
-        {
-          "hash": "2472a76",
-          "message": "style: speed up background animation 2x"
-        },
-        {
-          "hash": "057a21a",
-          "message": "feat: personalize landing page with Neil's branding"
-        }
-      ],
-      "notes": "Rebranded to Neil's Command Central with purple theming and circular orbit background animations"
-    },
-    {
-      "id": 8,
-      "tag": "v1.2.5",
-      "name": "Home Page Refresh",
-      "date": "2026-01-11T21:15:00Z",
-      "summary": "Revised home page layout with status summary",
-      "trigger": "github_actions",
-      "commits": [
-        {
-          "hash": "7092205",
-          "message": "Revise home page layout with 2x3 grid and status summary"
-        },
-        {
-          "hash": "1f3326f",
-          "message": "Add quick status summary action and update suggestions"
-        }
-      ],
-      "notes": "Updated home page to 2x3 grid layout with live status summary"
-    },
-    {
-      "id": 7,
-      "tag": "v1.2.4",
-      "name": "CI/CD Pipeline",
-      "date": "2026-01-08T00:13:41Z",
-      "summary": "Automated deployments via GitHub Actions",
-      "trigger": "github_actions",
-      "commits": [
-        {
-          "hash": "859319a",
-          "message": "Fix env file path and add CI/CD documentation"
-        },
-        {
-          "hash": "031b742",
-          "message": "Update CI/CD to deploy to EC2 instead of ECS"
-        }
-      ],
-      "notes": "Migrated from manual deployments to automated GitHub Actions CI/CD pipeline"
-    },
-    {
-      "id": 6,
-      "tag": "v1.2.3",
-      "name": "GitHub Actions Setup",
-      "date": "2026-01-07T23:51:08Z",
-      "summary": "Initial GitHub Actions workflow for EC2 deployment",
-      "trigger": "github_actions",
-      "commits": [
-        {
-          "hash": "e9fa2b1",
-          "message": "Add GitHub Actions CI/CD workflow for AWS ECS deployment"
-        }
-      ],
-      "notes": "First automated deployment via GitHub Actions on push to main"
-    },
-    {
-      "id": 5,
-      "tag": "v1.2.2",
-      "name": "Langflow Agent Fix",
-      "date": "2026-01-07T17:45:00Z",
-      "summary": "Fix Langflow agent Datadog API connectivity",
-      "trigger": "manual",
-      "commits": [
-        {
-          "hash": "c367b84",
-          "message": "Fix skeleton loaders not clearing on interpretations error"
-        }
-      ],
-      "notes": "Updated Langflow Agent Instructions with Datadog API URL configuration to restore metric interpretations"
-    },
-    {
-      "id": 4,
-      "tag": "v1.2.1",
-      "name": "Layout Responsiveness Fix",
-      "date": "2026-01-06T04:30:00Z",
-      "summary": "Fix home screen tiles and deployments grid layout",
-      "trigger": "manual",
-      "commits": [
-        {
-          "hash": "52b64c6",
-          "message": "Fix home screen tile layout and deployments grid responsiveness"
-        }
-      ],
-      "notes": "Changed home screen to display 5 tiles in a row, improved deployments view to show metric card and table side-by-side"
-    },
-    {
-      "id": 3,
-      "tag": "v1.2.0",
-      "name": "Deployment Tracking Feature",
-      "date": "2026-01-05T21:15:00Z",
-      "summary": "Deployment tracking with visual history in dashboard",
-      "trigger": "manual",
-      "commits": [
-        {
-          "hash": "dbb91ab",
-          "message": "Add deployment tracking configuration"
-        },
-        {
-          "hash": "e0948a5",
-          "message": "Add deployments tracking feature"
-        }
-      ],
-      "notes": "Added deployment history panel showing version tags, dates, and commit summaries"
-    },
-    {
-      "id": 2,
-      "tag": "v1.1.0",
-      "name": "Voice Input Feature",
-      "date": "2026-01-05T18:39:00Z",
-      "summary": "Voice input with live transcription and MCP integration",
-      "trigger": "manual",
-      "commits": [
-        {
-          "hash": "afbc64c",
-          "message": "Refine voice transcription styling"
-        },
-        {
-          "hash": "117fa6d",
-          "message": "Add voice input feature with live transcription"
-        },
-        {
-          "hash": "0e21d83",
-          "message": "Add MCP (Model Context Protocol) integration for agent orchestration"
-        }
-      ],
-      "notes": "Added voice input with Web Speech API, waveform animation, and CopilotKit chat integration"
-    },
-    {
-      "id": 1,
-      "tag": "v1.0.0",
-      "name": "Initial Deployment",
-      "date": "2026-01-02T01:30:33Z",
-      "summary": "Generative UI Dashboard with CopilotKit and Datadog integration",
-      "trigger": "manual",
-      "commits": [
-        {
-          "hash": "b333994",
-          "message": "Add generative UI dashboard with CopilotKit integration"
-        },
-        {
-          "hash": "080c640",
-          "message": "Add container metrics, uptime widget, and UI improvements"
-        },
-        {
-          "hash": "f23a287",
-          "message": "Add workflow metrics, containers list, and visual polish"
-        }
-      ],
-      "notes": "First deployment of generative UI dashboard to EC2"
     }
   ]
 }
