@@ -671,7 +671,7 @@ None - Express.js API patterns, HTTP client requests, standard error handling
 
 ### Phases
 
-- [ ] **Phase 29: EC2 API Endpoint** - Create POST endpoint to receive and store usage data
+- [x] **Phase 29: EC2 API Endpoint** - Create POST endpoint to receive and store usage data
 - [ ] **Phase 30: Data Sync Client** - Add sync client to scraper that POSTs after each scrape
 - [ ] **Phase 31: EC2 Data Storage** - Implement storage layer with versioning and cleanup
 - [ ] **Phase 32: EC2 GET Endpoint** - Create GET endpoint to serve stored usage data
@@ -695,7 +695,7 @@ Requirements:
 - Return success/error status
 
 Plans:
-- [ ] 29-01: TBD (run /gsd:plan-phase 29 to break down)
+- [x] 29-01: EC2 API Endpoint implementation (Complete)
 
 ### Phase 30: Data Sync Client
 
@@ -783,7 +783,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 29. EC2 API Endpoint | 0/? | Not started | - |
+| 29. EC2 API Endpoint | 1/1 | Complete | 2026-01-25 |
 | 30. Data Sync Client | 0/? | Not started | - |
 | 31. EC2 Data Storage | 0/? | Not started | - |
 | 32. EC2 GET Endpoint | 0/? | Not started | - |

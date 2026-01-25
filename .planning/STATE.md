@@ -4,8 +4,8 @@
 
 **Milestone**: v8.0 Scraper-to-EC2 Data Sync
 **Phase**: 29 of 34 (EC2 API Endpoint)
-**Plan**: Not started
-**Status**: Ready to plan Phase 29
+**Plan**: Complete (1/1)
+**Status**: Ready for Phase 30 (Data Sync Client)
 
 ## Quick Context
 
@@ -41,7 +41,7 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 
 | Phase | Name | Status | Completed |
 |-------|------|--------|-----------|
-| 29 | EC2 API Endpoint | Not started | - |
+| 29 | EC2 API Endpoint | Complete | 2026-01-25 |
 | 30 | Data Sync Client | Not started | - |
 | 31 | EC2 Data Storage | Not started | - |
 | 32 | EC2 GET Endpoint | Not started | - |
@@ -52,19 +52,19 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 
 | Commit | Type | Description |
 |--------|------|-------------|
+| `7bafdfc` | chore | Add environment variable documentation |
+| `62d8b78` | feat | Add POST endpoint with authentication and validation |
+| `783794e` | feat | Create TypeScript interfaces for Console usage data sync |
 | `7658d8b` | feat | Update auto-scraper to handle partial data results |
 | `7bf7500` | feat | Implement section-level error handling with partial data extraction |
 | `f84e56b` | feat | Integrate retry strategy into auto-scraper |
-| `3498cf0` | feat | Create retry strategy module with exponential backoff |
-| `22d502a` | feat | Integrate session validation into scraper startup |
-| `92fff73` | feat | Create session health check module |
 
 ## Next Actions
 
-1. Plan Phase 29 (EC2 API Endpoint) - Create POST endpoint to receive usage data
-2. Research EC2 deployment patterns if needed
-3. Consider authentication strategy (API keys, JWT, etc.)
-4. Plan data schema and storage format
+1. Plan Phase 30 (Data Sync Client) - Create client to POST usage data to EC2
+2. Integrate sync client into auto-scraper after successful scrapes
+3. Add retry logic for failed sync attempts
+4. Test end-to-end sync flow from scraper to EC2
 
 ## Key Files
 
@@ -94,6 +94,20 @@ Starting v8.0 Scraper-to-EC2 Data Sync milestone. Decoupling data collection (la
 - Rate limiting constraints
 
 ## Session Log
+
+### 2026-01-25 - Phase 29 Complete
+- Implemented EC2 API endpoint for scraper-to-EC2 data synchronization
+- Created TypeScript interfaces (ConsoleUsageDataSync, SyncResponse) in claude-console-sync-types.ts
+- Added POST /api/claude/console-usage endpoint with X-API-Key authentication
+- Comprehensive validation: lastUpdated ISO 8601, percentageUsed 0-100, resetsIn non-empty
+- Supports partial data (optional currentSession/weeklyLimits)
+- Separate storage file (console-usage-synced.json) to avoid conflicts with local scraper
+- Environment variable CLAUDE_SYNC_API_KEY for authentication
+- Server startup logging shows sync endpoint configuration status
+- Error responses: 401 (auth), 400 (validation), 500 (server errors)
+- Phase 29 complete (1/1 plans): EC2 API Endpoint
+- Commits: 783794e, 62d8b78, 7bafdfc
+- Ready for Phase 30 (Data Sync Client)
 
 ### 2026-01-24 - Milestone 8 Created
 - Created v8.0 Scraper-to-EC2 Data Sync milestone
