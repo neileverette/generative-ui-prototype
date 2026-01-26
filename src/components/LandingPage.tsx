@@ -211,17 +211,17 @@ export function LandingPage({
         />
 
         {/* System Metrics Row */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* System Uptime Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="widget-title">System Uptime</span>
                 </div>
-                <span className="text-4xl font-bold text-text-primary">{data.systemUptime}</span>
+                <span className="text-4xl font-bold text-text-primary whitespace-nowrap">{data.systemUptime}</span>
               </div>
-              <span className="text-sm text-green-600 text-right max-w-[120px]">
+              <span className="text-sm text-green-600 text-right break-words max-w-[120px]">
                 Stable, no issues.
               </span>
             </div>
@@ -229,14 +229,14 @@ export function LandingPage({
 
           {/* Availability Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="widget-title">Availability</span>
                 </div>
-                <span className="text-4xl font-bold text-text-primary">{data.availabilityPercent}%</span>
+                <span className="text-4xl font-bold text-text-primary whitespace-nowrap">{data.availabilityPercent}%</span>
               </div>
-              <span className={`text-sm text-right max-w-[120px] ${data.availabilityPercent >= 99 ? 'text-green-600' : data.availabilityPercent >= 95 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span className={`text-sm text-right break-words max-w-[120px] ${data.availabilityPercent >= 99 ? 'text-green-600' : data.availabilityPercent >= 95 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {data.availabilityPercent >= 99 ? 'Excellent' : data.availabilityPercent >= 95 ? 'Good' : 'Needs attention'}
               </span>
             </div>
@@ -244,14 +244,14 @@ export function LandingPage({
 
           {/* Memory Card */}
           <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm p-5">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="widget-title">Memory</span>
                 </div>
-                <span className="text-4xl font-bold text-text-primary">{data.memoryPercent}%</span>
+                <span className="text-4xl font-bold text-text-primary whitespace-nowrap">{data.memoryPercent}%</span>
               </div>
-              <span className={`text-sm text-right max-w-[120px] ${data.memoryPercent < 80 ? 'text-green-600' : data.memoryPercent < 95 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span className={`text-sm text-right break-words max-w-[120px] ${data.memoryPercent < 80 ? 'text-green-600' : data.memoryPercent < 95 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {data.memoryPercent < 80 ? 'Healthy' : data.memoryPercent < 95 ? 'Elevated' : 'Critical'}
               </span>
             </div>

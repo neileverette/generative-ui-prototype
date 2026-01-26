@@ -94,8 +94,8 @@
     {
       "id": "cicd",
       "title": "CI/CD",
-      "subtitle": "AWS",
-      "url": "https://us-east-1.console.aws.amazon.com/codesuite/codepipeline/pipelines",
+      "subtitle": "GitHub",
+      "url": "https://github.com/neileverette/generative-ui-prototype/actions",
       "color": "#8b5cf6"
     }
   ]

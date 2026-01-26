@@ -138,7 +138,7 @@ export function ClaudeUsageCard({
   // Loading state
   if (isLoading) {
     return (
-      <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
+      <div className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm ${className || ''}`}>
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
           <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
@@ -152,7 +152,7 @@ export function ClaudeUsageCard({
   // Error state
   if (error || !claudeCode) {
     return (
-      <div className={`bg-white rounded-2xl p-6 shadow-sm ${className || ''}`}>
+      <div className={`bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm ${className || ''}`}>
         <div className="flex items-center justify-between mb-4">
           <span className="widget-title">Claude</span>
         </div>

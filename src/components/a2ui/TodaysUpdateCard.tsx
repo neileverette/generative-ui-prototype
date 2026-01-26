@@ -40,7 +40,7 @@ export function TodaysUpdateCard({
     <div
       className={`
         bg-white/70 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm
-        p-6 pr-[200px] ${className}
+        p-6 ${className}
       `}
     >
       <div className="flex items-center gap-8">
