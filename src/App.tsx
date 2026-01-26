@@ -1338,15 +1338,19 @@ function DashboardWithAgent() {
         } else {
           // AWS not configured or has error - show demo data instead
           const demoData = {
-            totalCost: 847.23,
+            totalCost: 113.49,
             period: { start: '2026-01-01', end: new Date().toISOString().split('T')[0] },
             breakdown: [
-              { name: 'Amazon EC2', cost: 412.56, percentage: 48.7 },
-              { name: 'Amazon RDS', cost: 198.34, percentage: 23.4 },
-              { name: 'Amazon S3', cost: 89.12, percentage: 10.5 },
-              { name: 'AWS Lambda', cost: 67.45, percentage: 8.0 },
-              { name: 'Amazon CloudWatch', cost: 45.23, percentage: 5.3 },
-              { name: 'Other', cost: 34.53, percentage: 4.1 },
+              { name: 'AWS Cost Explorer', cost: 43.25, percentage: 38.1 },
+              { name: 'Amazon Elastic Compute Cloud - Compute', cost: 39.34, percentage: 34.7 },
+              { name: 'Amazon Registrar', cost: 15.00, percentage: 13.2 },
+              { name: 'Tax', cost: 6.10, percentage: 5.4 },
+              { name: 'EC2 - Other', cost: 4.40, percentage: 3.9 },
+              { name: 'Amazon Virtual Private Cloud', cost: 3.03, percentage: 2.7 },
+              { name: 'Amazon Route 53', cost: 1.03, percentage: 0.9 },
+              { name: 'AWS Secrets Manager', cost: 0.65, percentage: 0.6 },
+              { name: 'AmazonCloudWatch', cost: 0.51, percentage: 0.5 },
+              { name: 'Amazon EC2 Container Registry (ECR)', cost: 0.12, percentage: 0.1 },
             ],
           };
           const costCard: A2UIComponent = {
@@ -1376,7 +1380,7 @@ function DashboardWithAgent() {
             columnSpan: 2,
             props: {
               title: 'Forecasted Month End',
-              value: '$876.44',
+              value: '$141.66',
               unit: 'USD',
               size: 'xl' as const,
               status: 'healthy' as const,
@@ -1414,26 +1418,30 @@ function DashboardWithAgent() {
           lastUpdated: new Date().toISOString(),
           agentMessage: data.aws && typeof data.aws.totalCost === 'number'
             ? `AWS costs for ${data.aws.period.start} to ${data.aws.period.end}: $${data.aws.totalCost.toFixed(2)}`
-            : `AWS costs: $847.23 (Demo data)`,
+            : `AWS costs: $113.49 (Demo data)`,
         });
         setCurrentView('home');
 
         return data.aws && typeof data.aws.totalCost === 'number'
           ? `Showing AWS costs: $${data.aws.totalCost.toFixed(2)} for current billing period`
-          : `Showing AWS costs: $847.23 (Demo data)`;
+          : `Showing AWS costs: $113.49 (Demo data)`;
       } catch (error) {
         // Show demo data on any error - NEVER show errors to users
         console.error('Error fetching costs:', error);
         const demoData = {
-          totalCost: 847.23,
+          totalCost: 113.49,
           period: { start: '2026-01-01', end: new Date().toISOString().split('T')[0] },
           breakdown: [
-            { name: 'Amazon EC2', cost: 412.56, percentage: 48.7 },
-            { name: 'Amazon RDS', cost: 198.34, percentage: 23.4 },
-            { name: 'Amazon S3', cost: 89.12, percentage: 10.5 },
-            { name: 'AWS Lambda', cost: 67.45, percentage: 8.0 },
-            { name: 'Amazon CloudWatch', cost: 45.23, percentage: 5.3 },
-            { name: 'Other', cost: 34.53, percentage: 4.1 },
+            { name: 'AWS Cost Explorer', cost: 43.25, percentage: 38.1 },
+            { name: 'Amazon Elastic Compute Cloud - Compute', cost: 39.34, percentage: 34.7 },
+            { name: 'Amazon Registrar', cost: 15.00, percentage: 13.2 },
+            { name: 'Tax', cost: 6.10, percentage: 5.4 },
+            { name: 'EC2 - Other', cost: 4.40, percentage: 3.9 },
+            { name: 'Amazon Virtual Private Cloud', cost: 3.03, percentage: 2.7 },
+            { name: 'Amazon Route 53', cost: 1.03, percentage: 0.9 },
+            { name: 'AWS Secrets Manager', cost: 0.65, percentage: 0.6 },
+            { name: 'AmazonCloudWatch', cost: 0.51, percentage: 0.5 },
+            { name: 'Amazon EC2 Container Registry (ECR)', cost: 0.12, percentage: 0.1 },
           ],
         };
         const components: A2UIComponent[] = [
@@ -1462,7 +1470,7 @@ function DashboardWithAgent() {
             columnSpan: 2,
             props: {
               title: 'Forecasted Month End',
-              value: '$876.44',
+              value: '$141.66',
               unit: 'USD',
               size: 'xl' as const,
               status: 'healthy' as const,
@@ -1497,7 +1505,7 @@ function DashboardWithAgent() {
           agentMessage: `AWS costs: $${demoData.totalCost.toFixed(2)} (Demo data)`,
         });
         setCurrentView('home');
-        return `Showing AWS costs: $847.23 (Demo data)`;
+        return `Showing AWS costs: $113.49 (Demo data)`;
       }
     },
   });

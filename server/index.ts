@@ -1771,29 +1771,33 @@ app.get('/api/costs/aws/forecast', async (_req, res) => {
   }
 });
 
-// Demo data for AWS costs when not configured
+// Demo data for AWS costs when not configured (using real-looking values)
 const getAWSDemoData = () => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
   return {
-    totalCost: 847.23,
+    totalCost: 113.49,
     currency: 'USD',
     period: {
       start: startOfMonth.toISOString().split('T')[0],
       end: now.toISOString().split('T')[0],
     },
     breakdown: [
-      { name: 'Amazon EC2', cost: 412.56, percentage: 48.7 },
-      { name: 'Amazon RDS', cost: 198.34, percentage: 23.4 },
-      { name: 'Amazon S3', cost: 89.12, percentage: 10.5 },
-      { name: 'AWS Lambda', cost: 67.45, percentage: 8.0 },
-      { name: 'Amazon CloudWatch', cost: 45.23, percentage: 5.3 },
-      { name: 'Other', cost: 34.53, percentage: 4.1 },
+      { name: 'AWS Cost Explorer', cost: 43.25, percentage: 38.1 },
+      { name: 'Amazon Elastic Compute Cloud - Compute', cost: 39.34, percentage: 34.7 },
+      { name: 'Amazon Registrar', cost: 15.00, percentage: 13.2 },
+      { name: 'Tax', cost: 6.10, percentage: 5.4 },
+      { name: 'EC2 - Other', cost: 4.40, percentage: 3.9 },
+      { name: 'Amazon Virtual Private Cloud', cost: 3.03, percentage: 2.7 },
+      { name: 'Amazon Route 53', cost: 1.03, percentage: 0.9 },
+      { name: 'AWS Secrets Manager', cost: 0.65, percentage: 0.6 },
+      { name: 'AmazonCloudWatch', cost: 0.51, percentage: 0.5 },
+      { name: 'Amazon EC2 Container Registry (ECR)', cost: 0.12, percentage: 0.1 },
     ],
-    dailyAverage: 28.24,
-    projectedMonthEnd: 876.44,
+    dailyAverage: 4.36,
+    projectedMonthEnd: 141.66,
     isDemo: true,
   };
 };
@@ -1803,7 +1807,7 @@ const getAWSForecastDemoData = () => {
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
   return {
-    forecastedCost: 876.44,
+    forecastedCost: 141.66,
     currency: 'USD',
     period: {
       start: now.toISOString().split('T')[0],
@@ -1813,6 +1817,14 @@ const getAWSForecastDemoData = () => {
     isDemo: true,
   };
 };
+
+// Cache for AWS costs (24-hour TTL to minimize API calls)
+let awsCostsCache: {
+  data: any;
+  timestamp: number;
+} | null = null;
+
+const AWS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 // Combined costs overview (AWS + forecast)
 app.get('/api/costs/overview', async (_req, res) => {
@@ -1834,6 +1846,18 @@ app.get('/api/costs/overview', async (_req, res) => {
     // Fetch AWS costs if configured, otherwise use demo data
     if (costExplorerClient) {
       try {
+        const now = Date.now();
+
+        // Check if we have valid cached data (less than 24 hours old)
+        if (awsCostsCache && (now - awsCostsCache.timestamp) < AWS_CACHE_TTL) {
+          console.log('[Costs Overview] Using cached data (age: ' +
+            Math.round((now - awsCostsCache.timestamp) / 1000 / 60) + ' minutes)');
+          res.json(awsCostsCache.data);
+          return;
+        }
+
+        // Cache is stale or doesn't exist - fetch fresh data
+        console.log('[Costs Overview] Fetching fresh AWS data (cache expired or missing)');
         const [awsCosts, awsForecast] = await Promise.all([
           fetchAWSCosts(),
           fetchAWSForecast().catch(() => null), // Forecast can fail, don't block
@@ -1841,6 +1865,13 @@ app.get('/api/costs/overview', async (_req, res) => {
         result.aws = awsCosts;
         result.forecast = awsForecast;
         result.totalCurrentCost = awsCosts.totalCost;
+
+        // Update cache
+        awsCostsCache = {
+          data: result,
+          timestamp: now,
+        };
+        console.log('[Costs Overview] Cache updated, next refresh in 24 hours');
       } catch (error) {
         // On error, fall back to demo data
         console.log('[Costs Overview] AWS fetch failed, using demo data');
