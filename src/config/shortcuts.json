@@ -83,6 +83,20 @@
       "subtitle": "AWS",
       "url": "https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/home",
       "color": "#8b5cf6"
+    },
+    {
+      "id": "github",
+      "title": "GitHub",
+      "subtitle": "Code",
+      "url": "https://github.com/neileverette?tab=repositories",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "cicd",
+      "title": "CI/CD",
+      "subtitle": "AWS",
+      "url": "https://us-east-1.console.aws.amazon.com/codesuite/codepipeline/pipelines",
+      "color": "#8b5cf6"
     }
   ]
 }
