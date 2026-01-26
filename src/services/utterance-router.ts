@@ -26,8 +26,12 @@ export interface RouteMatch {
 export function routeUtterance(utterance: string): RouteMatch | null {
   const normalizedUtterance = utterance.toLowerCase().trim();
 
-  // Special case: empty utterance or "overview" returns the landing page
-  if (!normalizedUtterance || normalizedUtterance === 'overview') {
+  console.log('[routeUtterance] Processing utterance:', utterance, '→', normalizedUtterance);
+
+  // Special case: empty utterance, "overview", or direct home keywords return the landing page
+  const homeKeywords = ['overview', 'home', 'back', 'clear', 'reset', 'main'];
+  if (!normalizedUtterance || homeKeywords.includes(normalizedUtterance)) {
+    console.log('[routeUtterance] Home keyword detected - returning landing page');
     return getOverviewRoute();
   }
 
@@ -37,6 +41,10 @@ export function routeUtterance(utterance: string): RouteMatch | null {
   // Check each route in the config
   for (const [routeId, route] of Object.entries(routingConfig.routes)) {
     const confidence = calculateMatchConfidence(normalizedUtterance, route);
+
+    if (confidence > 0) {
+      console.log(`[routeUtterance] Route "${routeId}" confidence:`, confidence);
+    }
 
     if (confidence > highestConfidence) {
       highestConfidence = confidence;
@@ -52,6 +60,8 @@ export function routeUtterance(utterance: string): RouteMatch | null {
       };
     }
   }
+
+  console.log('[routeUtterance] Best match:', bestMatch?.routeId, 'with confidence:', highestConfidence, 'view:', bestMatch?.view);
 
   // Only return a match if confidence is above threshold (40%)
   return (highestConfidence >= 40) ? bestMatch : null;

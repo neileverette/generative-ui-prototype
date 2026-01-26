@@ -23,8 +23,10 @@ import { TodaysUpdateCard } from './a2ui/TodaysUpdateCard';
 import { NavigationCard, NavigationCardStatus } from './a2ui/NavigationCard';
 import { ClaudeUsageCard } from './a2ui/ClaudeUsageCard';
 import { AnthropicUsageCard } from './a2ui/AnthropicUsageCard';
+import { ShortcutLinksCard } from './a2ui/ShortcutLinksCard';
 import { mcpClient } from '../services/mcp-client';
-import { A2UIComponent } from '../types/a2ui';
+import { A2UIComponent, ShortcutLinksComponent } from '../types/a2ui';
+import shortcutsConfig from '../config/shortcuts.json';
 
 interface LandingPageProps {
   onNavigate: (destination: string) => void;
@@ -261,6 +263,21 @@ export function LandingPage({
           <ClaudeUsageCard component={claudeUsageComponent} />
           <AnthropicUsageCard />
         </div>
+
+        {/* Shortcuts Section */}
+        <ShortcutLinksCard
+          component={{
+            id: 'landing-shortcuts',
+            component: 'shortcut_links' as const,
+            source: 'landing-page',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            props: {
+              shortcuts: shortcutsConfig.shortcuts,
+              layout: 'default',
+            },
+          } as ShortcutLinksComponent}
+        />
 
         {/* Navigation Cards Grid */}
         <div className="grid grid-cols-3 gap-4">

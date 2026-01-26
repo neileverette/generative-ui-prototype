@@ -1,0 +1,88 @@
+{
+  "shortcuts": [
+    {
+      "id": "cloudflare",
+      "title": "Cloudflare",
+      "subtitle": "DNS",
+      "url": "https://dash.cloudflare.com/82855af53d3028c98dbd9e292e2111a4/home/domains",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "route53",
+      "title": "Route53",
+      "subtitle": "DNS",
+      "url": "https://us-east-1.console.aws.amazon.com/route53/v2/home?region=us-east-1#Dashboard",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "ec2",
+      "title": "EC2",
+      "subtitle": "AWS",
+      "url": "https://console.aws.amazon.com/ec2",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "n8n",
+      "title": "N8N",
+      "subtitle": "Automation",
+      "url": "https://n8n.neil-everette.com/",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "langflow",
+      "title": "LangFlow",
+      "subtitle": "AI Agent",
+      "url": "https://langflow.neil-everette.com/",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "claude",
+      "title": "Claude",
+      "subtitle": "LLM",
+      "url": "https://claude.ai/settings/usage",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "openai",
+      "title": "OpenAI",
+      "subtitle": "LLM",
+      "url": "https://platform.openai.com/settings/organization/usage",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "grafana",
+      "title": "Grafana",
+      "subtitle": "Monitoring",
+      "url": "https://grafana.neil-everette.com",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "datadog",
+      "title": "DataDog",
+      "subtitle": "Monitoring",
+      "url": "https://app.datadoghq.com",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "aws-console",
+      "title": "AWS Console",
+      "subtitle": "AWS",
+      "url": "https://us-east-1.console.aws.amazon.com/console/home?nc2=h_si&region=us-east-1&src=header-signin#",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "aws-billing",
+      "title": "AWS Billing",
+      "subtitle": "AWS",
+      "url": "https://us-east-1.console.aws.amazon.com/costmanagement/home?region=us-east-1#/home",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "aws-iam",
+      "title": "AWS IAM",
+      "subtitle": "AWS",
+      "url": "https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/home",
+      "color": "#8b5cf6"
+    }
+  ]
+}

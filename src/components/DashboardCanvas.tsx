@@ -8,6 +8,7 @@ import { ProgressBar } from './a2ui/ProgressBar';
 import { ECRSummaryCard } from './a2ui/ECRSummaryCard';
 import { ClaudeUsageCard } from './a2ui/ClaudeUsageCard';
 import { AnthropicUsageCard } from './a2ui/AnthropicUsageCard';
+import { ShortcutLinksCard } from './a2ui/ShortcutLinksCard';
 import { LandingPage } from './LandingPage';
 
 // Main Icon with optional gradient
@@ -72,6 +73,7 @@ const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   ecr_summary: ECRSummaryCard,
   claude_usage: ClaudeUsageCard,
   anthropic_usage: AnthropicUsageCard,
+  shortcut_links: ShortcutLinksCard,
 };
 
 function renderComponent(component: A2UIComponent, index: number) {
@@ -176,62 +178,16 @@ export function DashboardCanvas({ state, shortcuts, currentView = 'home', onBack
     );
   }
 
-  if (components.length === 0) {
+  // If no components and currentView is 'home', redirect to landing
+  if (components.length === 0 && currentView === 'home') {
+    // This should never happen with proper routing, but as a safeguard,
+    // render the landing page instead of the old shortcut cards view
     return (
-      <div className="h-full flex flex-col items-center justify-center text-center">
-        {/* Header - Always visible */}
-        <VennDiagramIcon className="w-96 h-auto mb-8" gradient />
-        <h2 className="font-semibold text-text-primary mb-3" style={{ fontSize: '1.5rem' }}>
-          Neil's Command Central
-        </h2>
-
-        {/* Status Summary - Loading with shimmer or actual summary */}
-        <p className="text-text-secondary max-w-2xl mb-8" style={{ fontSize: '1.3rem' }}>
-          {statusSummaryLoading ? (
-            <span className="inline-block animate-pulse bg-gradient-to-r from-text-secondary via-text-muted to-text-secondary bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
-              Gathering insights and summary...
-            </span>
-          ) : (
-            (() => {
-              const text = statusSummary || 'Choose an option below or use the chat';
-              // Highlight "good" and "running smoothly" in bold purple
-              const parts = text.split(/(good|running smoothly)/gi);
-              return parts.map((part, i) =>
-                /^(good|running smoothly)$/i.test(part)
-                  ? <span key={i} className="font-bold text-accent-primary">{part}</span>
-                  : part
-              );
-            })()
-          )}
-        </p>
-
-        {/* Shortcut Cards - 2 rows x 3 columns */}
-        {shortcuts && shortcuts.length > 0 && (
-          <div className="w-full max-w-4xl">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-              {shortcuts.map((shortcut) => (
-                <button
-                  key={shortcut.id}
-                  onClick={shortcut.onClick}
-                  className="group p-6 bg-white/70 hover:bg-white/90 backdrop-blur-sm border border-white/50 hover:border-accent-primary/50 rounded-xl transition-all duration-200 text-left shadow-sm hover:shadow-md"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-white/60 group-hover:bg-accent-primary/20 flex items-center justify-center mb-4 transition-colors">
-                    <span className="text-text-muted group-hover:text-accent-primary transition-colors">
-                      {shortcut.icon}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-text-primary mb-1">
-                    {shortcut.title}
-                  </h3>
-                  <p className="text-sm text-text-secondary">
-                    {shortcut.description}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      <LandingPage
+        onNavigate={onNavigate || (() => {})}
+        onSendMessage={onSendMessage || (() => {})}
+        timeWindow={timeWindow}
+      />
     );
   }
 

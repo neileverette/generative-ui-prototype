@@ -183,6 +183,7 @@ function DashboardWithAgent() {
   const { processUtterance } = useWidgetLoader({
     onRouteMatch: (match: RouteMatch) => {
       console.log('[WidgetLoader] Route matched:', match);
+      console.log('[WidgetLoader] Setting view to:', match.view);
 
       // Clear previous widgets before loading new ones
       setDashboardState({
@@ -192,8 +193,10 @@ function DashboardWithAgent() {
 
       // Route to view
       if (match.view === 'landing') {
+        console.log('[WidgetLoader] Switching to landing view');
         setCurrentView('landing');
       } else {
+        console.log('[WidgetLoader] Switching to loading view, will process route:', match.routeId);
         // Set pending route to trigger loading
         setPendingRoute(match);
         setCurrentView('loading');
@@ -1258,11 +1261,15 @@ function DashboardWithAgent() {
 
       try {
         const data = await mcpClient.getCostsOverview();
+        console.log('[fetchCostsOverview] API Response:', JSON.stringify(data, null, 2));
+        console.log('[fetchCostsOverview] data.aws:', data.aws);
+        console.log('[fetchCostsOverview] data.aws.totalCost:', data.aws?.totalCost);
 
         const components: A2UIComponent[] = [];
 
         // Check if AWS data is available
         if (data.aws && typeof data.aws.totalCost === 'number') {
+          console.log('[fetchCostsOverview] Using REAL data: $' + data.aws.totalCost);
           // Main cost metric card - 2 columns wide
           const costCard: A2UIComponent = {
             id: 'aws-total-cost',
@@ -2569,17 +2576,32 @@ function DashboardWithAgent() {
     setCurrentView('home');
   }, []);
 
+  // Action to show shortcuts
+  useCopilotAction({
+    name: 'showShortcuts',
+    description: 'Show quick links to external tools and services. Use this when the user asks to see shortcuts, tools, links, or external services.',
+    parameters: [],
+    handler: async () => {
+      await handleShowShortcuts();
+      return 'Showing quick links to your external tools and services.';
+    },
+  });
+
   // Handler for Costs
   const handleFetchCosts = useCallback(async () => {
     setCurrentView('loading');
 
     try {
       const data = await mcpClient.getCostsOverview();
+      console.log('[handleFetchCosts] API Response:', JSON.stringify(data, null, 2));
+      console.log('[handleFetchCosts] data.aws:', data.aws);
+      console.log('[handleFetchCosts] data.aws.totalCost:', data.aws?.totalCost);
 
       const components: A2UIComponent[] = [];
 
       // Check if AWS data is available - just check for data.aws with totalCost
       if (data.aws && typeof data.aws.totalCost === 'number') {
+        console.log('[handleFetchCosts] Using REAL data: $' + data.aws.totalCost);
         // Main cost metric card - 2 columns wide
         const costCard: A2UIComponent = {
           id: 'aws-total-cost',
@@ -2808,12 +2830,14 @@ function DashboardWithAgent() {
 
   // Handler for going back to landing page
   const handleBackToHome = useCallback(() => {
-    processUtterance('home');
+    console.log('[handleBackToHome] Going back to landing page');
+    // Directly set to landing view instead of routing through utterance
     setDashboardState({
       components: [],
       lastUpdated: new Date().toISOString(),
     });
-  }, [processUtterance]);
+    setCurrentView('landing');
+  }, []);
 
   // Handler for showing Claude Usage widget
   const handleShowClaudeUsage = useCallback(() => {
@@ -2846,6 +2870,38 @@ function DashboardWithAgent() {
     setCurrentView('home');
   }, []);
 
+  // Handler for showing shortcuts
+  const handleShowShortcuts = useCallback(async () => {
+    try {
+      // Import shortcuts config
+      const shortcutsModule = await import('./config/shortcuts.json');
+      const shortcuts = shortcutsModule.shortcuts;
+
+      // Create A2UI component
+      const shortcutComponent: A2UIComponent = {
+        id: 'shortcuts-widget',
+        component: 'shortcut_links' as const,
+        source: 'shortcuts-handler',
+        priority: 'medium',
+        timestamp: new Date().toISOString(),
+        props: {
+          shortcuts,
+          layout: 'default',
+        },
+      };
+
+      setDashboardState({
+        components: [shortcutComponent],
+        lastUpdated: new Date().toISOString(),
+        agentMessage: 'Quick links to your external tools and services',
+      });
+
+      setCurrentView('home');
+    } catch (error) {
+      console.error('Error loading shortcuts:', error);
+    }
+  }, []);
+
   // Effect to call route handlers when a route is matched
   useEffect(() => {
     if (!pendingRoute) return;
@@ -2855,6 +2911,14 @@ function DashboardWithAgent() {
 
       // Call the appropriate handler based on route ID
       switch (pendingRoute.routeId) {
+        case 'overview':
+          // Go back to landing page
+          setDashboardState({
+            components: [],
+            lastUpdated: new Date().toISOString(),
+          });
+          setCurrentView('landing');
+          break;
         case 'systemMetrics':
           await handleFetchSystemInfrastructure();
           break;
@@ -2873,9 +2937,12 @@ function DashboardWithAgent() {
         case 'aiUsage':
           await handleShowClaudeUsage();
           break;
+        case 'shortcuts':
+          await handleShowShortcuts();
+          break;
         default:
           console.warn(`[WidgetLoader] No handler found for route: ${pendingRoute.routeId}`);
-          setCurrentView('home');
+          setCurrentView('landing');
       }
 
       // Clear pending route after processing
@@ -2883,7 +2950,7 @@ function DashboardWithAgent() {
     };
 
     loadWidgets();
-  }, [pendingRoute, handleFetchSystemInfrastructure, handleFetchContainersList, handleFetchAutomations, handleFetchCosts, handleFetchDeployments, handleShowClaudeUsage]);
+  }, [pendingRoute, handleFetchSystemInfrastructure, handleFetchContainersList, handleFetchAutomations, handleFetchCosts, handleFetchDeployments, handleShowClaudeUsage, handleShowShortcuts]);
 
   // Define shortcuts for the welcome screen (2 rows x 3 columns)
   // Row 1: System & Infrastructure, Containers, Automations

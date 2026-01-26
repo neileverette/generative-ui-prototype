@@ -22,6 +22,7 @@
       ],
       "patterns": [
         "go home",
+        "go back",
         "take me back",
         "show overview",
         "return to main",
@@ -367,6 +368,44 @@
       ],
       "widgetCount": 2,
       "widgetTypes": ["claude_usage", "anthropic_usage"]
+    },
+    "shortcuts": {
+      "id": "shortcuts",
+      "displayName": "Shortcuts",
+      "action": "showShortcuts",
+      "view": "home",
+      "priority": 85,
+      "description": "Display quick links to external work management tools and services",
+      "keywords": [
+        "shortcuts",
+        "tools",
+        "links",
+        "quick access",
+        "external tools"
+      ],
+      "patterns": [
+        "shortcuts",
+        "tools",
+        "links",
+        "show shortcuts",
+        "show tools",
+        "show my tools",
+        "quick links",
+        "external tools",
+        "show links"
+      ],
+      "questionPatterns": [
+        "what tools do I have?",
+        "where are my shortcuts?",
+        "show me my tools",
+        "what links are available?"
+      ],
+      "semanticGroups": ["productivity", "navigation", "tools"],
+      "widgets": [
+        "shortcuts-widget"
+      ],
+      "widgetCount": 1,
+      "widgetTypes": ["shortcut_links"]
     }
   },
   "specificActions": {

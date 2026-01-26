@@ -20,7 +20,8 @@ export type ComponentType =
   | 'progress_bar'
   | 'ecr_summary'
   | 'claude_usage'
-  | 'anthropic_usage';
+  | 'anthropic_usage'
+  | 'shortcut_links';
 
 // Status indicators for metrics
 export type MetricStatus = 'healthy' | 'warning' | 'critical' | 'unknown';
@@ -190,6 +191,21 @@ export interface AnthropicUsageComponent extends A2UIComponentBase {
   };
 }
 
+// Shortcut Links - displays tiles linking to external work management tools
+export interface ShortcutLinksComponent extends A2UIComponentBase {
+  component: 'shortcut_links';
+  props: {
+    shortcuts: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      url: string;
+      color?: string;
+    }>;
+    layout?: 'compact' | 'default' | 'wide';
+  };
+}
+
 // Union type for all components
 export type A2UIComponent =
   | MetricCardComponent
@@ -200,7 +216,8 @@ export type A2UIComponent =
   | ProgressBarComponent
   | ECRSummaryComponent
   | ClaudeUsageComponent
-  | AnthropicUsageComponent;
+  | AnthropicUsageComponent
+  | ShortcutLinksComponent;
 
 // Dashboard state
 export interface DashboardState {
