@@ -13,6 +13,7 @@ import fs from 'fs';
 import { RetryStrategy, ErrorCategory, CircuitState } from './retry-strategy.js';
 import type { ConsoleUsageData } from './scrape.js';
 import { syncWithRetry, getSyncMetrics } from './sync-client.js';
+import { cleanupCache, shouldCleanup } from './cleanup-cache.js';
 
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
@@ -33,12 +34,36 @@ const VERBOSE = process.argv.includes('--verbose');
 // Scraper metrics tracking
 let scraperRunCount = 0;
 let lastCircuitStateTransition: { from: CircuitState; to: CircuitState; timestamp: Date } | null = null;
+let lastCleanupTime: Date | null = null;
+
+// Cleanup configuration
+const CLEANUP_INTERVAL_RUNS = 12; // Clean every 12 runs (1 hour if runs are every 5 min)
+const CLEANUP_THRESHOLD_MB = 50; // Clean if session cache exceeds 50MB
 
 async function runScraper(): Promise<void> {
   scraperRunCount++;
   const runStartTime = Date.now();
 
   try {
+    // Periodic cache cleanup to prevent memory bloat
+    if (scraperRunCount % CLEANUP_INTERVAL_RUNS === 0 || shouldCleanup(CLEANUP_THRESHOLD_MB)) {
+      try {
+        if (VERBOSE) {
+          console.log('[Auto-Scraper] Running periodic cache cleanup...');
+        }
+        const cleanupStats = await cleanupCache(VERBOSE);
+        lastCleanupTime = new Date();
+
+        if (cleanupStats.bytesFreed > 0) {
+          const mbFreed = (cleanupStats.bytesFreed / 1024 / 1024).toFixed(2);
+          console.log(`[Auto-Scraper] Cache cleanup: freed ${mbFreed} MB`);
+        }
+      } catch (cleanupError) {
+        // Don't fail the scraper if cleanup fails
+        console.warn('[Auto-Scraper] Cache cleanup failed:', cleanupError);
+      }
+    }
+
     // Check if circuit breaker is open
     if (retryStrategy.isCircuitOpen()) {
       const circuitState = retryStrategy.getCircuitState();

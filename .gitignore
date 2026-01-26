@@ -48,3 +48,10 @@ langflow-*.py
 langflow-*.txt
 update-*.txt
 PASTE_*.txt
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Playwright session cache
+server/claude-scraper/.session/
