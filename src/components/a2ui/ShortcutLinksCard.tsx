@@ -30,7 +30,7 @@ export function ShortcutLinksCard({ component, className = '' }: ShortcutLinksCa
             href={shortcut.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative flex flex-col p-4 rounded-lg transition-all duration-200 hover:shadow-lg overflow-hidden"
+            className="group relative flex flex-col p-3 rounded-lg transition-all duration-200 hover:shadow-lg overflow-hidden h-16"
             style={{
               backgroundColor: shortcut.color || '#6366f1',
               backgroundImage: shortcut.color
@@ -42,17 +42,17 @@ export function ShortcutLinksCard({ component, className = '' }: ShortcutLinksCa
             <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200" />
 
             {/* Content */}
-            <div className="relative flex flex-col h-full">
-              <div className="flex items-start justify-between mb-2">
+            <div className="relative flex flex-col h-full justify-center">
+              <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h4 className="text-white font-semibold text-base mb-0.5 group-hover:translate-x-0.5 transition-transform">
+                  <h4 className="text-white font-semibold text-sm mb-0.5 group-hover:translate-x-0.5 transition-transform">
                     {shortcut.title}
                   </h4>
                   <p className="text-white/80 text-xs font-medium">
                     {shortcut.subtitle}
                   </p>
                 </div>
-                <ExternalLink className="w-4 h-4 text-white/60 group-hover:text-white/90 transition-colors flex-shrink-0 ml-2" />
+                <ExternalLink className="w-3.5 h-3.5 text-white/60 group-hover:text-white/90 transition-colors flex-shrink-0 ml-2" />
               </div>
             </div>
 
