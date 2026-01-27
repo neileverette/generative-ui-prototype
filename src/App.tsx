@@ -14,7 +14,7 @@ import { useVoiceDictation } from './hooks/useVoiceDictation';
 import { VoiceButton } from './components/VoiceButton';
 import { VoiceOverlay } from './components/VoiceOverlay';
 import { mcpClient } from './services/mcp-client';
-import { getCachedInsight, setCachedInsight } from './utils/insights-cache';
+import { getCachedInsight, setCachedInsight, getFallbackInsight } from './utils/insights-cache';
 import { useWidgetLoader } from './hooks/useWidgetLoader';
 import { RouteMatch } from './services/utterance-router';
 
@@ -1676,6 +1676,9 @@ function DashboardWithAgent() {
       if (!countData.error) {
         const containersComponentId = 'running-containers-count';
         const cachedContainerInsight = getCachedInsight(containersComponentId);
+        const fallbackContainerInsight = getFallbackInsight(containersComponentId);
+        // Use cached insight if available, otherwise use fallback for immediate display
+        const initialContainerInsight = cachedContainerInsight || fallbackContainerInsight;
 
         newComponents.push({
           id: containersComponentId,
@@ -1690,11 +1693,11 @@ function DashboardWithAgent() {
             size: 'xl' as const,  // Large featured number
             status: 'healthy' as const,
             description: `Docker containers currently running across your infrastructure.`,
-            // If we have cached insights, show them immediately with stale indicator
-            interpretation: cachedContainerInsight?.interpretation,
-            actionableInsights: cachedContainerInsight?.actionableInsights,
-            insightsLoading: !cachedContainerInsight,  // Only show skeleton if no cached data
-            insightsStale: !!cachedContainerInsight,   // Show shimmer if using cached data
+            // Show cached or fallback insight immediately, marked as stale while loading fresh AI insights
+            interpretation: initialContainerInsight?.interpretation,
+            actionableInsights: initialContainerInsight?.actionableInsights,
+            insightsLoading: false,  // Always show content (cached or fallback)
+            insightsStale: true,     // Show shimmer while loading fresh AI insights
           },
         });
       }
@@ -1839,14 +1842,29 @@ function DashboardWithAgent() {
       mcpClient.getContainerInterpretations('1h')
         .then(interpretationsData => {
           if (interpretationsData.error || !interpretationsData.interpretation) {
-            // Remove loading/stale state on error (keep cached content visible)
+            // Use fallback insights when AI insights fail to load
+            console.warn('Container AI insights unavailable, using fallback insights');
+            const cachedInsight = getCachedInsight('running-containers-count');
+            const fallback = getFallbackInsight('running-containers-count');
+            const insight = cachedInsight || fallback;
+
             setDashboardState(prev => ({
               ...prev,
               components: prev.components.map(comp =>
                 comp.id === 'running-containers-count' && comp.component === 'metric_card'
-                  ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
+                  ? {
+                      ...comp,
+                      props: {
+                        ...comp.props,
+                        interpretation: insight?.interpretation || comp.props.interpretation,
+                        actionableInsights: insight?.actionableInsights || comp.props.actionableInsights,
+                        insightsLoading: false,
+                        insightsStale: false,
+                      },
+                    }
                   : comp
               ),
+              agentMessage: `Showing ${containersData.count} containers with fallback insights`,
             }));
             return;
           }
@@ -1884,14 +1902,28 @@ function DashboardWithAgent() {
         })
         .catch(err => {
           console.error('Failed to fetch container interpretations:', err);
-          // Remove loading/stale state on error (keep cached content visible)
+          // Use fallback insights on error
+          const cachedInsight = getCachedInsight('running-containers-count');
+          const fallback = getFallbackInsight('running-containers-count');
+          const insight = cachedInsight || fallback;
+
           setDashboardState(prev => ({
             ...prev,
             components: prev.components.map(comp =>
               comp.id === 'running-containers-count' && comp.component === 'metric_card'
-                ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
+                ? {
+                    ...comp,
+                    props: {
+                      ...comp.props,
+                      interpretation: insight?.interpretation || comp.props.interpretation,
+                      actionableInsights: insight?.actionableInsights || comp.props.actionableInsights,
+                      insightsLoading: false,
+                      insightsStale: false,
+                    },
+                  }
                 : comp
             ),
+            agentMessage: `Showing containers with fallback insights`,
           }));
         });
 
@@ -1945,6 +1977,9 @@ function DashboardWithAgent() {
 
             const componentId = `system-metric-${metric.metric}`;
             const cachedInsight = getCachedInsight(componentId);
+            const fallbackInsight = getFallbackInsight(metric.metric);
+            // Use cached insight if available, otherwise use fallback for immediate display
+            const initialInsight = cachedInsight || fallbackInsight;
 
             newComponents.push({
               id: componentId,
@@ -1959,11 +1994,11 @@ function DashboardWithAgent() {
                 status,
                 description: `Current ${metric.displayName.toLowerCase()}`,
                 change: metric.change,
-                // If we have cached insights, show them immediately with stale indicator
-                interpretation: cachedInsight?.interpretation,
-                actionableInsights: cachedInsight?.actionableInsights,
-                insightsLoading: !cachedInsight,  // Only show skeleton if no cached data
-                insightsStale: !!cachedInsight,   // Show shimmer if using cached data
+                // Show cached or fallback insight immediately, marked as stale while loading fresh AI insights
+                interpretation: initialInsight?.interpretation,
+                actionableInsights: initialInsight?.actionableInsights,
+                insightsLoading: false,  // Always show content (cached or fallback)
+                insightsStale: true,     // Show shimmer while loading fresh AI insights
               },
             });
           });
@@ -1981,15 +2016,38 @@ function DashboardWithAgent() {
       // Fetch AI interpretations in background (always use 1h to avoid LangFlow timeouts)
       mcpClient.getInterpretations('1h')
         .then(interpretationsData => {
-          if (interpretationsData.error || !interpretationsData.interpretations) {
-            // Clear loading/stale state even on error/empty response (keep cached content visible)
+          // Check for error or empty interpretations object
+          const hasValidInsights = interpretationsData.interpretations &&
+            Object.keys(interpretationsData.interpretations).length > 0;
+
+          if (interpretationsData.error || !hasValidInsights) {
+            // Use fallback insights when AI insights fail to load
+            console.warn('AI insights unavailable, using fallback insights');
             setDashboardState(prev => ({
               ...prev,
-              components: prev.components.map(comp =>
-                comp.component === 'metric_card'
-                  ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
-                  : comp
-              ),
+              components: prev.components.map(comp => {
+                if (comp.component !== 'metric_card') return comp;
+
+                // Extract metric ID and get fallback
+                const metricId = comp.id.replace('system-metric-', '');
+                const fallback = getFallbackInsight(metricId);
+
+                // Use cached insight if available, otherwise use fallback
+                const cachedInsight = getCachedInsight(comp.id);
+                const insight = cachedInsight || fallback;
+
+                return {
+                  ...comp,
+                  props: {
+                    ...comp.props,
+                    interpretation: insight?.interpretation || comp.props.interpretation,
+                    actionableInsights: insight?.actionableInsights || comp.props.actionableInsights,
+                    insightsLoading: false,
+                    insightsStale: false,
+                  },
+                };
+              }),
+              agentMessage: `System metrics with fallback insights`,
             }));
             return;
           }
@@ -2021,6 +2079,22 @@ function DashboardWithAgent() {
                   },
                 };
               }
+
+              // No AI interpretation found - use fallback
+              const fallback = getFallbackInsight(metricId);
+              if (fallback) {
+                return {
+                  ...comp,
+                  props: {
+                    ...comp.props,
+                    interpretation: fallback.interpretation,
+                    actionableInsights: fallback.actionableInsights,
+                    insightsLoading: false,
+                    insightsStale: false,
+                  },
+                };
+              }
+
               // Remove loading/stale state even if no interpretation found
               return {
                 ...comp,
@@ -2041,14 +2115,32 @@ function DashboardWithAgent() {
         })
         .catch(err => {
           console.error('Failed to fetch interpretations:', err);
-          // Remove loading/stale state on error (keep cached content visible)
+          // Use fallback insights on error
           setDashboardState(prev => ({
             ...prev,
-            components: prev.components.map(comp =>
-              comp.component === 'metric_card'
-                ? { ...comp, props: { ...comp.props, insightsLoading: false, insightsStale: false } }
-                : comp
-            ),
+            components: prev.components.map(comp => {
+              if (comp.component !== 'metric_card') return comp;
+
+              // Extract metric ID and get fallback
+              const metricId = comp.id.replace('system-metric-', '');
+              const fallback = getFallbackInsight(metricId);
+
+              // Use cached insight if available, otherwise use fallback
+              const cachedInsight = getCachedInsight(comp.id);
+              const insight = cachedInsight || fallback;
+
+              return {
+                ...comp,
+                props: {
+                  ...comp.props,
+                  interpretation: insight?.interpretation || comp.props.interpretation,
+                  actionableInsights: insight?.actionableInsights || comp.props.actionableInsights,
+                  insightsLoading: false,
+                  insightsStale: false,
+                },
+              };
+            }),
+            agentMessage: `System metrics with fallback insights`,
           }));
         });
 
