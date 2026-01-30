@@ -28,6 +28,12 @@ export function routeUtterance(utterance: string): RouteMatch | null {
 
   console.log('[routeUtterance] Processing utterance:', utterance, '→', normalizedUtterance);
 
+  // Special case: "homepage" alone should fall through to chat agent (not route to home)
+  if (normalizedUtterance === 'homepage') {
+    console.log('[routeUtterance] "homepage" detected - falling through to chat agent');
+    return null;
+  }
+
   // Special case: empty utterance, "overview", or direct home keywords return the landing page
   const homeKeywords = ['overview', 'home', 'back', 'clear', 'reset', 'main'];
   if (!normalizedUtterance || homeKeywords.includes(normalizedUtterance)) {

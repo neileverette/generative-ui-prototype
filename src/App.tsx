@@ -1289,26 +1289,30 @@ function DashboardWithAgent() {
           };
           components.push(costCard);
 
-          // Forecast card if available - 2 columns wide
-          if (data.forecast && data.forecast.forecastedCost > 0) {
-            const forecastCard: A2UIComponent = {
-              id: 'aws-forecast',
-              component: 'metric_card' as const,
-              source: 'aws-cost-explorer',
-              priority: 'medium',
-              timestamp: new Date().toISOString(),
-              columnSpan: 2,
-              props: {
-                title: 'Forecasted Month End',
-                value: `$${data.forecast.forecastedCost.toFixed(2)}`,
-                unit: 'USD',
-                size: 'xl' as const,
-                status: 'healthy' as const,
-                description: 'Estimated total for billing month',
-              },
-            };
-            components.push(forecastCard);
-          }
+          // Forecast card - always show, use current cost if at end of month
+          const forecastValue = data.forecast && data.forecast.forecastedCost > 0
+            ? data.forecast.forecastedCost
+            : data.aws.totalCost; // At end of month, projected = current
+          const forecastDescription = data.forecast && data.forecast.forecastedCost > 0
+            ? 'Estimated total for billing month'
+            : 'End of month (final projected)';
+          const forecastCard: A2UIComponent = {
+            id: 'aws-forecast',
+            component: 'metric_card' as const,
+            source: 'aws-cost-explorer',
+            priority: 'medium',
+            timestamp: new Date().toISOString(),
+            columnSpan: 2,
+            props: {
+              title: 'Projected Month End',
+              value: `$${forecastValue.toFixed(2)}`,
+              unit: 'USD',
+              size: 'xl' as const,
+              status: 'healthy' as const,
+              description: forecastDescription,
+            },
+          };
+          components.push(forecastCard);
 
           // Service breakdown table - 4 columns wide (full width)
           if (data.aws.breakdown && data.aws.breakdown.length > 0) {
@@ -2687,6 +2691,43 @@ function DashboardWithAgent() {
     },
   });
 
+  // Action to show Homepage Definition (widget recipe)
+  useCopilotAction({
+    name: 'showHomepageDefinition',
+    description: 'Show the recipe/inventory of widgets that make up the homepage. Use this when the user says "homepage", asks what makes up the homepage, homepage definition, widget recipe, or how the homepage is built. IMPORTANT: If the user says just "homepage" (not "home"), call this action.',
+    parameters: [],
+    handler: async () => {
+      // Get the overview route which defines the homepage
+      const overviewRoute = routingConfig.routes.overview;
+      const staticWidgets = overviewRoute.staticWidgets || [];
+
+      // Map widget IDs to friendly names
+      const widgetInfo: Record<string, string> = {
+        'todays-update': "Today's Update Banner - Summary of system status",
+        'system-uptime-static': 'System Uptime - How long the system has been running',
+        'memory-static': 'Memory Usage - Current memory utilization',
+        'claude-usage-landing': 'Claude Code Usage - Subscription usage and limits',
+        'anthropic-usage-landing': 'Anthropic API Usage - Token usage breakdown',
+        'nav-costs': 'Costs Navigation - Link to AWS costs',
+        'nav-system-metrics': 'System Metrics Navigation - Link to performance metrics',
+        'nav-automations': 'Automations Navigation - Link to workflows',
+        'nav-applications': 'Applications Navigation - Link to containers',
+        'nav-deployments': 'Deployments Navigation - Link to deployment history',
+        'nav-ai-usage': 'AI Usage Navigation - Link to Claude usage',
+      };
+
+      // Build bulleted list for chat
+      const bulletList = staticWidgets
+        .map((widgetId: string, index: number) => {
+          const description = widgetInfo[widgetId] || widgetId;
+          return `${index + 1}. ${description}`;
+        })
+        .join('\n');
+
+      return `**Homepage Recipe (${staticWidgets.length} Widgets)**\n\nThe homepage is composed of the following widgets:\n\n${bulletList}\n\nThis is a read-only view of the homepage configuration.`;
+    },
+  });
+
   // Handler for Costs
   const handleFetchCosts = useCallback(async () => {
     setCurrentView('loading');
@@ -2721,26 +2762,30 @@ function DashboardWithAgent() {
         };
         components.push(costCard);
 
-        // Forecast card if available - 2 columns wide
-        if (data.forecast && data.forecast.forecastedCost > 0) {
-          const forecastCard: A2UIComponent = {
-            id: 'aws-forecast',
-            component: 'metric_card' as const,
-            source: 'aws-cost-explorer',
-            priority: 'medium',
-            timestamp: new Date().toISOString(),
-            columnSpan: 2,
-            props: {
-              title: 'Forecasted Month End',
-              value: `$${data.forecast.forecastedCost.toFixed(2)}`,
-              unit: 'USD',
-              size: 'xl' as const,
-              status: 'healthy' as const,
-              description: 'Estimated total for billing month',
-            },
-          };
-          components.push(forecastCard);
-        }
+        // Forecast card - always show, use current cost if at end of month
+        const forecastValue = data.forecast && data.forecast.forecastedCost > 0
+          ? data.forecast.forecastedCost
+          : data.aws.totalCost; // At end of month, projected = current
+        const forecastDescription = data.forecast && data.forecast.forecastedCost > 0
+          ? 'Estimated total for billing month'
+          : 'End of month (final projected)';
+        const forecastCard: A2UIComponent = {
+          id: 'aws-forecast',
+          component: 'metric_card' as const,
+          source: 'aws-cost-explorer',
+          priority: 'medium',
+          timestamp: new Date().toISOString(),
+          columnSpan: 2,
+          props: {
+            title: 'Projected Month End',
+            value: `$${forecastValue.toFixed(2)}`,
+            unit: 'USD',
+            size: 'xl' as const,
+            status: 'healthy' as const,
+            description: forecastDescription,
+          },
+        };
+        components.push(forecastCard);
 
         // Service breakdown table - 4 columns wide (full width)
         if (data.aws.breakdown && data.aws.breakdown.length > 0) {
@@ -3116,7 +3161,7 @@ function DashboardWithAgent() {
                 ? 'text-accent-primary hover:bg-accent-primary/10 cursor-pointer'
                 : 'text-text-muted cursor-not-allowed opacity-30'
             }`}
-            title="Back to home"
+            title="Back to Home"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -3184,19 +3229,19 @@ function DashboardWithAgent() {
                 Console AI is a <button onClick={startListening} className="text-accent-primary hover:underline cursor-pointer">voice</button> first assistant. You can use the voice button or the chat to ask common things like:
               </p>
 
-              {/* Example Queries List */}
-              <p className="text-base text-text-primary mb-3 font-bold">
-                Ask me things in voice or text like:
+              {/* Example Queries - Pill Buttons */}
+              <p className="text-sm text-text-primary mb-2 font-medium">
+                Try asking:
               </p>
-              <ul className="text-base text-text-secondary space-y-1 ml-1">
-                <li>- <button onClick={() => handleSendMessage('Show me performance metrics')} className="text-accent-primary hover:underline cursor-pointer">Performance</button></li>
-                <li>- <button onClick={() => handleSendMessage('Show me costs')} className="text-accent-primary hover:underline cursor-pointer">Costs</button></li>
-                <li>- <button onClick={() => handleSendMessage('Show latest deployments')} className="text-accent-primary hover:underline cursor-pointer">Latest deployments</button></li>
-                <li>- <button onClick={() => handleSendMessage('Show automations')} className="text-accent-primary hover:underline cursor-pointer">Automations</button></li>
-                <li>- <button onClick={() => handleSendMessage('Show AI usage')} className="text-accent-primary hover:underline cursor-pointer">AI usage</button></li>
-                <li>- <button onClick={() => handleSendMessage('Go back')} className="text-accent-primary hover:underline cursor-pointer">Back</button></li>
-                <li>- <button onClick={startListening} className="text-accent-primary hover:underline cursor-pointer">Voice</button></li>
-              </ul>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => handleSendMessage('Show me performance metrics')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Performance</button>
+                <button onClick={() => handleSendMessage('Show me costs')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Costs</button>
+                <button onClick={() => handleSendMessage('Show latest deployments')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Deployments</button>
+                <button onClick={() => handleSendMessage('Show automations')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Automations</button>
+                <button onClick={() => handleSendMessage('Show AI usage')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">AI usage</button>
+                <button onClick={() => handleSendMessage('Go back')} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Back</button>
+                <button onClick={startListening} className="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">Voice</button>
+              </div>
             </div>
 
             {/* Divider */}
@@ -3244,7 +3289,7 @@ function DashboardWithAgent() {
 
 function App() {
   return (
-    <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false}>
+    <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={true}>
       <DashboardWithAgent />
     </CopilotKit>
   );

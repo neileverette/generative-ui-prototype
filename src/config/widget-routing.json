@@ -406,6 +406,61 @@
       ],
       "widgetCount": 1,
       "widgetTypes": ["shortcut_links"]
+    },
+    "homepageDefinition": {
+      "id": "homepageDefinition",
+      "displayName": "Homepage Definition",
+      "action": "showHomepageDefinition",
+      "view": "home",
+      "priority": 95,
+      "description": "Display the recipe of widgets that make up the homepage dashboard",
+      "keywords": [
+        "definition",
+        "recipe",
+        "widgets",
+        "inventory",
+        "config",
+        "configuration",
+        "makes",
+        "built",
+        "composed"
+      ],
+      "patterns": [
+        "homepage definition",
+        "show homepage definition",
+        "widget recipe",
+        "homepage recipe",
+        "widget inventory",
+        "show recipe",
+        "dashboard definition",
+        "what widgets",
+        "homepage config",
+        "what makes up my homepage",
+        "what makes up the homepage",
+        "what makes up home",
+        "what is my homepage made of",
+        "how is homepage built",
+        "how is my homepage composed",
+        "show me the homepage structure",
+        "homepage structure",
+        "dashboard structure"
+      ],
+      "questionPatterns": [
+        "what widgets make up the homepage?",
+        "what's the homepage recipe?",
+        "show me the homepage definition",
+        "what's on the homepage?",
+        "what makes up my home page?",
+        "what is my homepage made of?",
+        "how is the homepage built?",
+        "what components are on the homepage?"
+      ],
+      "semanticGroups": ["configuration", "meta"],
+      "widgets": [
+        "homepage-definition-view"
+      ],
+      "widgetCount": 1,
+      "widgetTypes": ["data_table"]
     }
   },
   "specificActions": {
@@ -599,7 +654,7 @@
     "analyze": ["analyze", "investigate", "examine", "review"]
   },
   "metadata": {
-    "totalRoutes": 7,
+    "totalRoutes": 8,
     "totalWidgetTypes": 9,
     "totalKeywords": 89,
     "supportedContainers": ["n8n", "redis", "postgres", "langflow"],

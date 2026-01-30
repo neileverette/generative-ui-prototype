@@ -149,7 +149,7 @@ export function DashboardCanvas({ state, currentView = 'home', onBack, commands 
             onClick={onBack}
             className="mt-8 text-sm text-text-secondary hover:text-accent-primary transition-colors"
           >
-            Back to home
+            Back to Home
           </button>
         )}
       </div>

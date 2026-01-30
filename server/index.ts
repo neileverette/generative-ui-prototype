@@ -406,8 +406,15 @@ async function queryLangFlowMetric(
 }
 
 import OpenAI from 'openai';
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-const serviceAdapter = new OpenAIAdapter({ openai });
+const openai = new OpenAI({
+  apiKey: OPENAI_API_KEY,
+  timeout: 30000,
+  maxRetries: 2
+});
+const serviceAdapter = new OpenAIAdapter({
+  openai,
+  model: process.env.OPENAI_MODEL || 'gpt-4-turbo'
+});
 
 // Import MCP Registry (orchestration layer for multiple MCP servers)
 import { getMCPRegistry, MCPServerRegistry } from './mcp-registry.js';
