@@ -1289,13 +1289,13 @@ function DashboardWithAgent() {
           };
           components.push(costCard);
 
-          // Forecast card - always show, use current cost if at end of month
+          // Forecast card - use AWS forecast if available, otherwise use daily average projection
           const forecastValue = data.forecast && data.forecast.forecastedCost > 0
-            ? data.forecast.forecastedCost
-            : data.aws.totalCost; // At end of month, projected = current
+            ? data.aws.totalCost + data.forecast.forecastedCost // Current + remaining forecast
+            : data.aws.projectedMonthEnd || data.aws.totalCost; // Use daily average projection
           const forecastDescription = data.forecast && data.forecast.forecastedCost > 0
-            ? 'Estimated total for billing month'
-            : 'End of month (final projected)';
+            ? 'AWS forecast for billing month'
+            : `Based on $${data.aws.dailyAverage?.toFixed(2) || '0'}/day average`;
           const forecastCard: A2UIComponent = {
             id: 'aws-forecast',
             component: 'metric_card' as const,
@@ -2762,13 +2762,13 @@ function DashboardWithAgent() {
         };
         components.push(costCard);
 
-        // Forecast card - always show, use current cost if at end of month
+        // Forecast card - use AWS forecast if available, otherwise use daily average projection
         const forecastValue = data.forecast && data.forecast.forecastedCost > 0
-          ? data.forecast.forecastedCost
-          : data.aws.totalCost; // At end of month, projected = current
+          ? data.aws.totalCost + data.forecast.forecastedCost // Current + remaining forecast
+          : data.aws.projectedMonthEnd || data.aws.totalCost; // Use daily average projection
         const forecastDescription = data.forecast && data.forecast.forecastedCost > 0
-          ? 'Estimated total for billing month'
-          : 'End of month (final projected)';
+          ? 'AWS forecast for billing month'
+          : `Based on $${data.aws.dailyAverage?.toFixed(2) || '0'}/day average`;
         const forecastCard: A2UIComponent = {
           id: 'aws-forecast',
           component: 'metric_card' as const,

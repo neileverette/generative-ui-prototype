@@ -185,6 +185,15 @@ async function fetchAWSCosts(): Promise<{
     breakdown.sort((a, b) => b.cost - a.cost);
   }
 
+  // Calculate daily average and projected month end
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const now = new Date();
+  const daysElapsed = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dailyAverage = totalCost / daysElapsed;
+  const projectedMonthEnd = dailyAverage * totalDaysInMonth;
+
   return {
     totalCost: parseFloat(totalCost.toFixed(2)),
     currency: 'USD',
@@ -192,6 +201,8 @@ async function fetchAWSCosts(): Promise<{
     period: { start, end },
     queriedAt: new Date().toISOString(),
     source: 'aws-cost-explorer',
+    dailyAverage: parseFloat(dailyAverage.toFixed(2)),
+    projectedMonthEnd: parseFloat(projectedMonthEnd.toFixed(2)),
   };
 }
 
