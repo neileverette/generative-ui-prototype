@@ -69,7 +69,10 @@
       "Bash(npm view:*)",
       "Bash(npm root:*)",
       "Bash(expr:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(doctl version:*)",
+      "Bash(doctl apps list:*)",
+      "Bash(doctl auth:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

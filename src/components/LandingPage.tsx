@@ -183,7 +183,7 @@ export function LandingPage({
   }, [timeWindow]);
 
   // Build the summary text
-  const summaryText = `${data.containerCount} containers running, ${data.alertCount} alerts firing, ${data.uptimePercent}% uptime—your automations saved ${data.automationExecutions} executions, ${data.automationHours} hours, your current costs are $${data.monthlyCost.toFixed(2)} and projected cost will be $${data.projectedCost.toFixed(2)} this month.`;
+  const summaryText = `${data.containerCount} containers running, ${data.alertCount} alerts firing, ${data.uptimePercent}% uptime—your automations ran ${data.automationExecutions} times, saving you ${data.automationHours} hours. Current month cost is $${data.monthlyCost.toFixed(2)} with a projected month end of $${data.projectedCost.toFixed(2)}.`;
 
   // Claude usage component
   const claudeUsageComponent: A2UIComponent = {
