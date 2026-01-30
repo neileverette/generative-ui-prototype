@@ -142,6 +142,8 @@ async function fetchAWSCosts(): Promise<{
   period: { start: string; end: string };
   queriedAt: string;
   source: string;
+  dailyAverage: number;
+  projectedMonthEnd: number;
 }> {
   if (!costExplorerClient) {
     throw new Error('AWS Cost Explorer not configured');
